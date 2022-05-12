@@ -1,0 +1,127 @@
+#version 450
+
+// #extension GL_EXT_debug_printf : enable
+#extension GL_GOOGLE_include_directive : enable
+
+// Area
+struct Area
+{
+    vec2 pos;
+    vec2 size;
+};
+
+// Rectangle instance
+struct Instance
+{
+    Area area;
+    vec4 radius;
+    uint spriteIndex;
+    uint fillMode;
+    uint color;
+    uint borderColor;
+    float borderWidth;
+    float edgeSoftness;
+};
+
+#include "PrimitiveCompute.glsl"
+
+layout (local_size_x = 1) in;
+
+vec2[4] getUVs(const vec2 size, const uint spriteIndex, const uint fillMode)
+{
+    vec2[4] uvs = vec2[4](
+        vec2(0.0, 0.0),
+        vec2(1.0, 0.0),
+        vec2(1.0, 1.0),
+        vec2(0.0, 1.0)
+    );
+    if (spriteIndex != NullSpriteIndex && fillMode == FillModeCrop) {
+        // Query sprite size
+        const vec2 spriteSize = textureSize(sprites[spriteIndex], 0);
+        // Compute resize factor
+        const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (size.x / size.y);
+        const float resizeFactor = float(!isSpriteGreater) * (size.x / spriteSize.x) + float(isSpriteGreater) * (size.y / spriteSize.y);
+        // Compute scaling
+        const vec2 newSize = vec2(spriteSize.x * resizeFactor, spriteSize.y * resizeFactor);
+        const vec2 offset = vec2(
+            (1.0 - (size.x / newSize.x)) / 2.0,
+            (1.0 - (size.y / newSize.y)) / 2.0
+        );
+        uvs[0] += offset;
+        uvs[1] += vec2(-offset.x, offset.y);
+        uvs[2] -= offset;
+        uvs[3] += vec2(offset.x, -offset.y);
+    }
+    return uvs;
+}
+
+Area getArea(const vec2 pos, const vec2 size, const uint spriteIndex, const uint fillMode)
+{
+    Area area = Area(pos, size);
+
+    if (spriteIndex != NullSpriteIndex && fillMode == FillModeFit) {
+        // Query sprite size
+        const vec2 spriteSize = textureSize(sprites[spriteIndex], 0);
+        // Compute resize factor
+        const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (size.x / size.y);
+        const float resizeFactor = float(isSpriteGreater) * (size.x / spriteSize.x) + float(!isSpriteGreater) * (size.y / spriteSize.y);
+        // Compute scaling
+        area.size = vec2(spriteSize.x * resizeFactor, spriteSize.y * resizeFactor);
+        area.pos = vec2(
+            pos.x + (size.x - area.size.x) / 2.0,
+            pos.y + (size.y - area.size.y) / 2.0
+        );
+    }
+    area.pos = (area.pos / context.halfWindowSize) - 1.0;
+    area.size = area.size / context.halfWindowSize;
+    return area;
+}
+
+void main(void)
+{
+    const uint instanceIndex = gl_GlobalInvocationID.x;
+    const Offset offset = offsets.data[instanceIndex];
+    const Instance instance = instances.data[instanceIndex];
+    const Area area = getArea(instance.area.pos, instance.area.size, instance.spriteIndex, instance.fillMode);
+    const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
+
+    // debugPrintfEXT("> Instance %u sprite: (%u) pos: (%v2f) size: (%v2f) realPos: (%v2f) realSize: (%v2f) vertexOffset: verticesOffset %u indexOffset: %u color: (%u ==> %v4f)\n",
+    //     instanceIndex, instance.spriteIndex, instance.area.pos, instance.area.size, pos, size, offset.vertexOffset, offset.indexOffset,
+    //     instance.color, unpackUnorm4x8(instance.color));
+
+    // Set vertices
+    // const float ratio = instance.area.size.x / instance.area.size.y;
+    Vertex vertex;
+    vertex.halfSize = instance.area.size / 2.0;
+    vertex.center = instance.area.pos + vertex.halfSize;
+    vertex.radius = instance.radius;
+    vertex.spriteIndex = instance.spriteIndex;
+    vertex.color = instance.color;
+    vertex.edgeSoftness = instance.edgeSoftness;
+    //   TopLeft
+    vertex.pos = area.pos;
+    vertex.uv = uvs[0];
+    vertices.data[offset.vertexOffset + 0] = vertex;
+    //   TopRight
+    vertex.pos.x += area.size.x;
+    vertex.uv = uvs[1];
+    vertices.data[offset.vertexOffset + 1] = vertex;
+    //   BottomRight
+    vertex.pos.y += area.size.y;
+    vertex.uv = uvs[2];
+    vertices.data[offset.vertexOffset + 2] = vertex;
+    //   BottomLeft
+    vertex.pos.x = area.pos.x;
+    vertex.uv = uvs[3];
+    vertices.data[offset.vertexOffset + 3] = vertex;
+
+    // Set indices
+    //   TopRight Triangle
+    indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
+    indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
+    indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
+    //   BottomLeft Triangle
+    indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
+    indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
+    indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;
+}

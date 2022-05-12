@@ -1,0 +1,72 @@
+#version 450
+
+// #extension GL_EXT_debug_printf : enable
+#extension GL_GOOGLE_include_directive : enable
+
+// Glyph instance
+struct Instance
+{
+    vec2 uvPos;
+    vec2 uvSize;
+    vec2 pos;
+    uint spriteIndex;
+    uint color;
+};
+
+#include "PrimitiveCompute.glsl"
+
+layout (local_size_x = 1) in;
+
+void main(void)
+{
+    const uint instanceIndex = gl_GlobalInvocationID.x;
+    const Offset offset = offsets.data[instanceIndex];
+    const Instance instance = instances.data[instanceIndex];
+    // Compute relative area
+    const vec2 rPos = (instance.pos / context.halfWindowSize) - 1.0;
+    const vec2 rSize = instance.uvSize / context.halfWindowSize;
+    // Compute relative UVs
+    const vec2 spriteSize = textureSize(sprites[instance.spriteIndex], 0);
+    const vec2 rUVPos = instance.uvPos / spriteSize;
+    const vec2 rUVSize = instance.uvSize / spriteSize;
+
+    // debugPrintfEXT("> Instance %u sprite: (%u) APOS (%v2f) RPOS (%v2f) RSIZE (%v2f) UV (%v2f | %v2f) RUV (%v2f | %v2f)\n",
+    //     instanceIndex, instance.spriteIndex, instance.pos, rPos, rSize, instance.uvPos, instance.uvSize, rUVPos, rUVSize);
+    // debugPrintfEXT("> Instance %u sprite: (%u) APOS (%v2f) UV (%v2f | %v2f) \n",
+    //     instanceIndex, instance.spriteIndex, instance.pos, instance.uvPos, instance.uvSize);
+
+    // Set vertices
+    Vertex vertex;
+    vertex.halfSize = instance.uvSize / 2.0;
+    vertex.center = instance.pos + vertex.halfSize;
+    vertex.radius = vec4(0.0);
+    vertex.spriteIndex = instance.spriteIndex;
+    vertex.color = instance.color;
+    vertex.edgeSoftness = 0.0;
+    //   TopLeft
+    vertex.pos = rPos;
+    vertex.uv = rUVPos;
+    vertices.data[offset.vertexOffset + 0] = vertex;
+    //   TopRight
+    vertex.pos.x += rSize.x;
+    vertex.uv = rUVPos + vec2(rUVSize.x, 0);
+    vertices.data[offset.vertexOffset + 1] = vertex;
+    //   BottomRight
+    vertex.pos.y += rSize.y;
+    vertex.uv = rUVPos + rUVSize;
+    vertices.data[offset.vertexOffset + 2] = vertex;
+    //   BottomLeft
+    vertex.pos.x = rPos.x;
+    vertex.uv = rUVPos + vec2(0, rUVSize.y);
+    vertices.data[offset.vertexOffset + 3] = vertex;
+
+    // Set indices
+    //   TopRight Triangle
+    indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
+    indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
+    indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
+    //   BottomLeft Triangle
+    indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
+    indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
+    indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;
+}
