@@ -46,7 +46,7 @@ void UI::Painter::growQueue(Queue &queue, const std::uint32_t minCapacity) noexc
     // Allocate the necessary size
     const auto capacity = std::max(minCapacity, queue.capacity * 2u);
     const auto instancesByteSize = capacity * queue.instanceSize;
-    const auto data = Core::Utils::AlignedAlloc<std::uint8_t>(
+    const auto data = Core::AlignedAlloc<std::uint8_t>(
         instancesByteSize + capacity * sizeof(InstanceOffset),
         queue.instanceAlignment
     );
@@ -69,7 +69,7 @@ void UI::Painter::growQueue(Queue &queue, const std::uint32_t minCapacity) noexc
 
 void UI::Painter::DeallocateQueueData(const Queue &queue) noexcept
 {
-    Core::Utils::AlignedFree(
+    Core::AlignedFree(
         queue.data,
         queue.totalByteCapacity(),
         queue.instanceAlignment

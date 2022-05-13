@@ -44,7 +44,7 @@ public:
     using TaggedNodePtr = Core::TaggedPtr<Node>;
 
     /** @brief Event range */
-    using Range = Core::Utils::IteratorRange<const EventType *>;
+    using Range = Core::IteratorRange<const EventType *>;
 
 
     /** @brief Destructor */

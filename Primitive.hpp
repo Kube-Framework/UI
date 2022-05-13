@@ -24,5 +24,5 @@ namespace kF::UI
 
     /** @brief Primitive concept */
     template<typename Type>
-    concept PrimitiveKind = std::is_trivially_destructible_v<Type> && Core::Utils::IsTag<Type, PrimitiveTag>;
+    concept PrimitiveKind = std::is_trivially_destructible_v<Type> && Core::IsTag<Type, PrimitiveTag>;
 }

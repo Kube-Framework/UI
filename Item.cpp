@@ -18,15 +18,15 @@ UI::Item::~Item(void) noexcept
 
     // Detach runtime components
     _uiSystem->dettach<TreeNode, Area, Depth>(_entity);
-    if (Core::Utils::HasFlags(_componentFlags, ComponentFlags::Constraints))
+    if (Core::HasFlags(_componentFlags, ComponentFlags::Constraints))
         _uiSystem->dettach<Constraints>(_entity);
-    if (Core::Utils::HasFlags(_componentFlags, ComponentFlags::Layout))
+    if (Core::HasFlags(_componentFlags, ComponentFlags::Layout))
         _uiSystem->dettach<Layout>(_entity);
-    if (Core::Utils::HasFlags(_componentFlags, ComponentFlags::PainterArea))
+    if (Core::HasFlags(_componentFlags, ComponentFlags::PainterArea))
         _uiSystem->dettach<PainterArea>(_entity);
-    if (Core::Utils::HasFlags(_componentFlags, ComponentFlags::MouseEventArea))
+    if (Core::HasFlags(_componentFlags, ComponentFlags::MouseEventArea))
         _uiSystem->dettach<MouseEventArea>(_entity);
-    if (Core::Utils::HasFlags(_componentFlags, ComponentFlags::KeyEventReceiver))
+    if (Core::HasFlags(_componentFlags, ComponentFlags::KeyEventReceiver))
         _uiSystem->dettach<KeyEventReceiver>(_entity);
 
     // Remove the entity from UISystem
@@ -35,7 +35,7 @@ UI::Item::~Item(void) noexcept
 
 UI::Item::Item(void) noexcept
     :   _uiSystem(&UI::App::Get().uiSystem()),
-        _componentFlags(Core::Utils::MakeFlags(ComponentFlags::TreeNode, ComponentFlags::Area, ComponentFlags::Depth)),
+        _componentFlags(Core::MakeFlags(ComponentFlags::TreeNode, ComponentFlags::Area, ComponentFlags::Depth)),
         _entity(_uiSystem->add(
             TreeNode {
                 .componentFlags = _componentFlags

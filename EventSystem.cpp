@@ -124,7 +124,7 @@ void kF::UI::EventSystem::dispatchEvents(void) noexcept
         // Dispatch each queue and mark unused
         const auto it = std::remove_if(queues.begin(), queues.end(), [this, &events](auto &queue) {
             if (queue.referenceCount() != 1) [[likely]] {
-                queue->produce(Core::Utils::IteratorRange { events.begin(), events.end() });
+                queue->produce(Core::IteratorRange { events.begin(), events.end() });
                 return false;
             } else [[unlikely]]
                 return true;

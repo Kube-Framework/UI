@@ -37,7 +37,7 @@ inline kF::UI::Item &kF::UI::Item::attachUpdate(Functors &&...functors) noexcept
 {
     static_assert(
         ([]<typename Functor>(Functor *) -> bool {
-            using Component = std::remove_cvref_t<std::tuple_element_t<0, Core::Utils::FunctionDecomposerHelper<Functors>::ArgsTuple>>;
+            using Component = std::remove_cvref_t<std::tuple_element_t<0, Core::FunctionDecomposerHelper<Functors>::ArgsTuple>>;
             return !std::is_same_v<Component, TreeNode> && !std::is_same_v<Component, Area>;
         }(std::declval<Functors *>()) && ...),
         "UI::Item::attachUpdate: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor"
@@ -45,7 +45,7 @@ inline kF::UI::Item &kF::UI::Item::attachUpdate(Functors &&...functors) noexcept
 
     uiSystem().attachUpdate(_entity, std::forward<Functors>(functors)...);
     markComponents<
-        std::remove_cvref_t<std::tuple_element_t<0, Core::Utils::FunctionDecomposerHelper<Functors>::ArgsTuple>>...
+        std::remove_cvref_t<std::tuple_element_t<0, Core::FunctionDecomposerHelper<Functors>::ArgsTuple>>...
     >();
     return *this;
 }
@@ -88,8 +88,8 @@ template<typename ...Components>
 inline void kF::UI::Item::markComponents(void) noexcept
 {
     const auto old = _componentFlags;
-    _componentFlags = Core::Utils::MakeFlags(_componentFlags, GetComponentFlag<Components>()...);
-    if (old != _componentFlags && Core::Utils::HasFlags(_componentFlags, ComponentFlags::TreeNode)) [[likely]] {
+    _componentFlags = Core::MakeFlags(_componentFlags, GetComponentFlag<Components>()...);
+    if (old != _componentFlags && Core::HasFlags(_componentFlags, ComponentFlags::TreeNode)) [[likely]] {
         get<TreeNode>().componentFlags = _componentFlags;
     }
 }
@@ -98,8 +98,8 @@ template<typename ...Components>
 inline void kF::UI::Item::unmarkComponents(void) noexcept
 {
     const auto old = _componentFlags;
-    _componentFlags = Core::Utils::RemoveFlags(_componentFlags, GetComponentFlag<Components>()...);
-    if (old != _componentFlags && Core::Utils::HasFlags(_componentFlags, ComponentFlags::TreeNode)) [[likely]] {
+    _componentFlags = Core::RemoveFlags(_componentFlags, GetComponentFlag<Components>()...);
+    if (old != _componentFlags && Core::HasFlags(_componentFlags, ComponentFlags::TreeNode)) [[likely]] {
         get<TreeNode>().componentFlags = _componentFlags;
     }
 }

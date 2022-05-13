@@ -26,13 +26,13 @@ static SDL_WindowFlags ToWindowFlags(const UI::App::WindowFlags flags) noexcept
     using enum UI::App::WindowFlags;
 
     constexpr auto ApplyFlags = [](SDL_WindowFlags &out, const UI::App::WindowFlags flags, const UI::App::WindowFlags from, const SDL_WindowFlags to) {
-        if (Core::Utils::HasFlags(flags, from))
-            out = Core::Utils::MakeFlags(out, to);
+        if (Core::HasFlags(flags, from))
+            out = Core::MakeFlags(out, to);
     };
 
     SDL_WindowFlags out {};
-    if (Core::Utils::HasFlags(flags, Fullscreen, Borderless)) {
-        out = Core::Utils::MakeFlags(out, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    if (Core::HasFlags(flags, Fullscreen, Borderless)) {
+        out = Core::MakeFlags(out, SDL_WINDOW_FULLSCREEN_DESKTOP);
     } else {
         ApplyFlags(out, flags, Fullscreen, SDL_WINDOW_FULLSCREEN);
         ApplyFlags(out, flags, Borderless, SDL_WINDOW_BORDERLESS);

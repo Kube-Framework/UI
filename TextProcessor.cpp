@@ -93,7 +93,7 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
     auto *out = reinterpret_cast<Glyph *>(instanceBegin);
     ComputeParameters params;
 
-    for (const auto &text : Core::Utils::IteratorRange { primitiveBegin, primitiveEnd }) {
+    for (const auto &text : Core::IteratorRange { primitiveBegin, primitiveEnd }) {
         // Query compute parameters
         params.text = &text;
         params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.font);

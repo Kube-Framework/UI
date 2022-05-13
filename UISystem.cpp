@@ -101,16 +101,16 @@ void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
     auto &areaTable = getTable<Area>();
     auto &mouseTable = getTable<MouseEventArea>();
 
-    // for (std::uint32_t index = mouseTable.count(); const auto &handler : Core::Utils::IteratorRange { mouseTable.rbegin(), mouseTable.rend() }) {
+    // for (std::uint32_t index = mouseTable.count(); const auto &handler : Core::IteratorRange { mouseTable.rbegin(), mouseTable.rend() }) {
     //     auto &area = areaTable.get(mouseTable.entities().at(--index));
     for (std::uint32_t index {}; const auto &handler : mouseTable) {
         auto &area = areaTable.get(mouseTable.entities().at(index++));
         if (area.contains(event.pos)) [[unlikely]] {
             // kFInfo("[processMouseEventAreas] Area ", area, " hit by ", event.pos);
             const auto flags = handler.event(event, area);
-            if (Core::Utils::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
+            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
-            if (!Core::Utils::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
                 break;
         }
     }
@@ -125,9 +125,9 @@ void kF::UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcep
         auto &area = areaTable.get(motionTable.entities().at(index++));
         if (area.contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
-            if (Core::Utils::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
+            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
-            if (!Core::Utils::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
                 break;
         }
     }
@@ -139,9 +139,9 @@ void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 
     for (const auto &handler : keyTable) {
         const auto flags = handler.event(event);
-        if (Core::Utils::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
+        if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
             invalidate();
-        if (!Core::Utils::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+        if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
             break;
     }
 }
@@ -259,7 +259,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
         Constraints &constraints = _traverseContext.constraints();
 
         // If the node has explicit constraints use it, else we use default fill constraints
-        if (!Core::Utils::HasFlags(node.componentFlags, ComponentFlags::Constraints)) [[likely]] {
+        if (!Core::HasFlags(node.componentFlags, ComponentFlags::Constraints)) [[likely]] {
             constraints = Constraints::Make(Fill(), Fill());
         } else [[unlikely]] {
             constraints = get<Constraints>(entity);
@@ -269,7 +269,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
         // If the node has variable constraints and at least one child, compute its size accordingly to its children
         if (!node.children.empty()) [[likely]] {
             // Update self constraints depending on children constraints
-            if (!Core::Utils::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
+            if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
                 computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints);
             else [[unlikely]]
                 buildLayoutConstraints(constraints);
@@ -333,7 +333,7 @@ void UI::UISystem::traverseAreas(void) noexcept
     {
         // Build position of children using the context node area
         const auto &contextArea = _traverseContext.area();
-        if (!Core::Utils::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]] {
+        if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]] {
             computeChildrenArea(contextArea, Anchor::Center);
         } else [[unlikely]] {
             buildLayoutArea(contextArea);

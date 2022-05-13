@@ -204,14 +204,14 @@ bool UI::Renderer::prepare(void) noexcept
         return false;
 
     // Compute all sections' sizes
-    const auto contextSectionSize = Core::Utils::AlignOffset(
+    const auto contextSectionSize = Core::AlignOffset(
         static_cast<std::uint32_t>(sizeof(PrimitiveContext)), _cache.minAlignment
     );
     const auto instancesSectionSize = computeDynamicOffsets();
-    const auto verticesSectionSize = Core::Utils::AlignOffset(
+    const auto verticesSectionSize = Core::AlignOffset(
         static_cast<std::uint32_t>(sizeof(PrimitiveVertex)) * _painter.vertexCount(), _cache.minAlignment
     );
-    const auto indicesSectionSize = Core::Utils::AlignOffset(
+    const auto indicesSectionSize = Core::AlignOffset(
         static_cast<std::uint32_t>(sizeof(PrimitiveIndex)) * _painter.indexCount(), _cache.minAlignment
     );
     FrameCache &frameCache = _perFrameCaches.current();
@@ -235,7 +235,7 @@ bool UI::Renderer::prepare(void) noexcept
     if (frameCache.buffers.deviceCapacity < totalDeviceSize) {
         frameCache.buffers.deviceBuffer = Buffer::MakeExclusive(
             totalDeviceSize,
-            Core::Utils::MakeFlags(BufferUsageFlags::TransferDst, BufferUsageFlags::StorageBuffer, BufferUsageFlags::VertexBuffer, BufferUsageFlags::IndexBuffer)
+            Core::MakeFlags(BufferUsageFlags::TransferDst, BufferUsageFlags::StorageBuffer, BufferUsageFlags::VertexBuffer, BufferUsageFlags::IndexBuffer)
         );
         frameCache.buffers.deviceAllocation = MemoryAllocation::MakeLocal(frameCache.buffers.deviceBuffer);
         frameCache.buffers.deviceCapacity = totalDeviceSize;
@@ -299,10 +299,10 @@ std::uint32_t UI::Renderer::computeDynamicOffsets(void) noexcept
         primitiveCache.instancesDynamicOffset = dynamicOffset;
 
         // Determine the dynamic offsets of offset section
-        primitiveCache.offsetsDynamicOffset = Core::Utils::AlignOffset(
+        primitiveCache.offsetsDynamicOffset = Core::AlignOffset(
             primitiveCache.instancesDynamicOffset + queue.instancesByteSize(), alignment
         );
-        dynamicOffset = Core::Utils::AlignOffset(
+        dynamicOffset = Core::AlignOffset(
             primitiveCache.offsetsDynamicOffset + queue.offsetsByteSize(), alignment
         );
     }
@@ -482,7 +482,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
             DependencyFlags::None,
             MemoryBarrier(
                 AccessFlags::ShaderWrite,
-                Core::Utils::MakeFlags(AccessFlags::VertexAttributeRead, AccessFlags::IndexRead)
+                Core::MakeFlags(AccessFlags::VertexAttributeRead, AccessFlags::IndexRead)
             )
         );
     }

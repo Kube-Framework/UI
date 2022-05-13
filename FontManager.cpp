@@ -205,7 +205,7 @@ UI::FontManager::MapSize UI::FontManager::collectGlyphs(const FontIndex fontInde
 
     // Compute map size
     MapSize mapSize {
-        .width = Core::Utils::NextPowerOf2(
+        .width = Core::NextPowerOf2(
             static_cast<std::uint32_t>(instanceModel.pixelHeight * std::sqrt(static_cast<float>(fontCache.glyphCount)))
         ),
         .height = 0u

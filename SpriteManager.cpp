@@ -44,7 +44,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
                 GPU::DescriptorSetLayoutBinding(
                     0u,
                     GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount,
-                    Core::Utils::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
+                    Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
                 )
             },
             { GPU::DescriptorBindingFlags::PartiallyBound }
@@ -161,7 +161,7 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
     spriteCache.image = Image::MakeSingleLayer2D(
         spriteBuffer.extent,
         Format::R8G8B8A8_SRGB,
-        Core::Utils::MakeFlags(ImageUsageFlags::TransferDst, ImageUsageFlags::Sampled),
+        Core::MakeFlags(ImageUsageFlags::TransferDst, ImageUsageFlags::Sampled),
         ImageTiling::TilingOptimal
     );
     spriteCache.memoryAllocation = MemoryAllocation::MakeLocal(spriteCache.image);
