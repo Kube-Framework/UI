@@ -14,6 +14,7 @@
 #include "FontManager.hpp"
 #include "TraverseContext.hpp"
 #include "EventQueue.hpp"
+#include "Animator.hpp"
 
 namespace kF::UI
 {
@@ -44,7 +45,8 @@ class alignas_double_cacheline kF::UI::UISystem
         PainterArea,
         MouseEventArea,
         MotionEventArea,
-        KeyEventReceiver
+        KeyEventReceiver,
+        Animator
     >
 {
 public:
@@ -128,8 +130,14 @@ private:
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
 
+    /** @brief Process system time elapsed */
+    void processElapsedTime(void) noexcept;
+
     /** @brief Process all Timer instances */
-    void processTimers(void) noexcept;
+    void processTimers(const std::int64_t elapsed) noexcept;
+
+    /** @brief Process all Animator instances */
+    void processAnimators(const std::int64_t elapsed) noexcept;
 
 
     /** @brief Process all PainterArea instances */

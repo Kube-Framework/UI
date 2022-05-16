@@ -52,8 +52,8 @@ bool UI::UISystem::tick(void) noexcept
     // Process UI events
     processEventHandlers();
 
-    // Process all update handlers
-    processTimers();
+    // Process elapsed time
+    processElapsedTime();
 
     // If the current frame is still valid, we only need to dispatch painter commands
     if (!isFrameInvalid(currentFrame)) {
@@ -146,23 +146,35 @@ void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     }
 }
 
-void UI::UISystem::processTimers(void) noexcept
+void UI::UISystem::processElapsedTime(void) noexcept
 {
     const auto oldTick = _lastTick;
-    _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    const auto elapsed = _lastTick - oldTick;
 
-    if (oldTick) [[likely]] {
-        const auto elapsed = _lastTick - oldTick;
-        bool invalidateState = false;
-        for (Timer &handler : getTable<Timer>()) {
-            handler.elapsed += elapsed;
-            if (handler.elapsed >= handler.interval) [[unlikely]] {
-                invalidateState |= handler.event(elapsed);
-                handler.elapsed = 0;
-            }
+    if (oldTick) [[likely]]
+        processTimers(elapsed);
+    processAnimators(elapsed);
+    _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+}
+
+void UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
+{
+    bool invalidateState = false;
+    for (Timer &handler : getTable<Timer>()) {
+        handler.elapsed += elapsed;
+        if (handler.elapsed >= handler.interval) [[unlikely]] {
+            invalidateState |= handler.event(elapsed);
+            handler.elapsed = 0;
         }
-        if (invalidateState) [[likely]]
-            invalidate();
+    }
+    if (invalidateState) [[likely]]
+        invalidate();
+}
+
+void UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
+{
+    for (Animator &handler : getTable<Animator>()) {
+        handler.tick(elapsed);
     }
 }
 

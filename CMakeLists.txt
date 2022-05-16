@@ -1,7 +1,9 @@
 kube_add_library(UI
     SOURCES
-        # Animation.cpp
-        # Animation.hpp
+        Animation.hpp
+        Animator.cpp
+        Animator.hpp
+        Animator.ipp
         App.cpp
         App.hpp
         Base.cpp
