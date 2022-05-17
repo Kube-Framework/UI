@@ -150,14 +150,18 @@ void UI::UISystem::processElapsedTime(void) noexcept
 {
     const auto oldTick = _lastTick;
     const auto elapsed = _lastTick - oldTick;
+    bool invalidateState = false;
 
     if (oldTick) [[likely]]
-        processTimers(elapsed);
-    processAnimators(elapsed);
+        invalidateState |= processTimers(elapsed);
+    invalidateState |= processAnimators(elapsed);
     _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+    if (invalidateState) [[likely]]
+        invalidate();
 }
 
-void UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
+bool UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
 {
     bool invalidateState = false;
     for (Timer &handler : getTable<Timer>()) {
@@ -167,15 +171,16 @@ void UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
             handler.elapsed = 0;
         }
     }
-    if (invalidateState) [[likely]]
-        invalidate();
+    return invalidateState;
 }
 
-void UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
+bool UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
 {
-    for (Animator &handler : getTable<Animator>()) {
-        handler.tick(elapsed);
-    }
+    bool invalidateState { false };
+
+    for (Animator &handler : getTable<Animator>())
+        invalidateState |= handler.tick(elapsed);
+    return invalidateState;
 }
 
 void UI::UISystem::processPainterAreas(void) noexcept

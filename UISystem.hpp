@@ -134,10 +134,10 @@ private:
     void processElapsedTime(void) noexcept;
 
     /** @brief Process all Timer instances */
-    void processTimers(const std::int64_t elapsed) noexcept;
+    [[nodiscard]] bool processTimers(const std::int64_t elapsed) noexcept;
 
     /** @brief Process all Animator instances */
-    void processAnimators(const std::int64_t elapsed) noexcept;
+    [[nodiscard]] bool processAnimators(const std::int64_t elapsed) noexcept;
 
 
     /** @brief Process all PainterArea instances */
