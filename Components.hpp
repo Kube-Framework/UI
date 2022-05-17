@@ -87,6 +87,20 @@ namespace kF::UI
     struct alignas_half_cacheline PainterArea
     {
         Core::Functor<void(Painter &, const Area &), UIAllocator> event {};
+
+        /** @brief Wrap any static paint functor within a painter area
+         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) must match remaining functor's arguments */
+        template<auto Functor, typename ...Args>
+            requires std::is_invocable_v<decltype(Functor), kF::UI::Painter &, const kF::UI::Area &, std::remove_cvref_t<Args> &...>
+        [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
+
+        /** @brief Wrap any static paint functor within a painter area
+         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) must match remaining functor's arguments */
+        template<typename Functor, typename ...Args>
+            requires std::is_invocable_v<Functor, kF::UI::Painter &, const kF::UI::Area &, std::remove_cvref_t<Args> &...>
+        [[nodiscard]] static PainterArea Make(Functor &&functor, Args &&...args) noexcept;
     };
     static_assert_fit_half_cacheline(PainterArea);
 
@@ -152,3 +166,5 @@ namespace kF::UI
             return ComponentFlags::None;
     }
 }
+
+#include "Components.ipp"

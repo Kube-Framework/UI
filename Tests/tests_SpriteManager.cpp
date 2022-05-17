@@ -1,6 +1,6 @@
 /**
  * @ Author: Matthieu Moinvaziri
- * @ Description: Unit tests of App
+ * @ Description: Unit tests of SpriteManager
  */
 
 #include <gtest/gtest.h>
