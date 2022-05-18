@@ -12,9 +12,3 @@ UI::Font::~Font(void) noexcept
     if (_manager)
         _manager->removeUnsafe(_index);
 }
-
-UI::FontInstance::~FontInstance(void) noexcept
-{
-    if (_manager)
-        _manager->removeInstanceUnsafe(_parentIndex, _index);
-}

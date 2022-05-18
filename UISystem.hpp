@@ -95,13 +95,8 @@ public:
 
     /** @brief Add a font to the FontManager using its path if it doesn't exists
      *  @note If the font already loaded this function does not duplicate its memory */
-    [[nodiscard]] inline Font addFont(const std::string_view &path) noexcept
-        { return _fontManager.add(path); }
-
-    /** @brief Add a font to the FontManager using its path if it doesn't exists
-     *  @note If the font already loaded this function does not duplicate its memory */
-    [[nodiscard]] inline FontInstance addFontInstance(const FontIndex fontIndex, const FontInstanceModel &model) noexcept
-        { return _fontManager.addInstance(fontIndex, model); }
+    [[nodiscard]] inline Font addFont(const std::string_view &path, const FontModel &model) noexcept
+        { return _fontManager.add(path, model); }
 
 
     /** @brief Virtual tick callback */

@@ -96,12 +96,12 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
     for (const auto &text : Core::IteratorRange { primitiveBegin, primitiveEnd }) {
         // Query compute parameters
         params.text = &text;
-        params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.font);
-        params.glyphUVs = &fontManager.glyphUVsAt(text.font, text.fontInstance);
-        params.spaceWidth = fontManager.spaceWidthAt(text.font, text.fontInstance);
-        params.lineHeight = fontManager.lineHeightAt(text.font, text.fontInstance);
-        params.mapSize = fontManager.mapSizeAt(text.font, text.fontInstance);
-        params.spriteIndex = fontManager.spriteAt(text.font, text.fontInstance);
+        params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.fontIndex);
+        params.glyphUVs = &fontManager.glyphUVsAt(text.fontIndex);
+        params.spaceWidth = fontManager.spaceWidthAt(text.fontIndex);
+        params.lineHeight = fontManager.lineHeightAt(text.fontIndex);
+        params.mapSize = fontManager.mapSizeAt(text.fontIndex);
+        params.spriteIndex = fontManager.spriteAt(text.fontIndex);
         params.pixelCache.clear();
 
         // Compute glyphs areas

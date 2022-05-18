@@ -16,8 +16,7 @@ namespace kF::UI
     {
         Area area {};
         std::wstring_view str {};
-        FontIndex font {};
-        FontInstanceIndex fontInstance {};
+        FontIndex fontIndex {};
         Color color {};
         Anchor anchor {};
         TextAlignment alignment {};
