@@ -9,6 +9,8 @@
 #include <Kube/Core/SmallVector.hpp>
 #include <Kube/ECS/Base.hpp>
 
+#include "Animator.hpp"
+
 #include "Base.hpp"
 
 namespace kF::UI
@@ -138,6 +140,7 @@ namespace kF::UI
             || std::same_as<Components, PainterArea>
             || std::same_as<Components, MouseEventArea>
             || std::same_as<Components, KeyEventReceiver>
+            || std::same_as<Components, Animator>
         ) && ...
     );
 
