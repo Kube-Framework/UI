@@ -249,12 +249,12 @@ namespace kF::UI
 }
 
 /** @brief Stream utilities */
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Color &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Point &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Size &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Area &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Constraints &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Padding &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Radius &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Color &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Point &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Size &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Area &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Constraints &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Padding &rhs) noexcept;
+std::wostream &operator<<(std::wostream &lhs, const kF::UI::Radius &rhs) noexcept;
 
 #include "Base.ipp"
