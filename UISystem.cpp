@@ -148,15 +148,20 @@ void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 
 void UI::UISystem::processElapsedTime(void) noexcept
 {
+    // Query time
     const auto oldTick = _lastTick;
+    _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+    // Compute elapsed time
     const auto elapsed = _lastTick - oldTick;
     bool invalidateState = false;
 
+    // Process timers & animations
     if (oldTick) [[likely]]
         invalidateState |= processTimers(elapsed);
     invalidateState |= processAnimators(elapsed);
-    _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
+    // Invalidate UI
     if (invalidateState) [[likely]]
         invalidate();
 }
