@@ -97,7 +97,7 @@ public:
     static_assert_fit_cacheline(PrimitiveCache);
 
     /** @brief List of PrimitiveCache */
-    using PrimitiveCaches = Core::TinyVector<PrimitiveCache, UIAllocator>;
+    using PrimitiveCaches = Core::Vector<PrimitiveCache, UIAllocator>;
 
 
     /** @brief Destructor */

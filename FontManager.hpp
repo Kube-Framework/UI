@@ -65,7 +65,7 @@ public:
     };
 
     /** @brief Buffer type of a map */
-    using MapBuffer = Core::TinyVector<Color, ResourceAllocator>;
+    using MapBuffer = Core::Vector<Color, ResourceAllocator>;
 
 
     /** @brief Destructor */

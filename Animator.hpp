@@ -34,7 +34,7 @@ public:
     static_assert(OptimizedCount != 0, "Invalid small optimization");
 
     /** @brief Small optimized animation states */
-    using AnimationStates = Core::TinySmallVector<AnimationState, OptimizedCount, UIAllocator>;
+    using AnimationStates = Core::SmallVector<AnimationState, OptimizedCount, UIAllocator>;
 
 
     /** @brief Start an animation

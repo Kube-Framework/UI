@@ -51,13 +51,13 @@ private:
 
 
     // Cacheline N
-    Core::TinyVector<MouseEvent, EventAllocator> _mouseEvents {};
-    Core::TinyVector<MotionEvent, EventAllocator> _motionEvents {};
-    Core::TinyVector<KeyEvent, EventAllocator> _keyEvents {};
-    Core::TinyVector<EventQueuePtr<MouseEvent>, EventAllocator> _mouseQueues {};
+    Core::Vector<MouseEvent, EventAllocator> _mouseEvents {};
+    Core::Vector<MotionEvent, EventAllocator> _motionEvents {};
+    Core::Vector<KeyEvent, EventAllocator> _keyEvents {};
+    Core::Vector<EventQueuePtr<MouseEvent>, EventAllocator> _mouseQueues {};
     // Cacheline N + 1
-    Core::TinyVector<EventQueuePtr<MotionEvent>, EventAllocator> _motionQueues {};
-    Core::TinyVector<EventQueuePtr<KeyEvent>, EventAllocator> _keyQueues {};
+    Core::Vector<EventQueuePtr<MotionEvent>, EventAllocator> _motionQueues {};
+    Core::Vector<EventQueuePtr<KeyEvent>, EventAllocator> _keyQueues {};
     GPU::Extent2D _resizeExtent {};
 };
 

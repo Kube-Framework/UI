@@ -35,7 +35,7 @@ public:
     /** @brief Linked list node */
     struct alignas_half_cacheline Node
     {
-        Core::TinyVector<EventType, EventAllocator> batch {};
+        Core::Vector<EventType, EventAllocator> batch {};
         Node *next {};
     };
     static_assert_fit_half_cacheline(Node);

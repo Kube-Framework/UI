@@ -25,7 +25,7 @@ namespace kF::UI
     static_assert_alignof_half_cacheline(Glyph);
 
     /** @brief Pixel small optimized cache */
-    using PixelCache = Core::TinySmallVector<Pixel, Core::CacheLineSize / sizeof(Pixel), UIAllocator>;
+    using PixelCache = Core::SmallVector<Pixel, Core::CacheLineSize / sizeof(Pixel), UIAllocator>;
 
     /** @brief Stores all parameters of a text computation */
     struct alignas_double_cacheline ComputeParameters

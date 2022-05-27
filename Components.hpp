@@ -53,7 +53,7 @@ namespace kF::UI
     struct alignas_half_cacheline TreeNode
     {
         /** @brief Children vector is small optimized to fit half cacheline */
-        using Children = Core::TinySmallVector<ECS::Entity,
+        using Children = Core::SmallVector<ECS::Entity,
             (Core::CacheLineQuarterSize - sizeof(ECS::Entity) - sizeof(ComponentFlags)) / sizeof(ECS::Entity),
             UIAllocator
         >;

@@ -20,7 +20,7 @@ class alignas_cacheline kF::UI::Internal::TraverseContext
 public:
     /** @brief Entity children counter, used to retain indexes during traversing phase */
     struct alignas_half_cacheline Counter
-        : public Core::TinySmallVector<ECS::EntityIndex, Core::CacheLineQuarterSize / sizeof(ECS::EntityIndex), UIAllocator> {};
+        : public Core::SmallVector<ECS::EntityIndex, Core::CacheLineQuarterSize / sizeof(ECS::EntityIndex), UIAllocator> {};
 
 
     /** @brief Get context entity */
@@ -64,8 +64,8 @@ public:
 
 
 private:
-    Core::TinyVector<Constraints, UIAllocator> _constraints {};
-    Core::TinyVector<Counter, UIAllocator> _counters {};
+    Core::Vector<Constraints, UIAllocator> _constraints {};
+    Core::Vector<Counter, UIAllocator> _counters {};
     TreeNode *_nodeBegin {};
     Area *_areaBegin {};
     Depth *_depthBegin {};

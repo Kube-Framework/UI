@@ -31,7 +31,7 @@ class alignas_cacheline kF::UI::Item
 {
 public:
     /** @brief Small optimized children list */
-    using Children = Core::TinySmallVector<ItemPtr, Core::CacheLineQuarterSize / sizeof(ItemPtr), UIAllocator>;
+    using Children = Core::SmallVector<ItemPtr, Core::CacheLineQuarterSize / sizeof(ItemPtr), UIAllocator>;
 
 
     /** @brief Destructor */

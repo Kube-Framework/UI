@@ -23,7 +23,7 @@ public:
     static constexpr std::uint32_t InitialAllocationCount { 8 };
 
     /** @brief Small optimized vector of primitive names */
-    using Names = Core::TinySmallVector<Core::HashedName, (Core::CacheLineEighthSize * 3) / sizeof(Core::HashedName), UIAllocator>;
+    using Names = Core::SmallVector<Core::HashedName, (Core::CacheLineEighthSize * 3) / sizeof(Core::HashedName), UIAllocator>;
 
     /** @brief Offset of an instance */
     struct InstanceOffset
@@ -64,7 +64,7 @@ public:
     static_assert_fit_half_cacheline(Queue);
 
     /** @brief Vector of primitive queues */
-    using Queues = Core::TinyVector<Queue, UIAllocator>;
+    using Queues = Core::Vector<Queue, UIAllocator>;
 
 
     /** @brief Destructor */

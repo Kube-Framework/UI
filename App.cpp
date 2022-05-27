@@ -140,7 +140,7 @@ UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
         size.height = rect.h;
 
     // Create the backend window
-    Core::TinyString str(windowTitle);
+    Core::String str(windowTitle);
     window = SDL_CreateWindow(
         str.c_str(),
         pos.x, pos.y,
