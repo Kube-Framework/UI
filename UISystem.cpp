@@ -106,7 +106,7 @@ void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
     for (std::uint32_t index {}; const auto &handler : mouseTable) {
         auto &area = areaTable.get(mouseTable.entities().at(index++));
         if (area.contains(event.pos)) [[unlikely]] {
-            // kFInfo("[processMouseEventAreas] Area ", area, " hit by ", event.pos);
+            kFInfo("[processMouseEventAreas] Area ", area, " hit by ", event.pos);
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
@@ -203,7 +203,7 @@ void UI::UISystem::processPainterAreas(void) noexcept
 
 void UI::UISystem::processAreas(void) noexcept
 {
-    // kFInfo("UI::UISystem::processArea: Process begin");
+    kFInfo("UI::UISystem::processArea: Process begin");
     auto &nodeTable = getTable<TreeNode>();
     // Prepare context caches
     _traverseContext.setupContext(nodeTable.count(), nodeTable.begin(), getTable<Area>().begin(), getTable<Depth>().begin());
@@ -242,7 +242,7 @@ void UI::UISystem::processAreas(void) noexcept
     // Sort component tables by depth
     sortTables();
 
-    // kFInfo("UI::UISystem::processArea: Process end\n");
+    kFInfo("UI::UISystem::processArea: Process end\n");
 }
 
 void UI::UISystem::sortTables(void) noexcept
@@ -273,7 +273,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
         );
     };
 
-    // kFInfo("[traverseConstraints] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex());
+    kFInfo("[traverseConstraints] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex());
 
     { // For each traversed node, we build constraints from children to parents
         const auto entity = _traverseContext.entity();
@@ -286,7 +286,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
         } else [[unlikely]] {
             constraints = get<Constraints>(entity);
         }
-        // kFInfo("[traverseConstraints] Entity constraints input: ", constraints);
+        kFInfo("[traverseConstraints] Entity constraints input: ", constraints);
 
         // If the node has variable constraints and at least one child, compute its size accordingly to its children
         if (!node.children.empty()) [[likely]] {
@@ -297,7 +297,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
                 buildLayoutConstraints(constraints);
         }
 
-        // kFInfo("[traverseConstraints] Entity ", entity, " transformed constraints: ", constraints);
+        kFInfo("[traverseConstraints] Entity ", entity, " transformed constraints: ", constraints);
 
         // Check if node has parent => stop traversal
         if (!node.parent) [[unlikely]]
@@ -327,7 +327,7 @@ void UI::UISystem::buildLayoutConstraints(Constraints &constraints) noexcept
 {
     using namespace Internal;
 
-    auto &layout = get<Layout>(_traverseContext.entity());
+    const auto &layout = get<Layout>(_traverseContext.entity());
 
     switch (layout.flowType) {
     case FlowType::Stack:
@@ -335,11 +335,18 @@ void UI::UISystem::buildLayoutConstraints(Constraints &constraints) noexcept
         break;
     case FlowType::Column:
         computeChildrenConstraints<Accumulate::No, Accumulate::Yes>(constraints);
+        if (const auto count = _traverseContext.node().children.size(); count)
+            constraints.maxSize.height += layout.spacing * static_cast<Pixel>(count - 1);
         break;
     case FlowType::Row:
         computeChildrenConstraints<Accumulate::Yes, Accumulate::No>(constraints);
+        if (const auto count = _traverseContext.node().children.size(); count)
+            constraints.maxSize.width += layout.spacing * static_cast<Pixel>(count - 1);
         break;
     }
+
+    const auto &padding = layout.padding;
+    constraints.maxSize += Size(padding.left + padding.right, padding.top + padding.bottom);
 }
 
 void UI::UISystem::traverseAreas(void) noexcept
@@ -349,7 +356,7 @@ void UI::UISystem::traverseAreas(void) noexcept
     // Set depth
     _traverseContext.depth() = ++_maxDepth;
 
-    // kFInfo("[traverseAreas] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex(), ", area ", _traverseContext.area(), " and depth ", _traverseContext.depth());
+    kFInfo("[traverseAreas] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex(), ", area ", _traverseContext.area(), " and depth ", _traverseContext.depth());
 
     const auto &node = _traverseContext.node();
     {
