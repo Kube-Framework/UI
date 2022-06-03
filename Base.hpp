@@ -105,9 +105,11 @@ namespace kF::UI
         Pixel x {};
         Pixel y {};
 
+
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Point &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Point &other) const noexcept = default;
+
 
         /** @brief Convert point to size */
         [[nodiscard]] constexpr Size toSize(void) const noexcept;
@@ -128,9 +130,11 @@ namespace kF::UI
         Pixel width {};
         Pixel height {};
 
+
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Size &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Size &other) const noexcept = default;
+
 
         /** @brief Convert size to point */
         [[nodiscard]] constexpr Point toPoint(void) const noexcept;
@@ -151,9 +155,11 @@ namespace kF::UI
         Point pos {};
         Size size {};
 
+
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Area &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Area &other) const noexcept = default;
+
 
         /** @brief Check if a point intersect with area */
         [[nodiscard]] inline bool contains(const Point &point) const noexcept
@@ -197,14 +203,18 @@ namespace kF::UI
         Size maxSize {};
 
 
-        /** @brief Create a fill constraints */
-        template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
-        [[nodiscard]] static constexpr Constraints Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept;
-
-
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Constraints &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Constraints &other) const noexcept = default;
+
+
+        /** @brief Create max width / height constraints */
+        template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
+        [[nodiscard]] static constexpr Constraints Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept;
+
+        /** @brief Create single size constraints */
+        template<kF::UI::ConstraintSpecifierRequirements SizeSpecifier>
+        [[nodiscard]] static constexpr Constraints Make(const SizeSpecifier sizeSpecifier) noexcept { return Make(sizeSpecifier, sizeSpecifier); }
     };
 
 
@@ -217,6 +227,11 @@ namespace kF::UI
         Pixel bottom {};
 
 
+        /** @brief Comparison operators */
+        [[nodiscard]] constexpr bool operator==(const Padding &other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator!=(const Padding &other) const noexcept = default;
+
+
         /** @brief Fill a padding structure with a single value for all pads */
         [[nodiscard]] static constexpr Padding MakeCenter(const Pixel value) noexcept { return Padding(value, value, value, value); }
 
@@ -225,11 +240,6 @@ namespace kF::UI
 
         /** @brief Fill a padding structure with a single value for vertical pads */
         [[nodiscard]] static constexpr Padding MakeVertical(const Pixel value) noexcept { return Padding(0, 0, value, value); }
-
-
-        /** @brief Comparison operators */
-        [[nodiscard]] constexpr bool operator==(const Padding &other) const noexcept = default;
-        [[nodiscard]] constexpr bool operator!=(const Padding &other) const noexcept = default;
     };
 
 
@@ -240,6 +250,11 @@ namespace kF::UI
         Pixel topRight {};
         Pixel bottomLeft {};
         Pixel bottomRight {};
+
+
+        /** @brief Comparison operators */
+        [[nodiscard]] constexpr bool operator==(const Radius &other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator!=(const Radius &other) const noexcept = default;
 
 
         /** @brief Fill a radius structure with a single value */
@@ -256,11 +271,6 @@ namespace kF::UI
 
         /** @brief Fill right radius with a single value */
         [[nodiscard]] static constexpr Radius MakeRight(const Pixel value) noexcept { return Radius(0.0f, value, 0.0f, value); }
-
-
-        /** @brief Comparison operators */
-        [[nodiscard]] constexpr bool operator==(const Radius &other) const noexcept = default;
-        [[nodiscard]] constexpr bool operator!=(const Radius &other) const noexcept = default;
     };
 }
 

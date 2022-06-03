@@ -3,8 +3,6 @@
  * @ Description: UI System Traverse Context
  */
 
-#pragma once
-
 #include "TraverseContext.hpp"
 
 using namespace kF;
