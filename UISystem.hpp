@@ -40,6 +40,7 @@ class alignas_double_cacheline kF::UI::UISystem
         Area,
         Depth,
         Constraints,
+        Transform,
         Layout,
         Timer,
         PainterArea,
@@ -173,16 +174,18 @@ private:
 
     /** @brief Compute every children area within the given context area, distributing over axis */
     template<Internal::Axis DistributionAxis>
-    void computeDistributedChildrenArea(const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept;
-
-    /** @brief Compute child size inside parent space according to min/max range */
-    template<Internal::BoundType Bound>
-    [[nodiscard]] static Pixel ComputeSize(const Pixel parent, const Pixel min, const Pixel max) noexcept;
+    void computeDistributedChildrenArea(const Area &contextArea, const Layout &layout) noexcept;
 
     /** @brief Compute distributed child size inside parent space according to min/max range and spacing */
     template<bool Distribute>
     [[nodiscard]] static Pixel ComputeDistributedSize(Pixel &flexCount, Pixel &freeSpace,
             const Pixel parent, const Pixel min, const Pixel max) noexcept;
+
+
+    /** @brief Compute child size inside parent space according to min/max range */
+    template<Internal::BoundType Bound>
+    [[nodiscard]] static Pixel ComputeSize(const Pixel parent, const Pixel min, const Pixel max) noexcept;
+
 
     /** @brief Compute position of an item using its context area and an anchor */
     static void ComputePosition(Area &area, const Area &contextArea, const Anchor anchor) noexcept;
@@ -190,6 +193,9 @@ private:
     /** @brief Compute position of a distributed item using its context area and an anchor */
     template<Internal::Axis DistributionAxis>
     static void ComputeDistributedPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept;
+
+    /** @brief Apply transform to item area */
+    void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;
 
 
     // Cacheline N
@@ -213,7 +219,7 @@ private:
     Renderer _renderer;
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);
-// static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 8);
+static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 13);
 
 #include "Item.ipp"
 #include "UISystem.ipp"

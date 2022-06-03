@@ -14,10 +14,12 @@ void UI::Animator::start(const Animation &animation) noexcept
     const auto index = findIndex(animation);
     AnimationState *state { nullptr };
 
+    kFEnsure(animation.tickEvent,
+        "UI::Animator::start: Animation must have a tick event callback");
     if (!index.success()) [[likely]] {
-        kFEnsure(animation.tickEvent,
-            "UI::Animator::start: Animation must have a tick event callback");
         state = &_states.push(AnimationState { .animation = &animation });
+    } else {
+        state = &_states.at(index.value());
     }
     // if (state->elapsed) // This is a restart
     state->elapsed = {};

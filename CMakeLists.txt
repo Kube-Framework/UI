@@ -10,8 +10,6 @@ kube_add_library(UI
         Base.hpp
         Base.ipp
         Components.hpp
-        # Curve.hpp
-        # Curve.ipp
         Events.hpp
         EventQueue.hpp
         EventQueue.ipp

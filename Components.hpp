@@ -27,15 +27,17 @@ namespace kF::UI
     enum class ComponentFlags : std::uint32_t
     {
         None                = 0b0,
-        TreeNode            = 0b000000001,
-        Area                = 0b000000010,
-        Depth               = 0b000000100,
-        Constraints         = 0b000001000,
-        Layout              = 0b000010000,
-        Timer               = 0b000100000,
-        PainterArea         = 0b001000000,
-        MouseEventArea      = 0b010000000,
-        KeyEventReceiver    = 0b100000000
+        TreeNode            = 0b00000000001,
+        Area                = 0b00000000010,
+        Depth               = 0b00000000100,
+        Constraints         = 0b00000001000,
+        Transform           = 0b00000010000,
+        Layout              = 0b00000100000,
+        Timer               = 0b00001000000,
+        PainterArea         = 0b00010000000,
+        MouseEventArea      = 0b00100000000,
+        KeyEventReceiver    = 0b01000000000,
+        Animator            = 0b10000000000
     };
 
 
@@ -63,6 +65,16 @@ namespace kF::UI
         ComponentFlags componentFlags { ComponentFlags::None };
     };
     static_assert_fit_half_cacheline(TreeNode);
+
+    /** @brief Transform describes a 2D space transformation */
+    struct alignas_half_cacheline Transform
+    {
+        Point origin {}; // Relative origin point [0, 1]
+        Size scale {}; // Relative scale [-inf, inf]
+        Size minSize {}; // Absolute minimum size after scaling
+        Point offset {}; // Absolute translation offset
+    };
+    static_assert_fit_half_cacheline(Transform);
 
     /** @brief Layout describes the children distribution of an item */
     struct alignas_half_cacheline Layout
@@ -135,6 +147,7 @@ namespace kF::UI
             std::same_as<Components, TreeNode>
             || std::same_as<Components, Area>
             || std::same_as<Components, Constraints>
+            || std::same_as<Components, Transform>
             || std::same_as<Components, Layout>
             || std::same_as<Components, Timer>
             || std::same_as<Components, PainterArea>
@@ -155,6 +168,8 @@ namespace kF::UI
             return ComponentFlags::Area;
         else if constexpr (std::is_same_v<Component, Constraints>)
             return ComponentFlags::Constraints;
+        else if constexpr (std::is_same_v<Component, Transform>)
+            return ComponentFlags::Transform;
         else if constexpr (std::is_same_v<Component, Layout>)
             return ComponentFlags::Layout;
         else if constexpr (std::is_same_v<Component, Timer>)
@@ -165,6 +180,8 @@ namespace kF::UI
             return ComponentFlags::MouseEventArea;
         else if constexpr (std::is_same_v<Component, KeyEventReceiver>)
             return ComponentFlags::KeyEventReceiver;
+        else if constexpr (std::is_same_v<Component, Animator>)
+            return ComponentFlags::Animator;
         else
             return ComponentFlags::None;
     }

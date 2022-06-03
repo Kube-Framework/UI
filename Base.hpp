@@ -111,6 +111,14 @@ namespace kF::UI
 
         /** @brief Convert point to size */
         [[nodiscard]] constexpr Size toSize(void) const noexcept;
+
+        /** @brief Get min x and y from two points */
+        [[nodiscard]] static inline Point Min(const Point lhs, const Point rhs) noexcept
+            { return Point { std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y) }; }
+
+        /** @brief Get max x and y from two points */
+        [[nodiscard]] static inline Point Max(const Point lhs, const Point rhs) noexcept
+            { return Point { std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y) }; }
     };
 
 
@@ -126,6 +134,14 @@ namespace kF::UI
 
         /** @brief Convert size to point */
         [[nodiscard]] constexpr Point toPoint(void) const noexcept;
+
+        /** @brief Get min width and height from two sizes */
+        [[nodiscard]] static inline Size Min(const Size lhs, const Size rhs) noexcept
+            { return Size { std::min(lhs.width, rhs.width), std::min(lhs.height, rhs.height) }; }
+
+        /** @brief Get max width and height from two sizes */
+        [[nodiscard]] static inline Size Max(const Size lhs, const Size rhs) noexcept
+            { return Size { std::max(lhs.width, rhs.width), std::max(lhs.height, rhs.height) }; }
     };
 
 

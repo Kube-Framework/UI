@@ -29,10 +29,10 @@ public:
     /** @brief Get context entity index */
     [[nodiscard]] inline ECS::EntityIndex entityIndex(void) const noexcept { return _entityIndex; }
 
-
     /** @brief Get the entity index of an entity using its node */
     [[nodiscard]] inline ECS::EntityIndex entityIndexOf(const TreeNode &node) const noexcept
         { return static_cast<ECS::EntityIndex>(std::distance(const_cast<const TreeNode *>(_nodeBegin), &node)); }
+
 
     /** @brief Get the constraints of an entity */
     [[nodiscard]] inline Constraints &constraintsAt(const ECS::EntityIndex entityIndex) noexcept { return _constraints.at(entityIndex); }
