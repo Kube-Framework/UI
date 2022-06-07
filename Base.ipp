@@ -277,6 +277,20 @@ namespace kF::UI
         { lhs.left /= rhs; lhs.right /= rhs; lhs.top /= rhs; lhs.bottom /= rhs; return lhs; }
 }
 
+constexpr kF::UI::Area kF::UI::Area::ApplyPadding(const Area &area, const Padding &padding) noexcept
+{
+    return Area {
+        .pos = area.pos + Point {
+            padding.left,
+            padding.top
+        },
+        .size = area.size - Size {
+            padding.left + padding.right,
+            padding.top + padding.bottom
+        }
+    };
+}
+
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {

@@ -435,16 +435,7 @@ void UI::UISystem::buildLayoutArea(const Area &contextArea) noexcept
     using namespace Internal;
 
     auto &layout = get<Layout>(_traverseContext.entity());
-    const Area transformedArea {
-        .pos = contextArea.pos + Point {
-            layout.padding.left,
-            layout.padding.top
-        },
-        .size = contextArea.size - Size {
-            layout.padding.left + layout.padding.right,
-            layout.padding.top + layout.padding.bottom
-        }
-    };
+    const auto transformedArea = Area::ApplyPadding(contextArea, layout.padding);
 
     switch (layout.flowType) {
     case FlowType::Stack:

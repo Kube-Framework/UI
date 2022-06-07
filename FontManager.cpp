@@ -34,7 +34,7 @@ UI::Font UI::FontManager::add(const std::string_view &path, const FontModel &mod
     // Try to find an existing instance of the queried font
     const auto fontName = GenerateFontName(path, model);
     if (const auto it = _fontNames.find(fontName); it != _fontNames.end()) [[likely]] {
-        const FontIndex fontIndex { static_cast<FontIndex::IndexType>(std::distance(it, _fontNames.end())) };
+        const FontIndex fontIndex { static_cast<FontIndex::IndexType>(std::distance(it, _fontNames.end())) - 1 };
         ++_fontCounters.at(fontIndex);
         return Font(*this, fontIndex);
     }

@@ -111,6 +111,7 @@ namespace kF::UI
 
 
     struct Size;
+    struct Padding;
 
     /** @brief Point */
     struct alignas_eighth_cacheline Point
@@ -177,6 +178,10 @@ namespace kF::UI
         /** @brief Check if a point intersect with area */
         [[nodiscard]] inline bool contains(const Point &point) const noexcept
             { return pos.x <= point.x && pos.y <= point.y && pos.x + size.width >= point.x && pos.y + size.height >= point.y; }
+
+
+        /** @brief Apply padding to an area */
+        [[nodiscard]] static constexpr Area ApplyPadding(const Area &area, const Padding &padding) noexcept;
     };
 
 
