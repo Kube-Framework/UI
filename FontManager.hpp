@@ -24,7 +24,7 @@ namespace kF::UI
     /** @brief Describes a font */
     struct FontModel
     {
-        std::uint32_t pixelHeight {};
+        FontSize pixelHeight {};
 
         /** @brief Comparison operator */
         [[nodiscard]] bool operator==(const FontModel &other) const noexcept = default;
@@ -46,10 +46,10 @@ public:
     struct alignas_double_cacheline FontCache
     {
         GlyphIndexSet glyphIndexSet {};
+        Sprite sprite {};
+        GlyphUVs glyphUVs {};
         std::uint32_t glyphCount {};
         FontModel model {};
-        Sprite sprite;
-        GlyphUVs glyphUVs {};
         Size mapSize {};
         Pixel spaceWidth {};
         Pixel lineHeight {};

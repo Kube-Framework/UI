@@ -15,7 +15,7 @@ namespace kF::UI
     struct alignas_cacheline Text : public PrimitiveTag<"Text">
     {
         Area area {};
-        std::wstring_view str {};
+        std::string_view str {};
         FontIndex fontIndex {};
         Color color {};
         Anchor anchor {};

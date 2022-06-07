@@ -61,8 +61,13 @@ public:
     /** @brief Get window size */
     [[nodiscard]] Size windowSize(void) const noexcept { return _windowSize; }
 
+    /** @brief Get window DPI */
+    [[nodiscard]] DPI windowDPI(void) const noexcept { return _windowDPI; }
+
+
     /** @brief Get scene max depth */
     [[nodiscard]] Depth maxDepth(void) const noexcept { return _maxDepth; }
+
 
     /** @brief Set clear color of UI renderer */
     inline void setClearColor(const Color &color) noexcept { _renderer.setClearColor(color); }
@@ -162,7 +167,7 @@ private:
 
     /** @brief Compute children constraints to given constraints */
     template<Internal::Accumulate AccumulateX, Internal::Accumulate AccumulateY>
-    void computeChildrenConstraints(Constraints &constraints) noexcept;
+    void computeChildrenConstraints(Constraints &constraints, const bool hugWidth, const bool hugHeight) noexcept;
 
     /** @brief Compute axis constraint (rhs) to another (lhs) */
     template<Internal::Accumulate AccumulateValue>
@@ -198,8 +203,16 @@ private:
     void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;
 
 
+    /** @brief Query current window Size */
+    [[nodiscard]] static Size GetWindowSize(void) noexcept;
+
+    /** @brief Query current window DPI */
+    [[nodiscard]] static DPI GetWindowDPI(void) noexcept;
+
+
     // Cacheline N
     Size _windowSize {};
+    DPI _windowDPI {};
     ItemPtr _root {};
     GPU::FrameIndex _invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
     bool _invalidateTree { true };

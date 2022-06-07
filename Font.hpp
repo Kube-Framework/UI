@@ -13,6 +13,9 @@ namespace kF::UI
     class FontManager;
 
 
+    /** @brief Unit of font size */
+    using FontSize = std::uint32_t;
+
     /** @brief Index of a font */
     struct FontIndex
     {

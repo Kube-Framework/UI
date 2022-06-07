@@ -10,6 +10,7 @@ layout(location = 4) in vec2 vertUV;
 layout(location = 5) in uint vertSpriteIndex;
 layout(location = 6) in uint vertColor;
 layout(location = 7) in float vertEdgeSoftness;
+layout(location = 8) in vec2 vertRotationCosSin;
 
 // Outputs
 layout(location = 0) out vec4 fragColor;
@@ -19,6 +20,7 @@ layout(location = 3) out flat vec4 fragRadius;
 layout(location = 4) out vec2 fragUV;
 layout(location = 5) out flat uint fragSpriteIndex;
 layout(location = 6) out flat float fragEdgeSoftness;
+layout(location = 7) out flat vec2 fragRotationCosSin;
 
 void main(void)
 {
@@ -31,4 +33,5 @@ void main(void)
     fragUV = vertUV;
     fragSpriteIndex = vertSpriteIndex;
     fragEdgeSoftness = vertEdgeSoftness;
+    fragRotationCosSin = vertRotationCosSin;
 }

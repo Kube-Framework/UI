@@ -65,6 +65,7 @@ UI::Font UI::FontManager::add(const std::string_view &path, const FontModel &mod
 
 void UI::FontManager::load(const std::string_view &path, const FontIndex fontIndex) noexcept
 {
+    auto &uiSystem = UI::App::Get().uiSystem();
     auto &fontCache = _fontCaches.at(fontIndex);
     FT_Face fontFace {};
     FT_Error code {};
@@ -92,11 +93,12 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
     fontCache.glyphCount = glyphCount;
 
     { // Set font size
+        const auto scaledPixelHeight = UI::ScalePixel(fontCache.model.pixelHeight, uiSystem.windowDPI().vertical);
         auto code = FT_Set_Pixel_Sizes(fontFace, 0, fontCache.model.pixelHeight);
         if (!code)
             code = FT_Activate_Size(fontFace->size);
         kFEnsure(!code,
-            "UI::FontManager::load: Couldn't set font pixel size to ", fontCache.model.pixelHeight, " of font '", fontIndex,  "(error: ", code, ')');
+            "UI::FontManager::load: Couldn't set font pixel size to ", fontCache.model.pixelHeight, " (scaled: ", scaledPixelHeight, ") of font '", fontIndex,  "(error: ", code, ')');
     }
 
     // Collect all glyphs to render
@@ -106,7 +108,7 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
     const auto buffer = renderGlyphs(fontFace, fontIndex, mapSize);
 
     // Add sprite
-    fontCache.sprite = UI::App::Get().uiSystem().spriteManager().add(SpriteManager::SpriteBuffer {
+    fontCache.sprite = uiSystem.spriteManager().add(SpriteManager::SpriteBuffer {
         .data = buffer.data(),
         .extent = GPU::Extent2D { mapSize.width, mapSize.height }
     });
@@ -135,19 +137,19 @@ UI::FontManager::MapSize UI::FontManager::collectGlyphs(const FT_Face fontFace, 
     // Query font data
     auto &fontCache = _fontCaches.at(fontIndex);
 
-    // Compute map size
-    MapSize mapSize {
-        .width = Core::NextPowerOf2(
-            static_cast<std::uint32_t>(fontCache.model.pixelHeight * std::sqrt(static_cast<float>(fontCache.glyphCount)))
-        ),
-        .height = 0u
-    };
-
     // Setup compute cache
     FT_UInt glyphIndex {};
     auto unicode = FT_Get_First_Char(fontFace, &glyphIndex);
-    const Pixel pixelMapWidth = static_cast<Pixel>(mapSize.width);
     Area glyphArea { .size = { .height = static_cast<Pixel>(fontFace->size->metrics.height) / 64.0f } };
+
+    // Compute map size
+    MapSize mapSize {
+        .width = Core::NextPowerOf2(
+            static_cast<std::uint32_t>(glyphArea.size.height * std::sqrt(static_cast<float>(fontCache.glyphCount)))
+        ),
+        .height = 0u
+    };
+    const Pixel pixelMapWidth = static_cast<Pixel>(mapSize.width);
 
     // Collect each glyph meta data
     fontCache.glyphUVs.resizeUninitialized(fontCache.glyphCount);

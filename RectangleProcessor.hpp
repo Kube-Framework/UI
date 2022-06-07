@@ -14,14 +14,15 @@ namespace kF::UI
     /** @brief Rectangle primitive */
     struct alignas_cacheline Rectangle : public PrimitiveTag<"Rectangle">
     {
-        Area area {};
-        Radius radius {};
-        SpriteIndex spriteIndex { NullSpriteIndex };
-        FillMode fillMode {};
-        Color color {};
-        Color borderColor {};
-        Pixel borderWidth {};
-        Pixel edgeSoftness {};
+        Area area {}; // Rectangle area
+        Radius radius {}; // Border radius in pixels
+        SpriteIndex spriteIndex { NullSpriteIndex }; // Sprite index
+        FillMode fillMode {}; // Sprite fill mode
+        Color color {}; // Fill color
+        Color borderColor {}; // Border color
+        Pixel borderWidth {}; // Width of border color
+        Pixel edgeSoftness {}; // Edge softness in pixels
+        float rotationAngle {}; // Rotation in radians
     };
     static_assert_fit_cacheline(Rectangle);
 

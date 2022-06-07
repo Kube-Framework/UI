@@ -150,7 +150,8 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
         VertexInputAttribute(0, 4, Format::R32G32_SFLOAT, offsetof(PrimitiveVertex, vertUV)),
         VertexInputAttribute(0, 5, Format::R32_UINT, offsetof(PrimitiveVertex, vertSpriteIndex)),
         VertexInputAttribute(0, 6, Format::R32_UINT, offsetof(PrimitiveVertex, vertColor)),
-        VertexInputAttribute(0, 7, Format::R32_SFLOAT, offsetof(PrimitiveVertex, vertEdgeSoftness))
+        VertexInputAttribute(0, 7, Format::R32_SFLOAT, offsetof(PrimitiveVertex, vertEdgeSoftness)),
+        VertexInputAttribute(0, 8, Format::R32G32_SFLOAT, offsetof(PrimitiveVertex, vertRotationCosSin))
     };
     const Viewport viewport {
         .x = 0.0f,

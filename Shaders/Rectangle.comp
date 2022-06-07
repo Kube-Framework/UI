@@ -21,9 +21,19 @@ struct Instance
     uint borderColor;
     float borderWidth;
     float edgeSoftness;
+    float rotationAngle;
 };
 
 #include "PrimitiveCompute.glsl"
+
+// Quad
+struct Quad
+{
+    vec2 p1;
+    vec2 p2;
+    vec2 p3;
+    vec2 p4;
+};
 
 layout (local_size_x = 1) in;
 
@@ -55,26 +65,37 @@ vec2[4] getUVs(const vec2 size, const uint spriteIndex, const uint fillMode)
     return uvs;
 }
 
-Area getArea(const vec2 pos, const vec2 size, const uint spriteIndex, const uint fillMode)
+vec2 toRelative(const vec2 point)
 {
-    Area area = Area(pos, size);
+    return (point / context.halfWindowSize) - 1.0;
+}
+
+Quad getQuad(const Area area, const uint spriteIndex, const uint fillMode, const vec2 rotationCosSin)
+{
+    Quad quad;
+    Area transformed = area;
 
     if (spriteIndex != NullSpriteIndex && fillMode == FillModeFit) {
         // Query sprite size
         const vec2 spriteSize = textureSize(sprites[spriteIndex], 0);
         // Compute resize factor
-        const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (size.x / size.y);
-        const float resizeFactor = float(isSpriteGreater) * (size.x / spriteSize.x) + float(!isSpriteGreater) * (size.y / spriteSize.y);
+        const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (area.size.x / area.size.y);
+        const float resizeFactor = float(isSpriteGreater) * (area.size.x / spriteSize.x) + float(!isSpriteGreater) * (area.size.y / spriteSize.y);
         // Compute scaling
-        area.size = vec2(spriteSize.x * resizeFactor, spriteSize.y * resizeFactor);
-        area.pos = vec2(
-            pos.x + (size.x - area.size.x) / 2.0,
-            pos.y + (size.y - area.size.y) / 2.0
+        transformed.size = vec2(spriteSize.x * resizeFactor, spriteSize.y * resizeFactor);
+        transformed.pos = vec2(
+            area.pos.x + (area.size.x - transformed.size.x) / 2.0,
+            area.pos.y + (area.size.y - transformed.size.y) / 2.0
         );
     }
-    area.pos = (area.pos / context.halfWindowSize) - 1.0;
-    area.size = area.size / context.halfWindowSize;
-    return area;
+
+    const mat2 rotationMatrix = mat2(rotationCosSin.x, -rotationCosSin.y, rotationCosSin.y, rotationCosSin.x);
+    const vec2 rotationOrigin = transformed.pos + transformed.size / 2.0;
+    quad.p1 = toRelative(applyRotation(rotationMatrix, rotationOrigin, transformed.pos));
+    quad.p2 = toRelative(applyRotation(rotationMatrix, rotationOrigin, transformed.pos + vec2(transformed.size.x, 0.0)));
+    quad.p3 = toRelative(applyRotation(rotationMatrix, rotationOrigin, transformed.pos + transformed.size));
+    quad.p4 = toRelative(applyRotation(rotationMatrix, rotationOrigin, transformed.pos + vec2(0.0, transformed.size.y)));
+    return quad;
 }
 
 void main(void)
@@ -82,7 +103,8 @@ void main(void)
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
-    const Area area = getArea(instance.area.pos, instance.area.size, instance.spriteIndex, instance.fillMode);
+    const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
+    const Quad quad = getQuad(instance.area, instance.spriteIndex, instance.fillMode, rotationCosSin);
     const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
 
     // debugPrintfEXT("> Instance %u sprite: (%u) pos: (%v2f) size: (%v2f) realPos: (%v2f) realSize: (%v2f) vertexOffset: verticesOffset %u indexOffset: %u color: (%u ==> %v4f)\n",
@@ -90,7 +112,6 @@ void main(void)
     //     instance.color, unpackUnorm4x8(instance.color));
 
     // Set vertices
-    // const float ratio = instance.area.size.x / instance.area.size.y;
     Vertex vertex;
     vertex.halfSize = instance.area.size / 2.0;
     vertex.center = instance.area.pos + vertex.halfSize;
@@ -98,20 +119,21 @@ void main(void)
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
     vertex.edgeSoftness = instance.edgeSoftness;
+    vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
-    vertex.pos = area.pos;
+    vertex.pos = quad.p1;
     vertex.uv = uvs[0];
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
-    vertex.pos.x += area.size.x;
+    vertex.pos = quad.p2;
     vertex.uv = uvs[1];
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
-    vertex.pos.y += area.size.y;
+    vertex.pos = quad.p3;
     vertex.uv = uvs[2];
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
-    vertex.pos.x = area.pos.x;
+    vertex.pos = quad.p4;
     vertex.uv = uvs[3];
     vertices.data[offset.vertexOffset + 3] = vertex;
 

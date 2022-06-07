@@ -3,6 +3,8 @@
  * @ Description: UI System
  */
 
+#include <SDL2/SDL.h>
+
 #include <Kube/GPU/GPU.hpp>
 #include <Kube/UI/App.hpp>
 
@@ -11,24 +13,38 @@
 
 using namespace kF;
 
+UI::Size UI::UISystem::GetWindowSize(void) noexcept
+{
+    const auto extent = GPU::GPUObject::Parent().swapchain().extent();
+    kFEnsure(extent.width && extent.height,
+        "UI::UISystem::GetWindowSize: Couldn't retreive display DPI");
+    return Size(extent.width, extent.height);
+}
+
+UI::DPI UI::UISystem::GetWindowDPI(void) noexcept
+{
+    DPI dpi;
+    kFEnsure(!SDL_GetDisplayDPI(0, &dpi.diagonal, &dpi.horizontal, &dpi.vertical),
+        "UI::UISystem::GetWindowDPI: Couldn't retreive display DPI");
+    return dpi;
+}
+
 UI::UISystem::~UISystem(void) noexcept
 {
     _root.release();
 }
 
 UI::UISystem::UISystem(void) noexcept
-    :   _windowSize([] {
-            const auto extent = GPU::GPUObject::Parent().swapchain().extent();
-            return Size(extent.width, extent.height);
-        }()),
+    :   _windowSize(GetWindowSize()),
+        _windowDPI(GetWindowDPI()),
         _renderer(*this),
         _mouseQueue(parent().getSystem<EventSystem>().addEventQueue<MouseEvent>()),
         _motionQueue(parent().getSystem<EventSystem>().addEventQueue<MotionEvent>()),
         _keyQueue(parent().getSystem<EventSystem>().addEventQueue<KeyEvent>())
 {
     GPU::GPUObject::Parent().viewSizeDispatcher().add([this] {
-        const auto extent = GPU::GPUObject::Parent().swapchain().extent();
-        _windowSize = Size(static_cast<float>(extent.width), static_cast<float>(extent.height));
+        _windowSize = GetWindowSize();
+        _windowDPI = GetWindowDPI();
         invalidate();
     });
 
@@ -292,7 +308,7 @@ void UI::UISystem::traverseConstraints(void) noexcept
         if (!node.children.empty()) [[likely]] {
             // Update self constraints depending on children constraints
             if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
-                computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints);
+                computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints, constraints.maxSize.width == PixelHug, constraints.maxSize.height == PixelHug);
             else [[unlikely]]
                 buildLayoutConstraints(constraints);
         }
@@ -327,42 +343,45 @@ void UI::UISystem::buildLayoutConstraints(Constraints &constraints) noexcept
 {
     using namespace Internal;
 
-    const auto &layout = get<Layout>(_traverseContext.entity());
+    const bool hugWidth = constraints.maxSize.width == PixelHug;
+    const bool hugHeight = constraints.maxSize.height == PixelHug;
 
+    if (!hugWidth && !hugHeight) [[likely]]
+        return;
+
+    const auto &layout = get<Layout>(_traverseContext.entity());
     switch (layout.flowType) {
     case FlowType::Stack:
-        computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints);
+        computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints, hugWidth, hugHeight);
         break;
     case FlowType::Column:
-        computeChildrenConstraints<Accumulate::No, Accumulate::Yes>(constraints);
+        computeChildrenConstraints<Accumulate::No, Accumulate::Yes>(constraints, hugWidth, hugHeight);
         if (const auto count = _traverseContext.node().children.size(); count)
             constraints.maxSize.height += layout.spacing * static_cast<Pixel>(count - 1);
         break;
     case FlowType::Row:
-        computeChildrenConstraints<Accumulate::Yes, Accumulate::No>(constraints);
+        computeChildrenConstraints<Accumulate::Yes, Accumulate::No>(constraints, hugWidth, hugHeight);
         if (const auto count = _traverseContext.node().children.size(); count)
             constraints.maxSize.width += layout.spacing * static_cast<Pixel>(count - 1);
         break;
     }
 
     const auto &padding = layout.padding;
-    constraints.maxSize += Size(padding.left + padding.right, padding.top + padding.bottom);
+    constraints.maxSize += Size(
+        static_cast<Pixel>(hugWidth) * padding.left + padding.right,
+        static_cast<Pixel>(hugHeight) * padding.top + padding.bottom
+    );
 }
 
 template<kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate AccumulateY>
-void kF::UI::UISystem::computeChildrenConstraints(Constraints &constraints) noexcept
+void kF::UI::UISystem::computeChildrenConstraints(Constraints &constraints, const bool hugWidth, const bool hugHeight) noexcept
 {
-    const bool hugWidth = constraints.maxSize.width == PixelHug;
-    const bool hugHeight = constraints.maxSize.height == PixelHug;
-
-    if (hugWidth || hugHeight) [[unlikely]] {
-        for (const auto childEntityIndex : _traverseContext.counter()) {
-            const auto &rhs = _traverseContext.constraintsAt(childEntityIndex);
-            if (hugWidth)
-                ComputeAxisHugConstraint<AccumulateX>(constraints.maxSize.width, rhs.maxSize.width);
-            if (hugHeight)
-                ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height);
-        }
+    for (const auto childEntityIndex : _traverseContext.counter()) {
+        const auto &rhs = _traverseContext.constraintsAt(childEntityIndex);
+        if (hugWidth)
+            ComputeAxisHugConstraint<AccumulateX>(constraints.maxSize.width, rhs.maxSize.width);
+        if (hugHeight)
+            ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height);
     }
 }
 

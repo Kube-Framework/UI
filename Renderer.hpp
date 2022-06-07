@@ -164,6 +164,7 @@ private:
         std::uint32_t vertSpriteIndex;
         Color vertColor;
         Pixel vertEdgeSoftness;
+        Point vertRotationCosSin;
     };
 
     /** @brief QueryModel function signature */

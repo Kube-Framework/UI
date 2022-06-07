@@ -15,6 +15,7 @@ layout(location = 3) in flat vec4 fragRadius;
 layout(location = 4) in vec2 fragUV;
 layout(location = 5) in flat uint fragSpriteIndex;
 layout(location = 6) in flat float fragEdgeSoftness;
+layout(location = 7) in flat vec2 fragRotationCosSin;
 
 // Outputs
 layout(location = 0) out vec4 outColor;
@@ -33,6 +34,16 @@ float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, co
 
     // Compute SDF
     return length(max(abs(point - center) - halfSize + radius, 0.0)) - radius;
+}
+
+mat2 getInversedRotationMatrix(const vec2 rotationCosSin)
+{
+    return inverse(mat2(rotationCosSin.x, -rotationCosSin.y, rotationCosSin.y, rotationCosSin.x));
+}
+
+vec2 applyRotation(const mat2 matrix, const vec2 origin, const vec2 point)
+{
+    return (matrix * (point - origin)) + origin;
 }
 
 void main(void)
@@ -54,7 +65,8 @@ void main(void)
     }
 
     // Compute SDF alpha
-    const float dist = roundedBoxSDF(gl_FragCoord.xy, fragCenter, fragHalfSize - fragEdgeSoftness, fragRadius);
+    const vec2 inversedPoint = applyRotation(getInversedRotationMatrix(fragRotationCosSin), fragCenter, gl_FragCoord.xy);
+    const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize - fragEdgeSoftness, fragRadius);
     // Smooth the result by antialiasing
     const float smoothedAlpha =  1.0 - smoothstep(0.0, fragEdgeSoftness * 2.0, dist);
 

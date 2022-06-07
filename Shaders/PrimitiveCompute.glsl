@@ -24,6 +24,7 @@ struct Vertex
     uint color;
     float edgeSoftness;
     uint _padding;
+    vec2 rotationCosSin;
 };
 
 // Offset
@@ -53,3 +54,9 @@ layout(std430, set = 0, binding = 4) buffer Indices { uint data[]; } indices;
 
 // Samplers
 layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
+
+
+vec2 applyRotation(const mat2 matrix, const vec2 origin, const vec2 point)
+{
+    return (matrix * (point - origin)) + origin;
+}

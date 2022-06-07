@@ -82,6 +82,19 @@ namespace kF::UI
     constexpr Pixel PixelHug = 0.0f;
 
 
+    /** @brief Dot per inches */
+    struct DPI
+    {
+        Pixel diagonal {};
+        Pixel horizontal {};
+        Pixel vertical {};
+    };
+
+    /** @brief Scale DIP (Device Independent Pixels) to pixel unit considering display DPI (Dots Per Inch) */
+    [[nodiscard]] static inline Pixel ScalePixel(const Pixel dip, const Pixel displayDPI) noexcept
+        { return dip / (displayDPI / 96.0f); }
+
+
     /** @brief 32bit RGBA color structure */
     struct alignas(std::uint32_t) Color
     {
