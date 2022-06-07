@@ -66,6 +66,16 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
 {
     using namespace GPU;
 
+    kFEnsure(!path.empty(), "UI::SpriteManager::add: Empty path");
+
+    // Try to find an existing instance of the queried sprite
+    const auto spriteName = Core::Hash(path);
+    if (const auto it = _spriteNames.find(spriteName); it != _spriteNames.end()) [[likely]] {
+        const auto spriteIndex = static_cast<SpriteIndex>(std::distance(_spriteNames.begin(), it));
+        ++_spriteCounters.at(spriteIndex);
+        return Sprite(*this, spriteIndex);
+    }
+
     // Decode image
     int x {}, y {}, channelCount {};
     Color *data {};
@@ -87,7 +97,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
 
     // Reserve sprite index
     kFEnsure(!path.empty(), "UI::SpriteManager::add: Path cannot be empty");
-    const auto spriteIndex = addImpl(path);
+    const auto spriteIndex = addImpl(spriteName);
 
     // Build sprite cache at 'spriteIndex'
     load(spriteIndex, SpriteBuffer {
@@ -105,7 +115,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
 UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer) noexcept
 {
     // Reserve sprite index
-    const auto spriteIndex = addImpl(std::string_view {});
+    const auto spriteIndex = addImpl(Core::HashedName {});
 
     // Build sprite cache at 'spriteIndex'
     load(spriteIndex, spriteBuffer);
@@ -114,20 +124,8 @@ UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer) noexcept
     return Sprite(*this, spriteIndex);
 }
 
-UI::SpriteIndex UI::SpriteManager::addImpl(const std::string_view &path) noexcept
+UI::SpriteIndex UI::SpriteManager::addImpl(const Core::HashedName spriteName) noexcept
 {
-    // Try to find an existing instance of the queried sprite
-    Core::HashedName spriteName {};
-    if (!path.empty()) [[likely]] {
-        spriteName = Core::Hash(path);
-        if (const auto it = _spriteNames.find(spriteName); it != _spriteNames.end()) [[likely]] {
-            const auto spriteIndex = static_cast<SpriteIndex>(std::distance(it, _spriteNames.end()));
-            ++_spriteCounters.at(spriteIndex);
-            return Sprite(*this, spriteIndex);
-        }
-    }
-
-    // We didn't found an instance: either get free index or create a new one
     SpriteIndex spriteIndex {};
     if (!_spriteFreeList.empty()) {
         spriteIndex.value = _spriteFreeList.back();

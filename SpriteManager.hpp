@@ -92,7 +92,7 @@ public: // Unsafe functions reserved for internal usage
 
 private:
     /** @brief Base implementation of the add function */
-    [[nodiscard]] SpriteIndex addImpl(const std::string_view &path) noexcept;
+    [[nodiscard]] SpriteIndex addImpl(const Core::HashedName spriteName) noexcept;
 
     /** @brief Load a sprite stored at 'spriteIndex' */
     void load(const SpriteIndex spriteIndex, const SpriteBuffer &spriteBuffer) noexcept;
