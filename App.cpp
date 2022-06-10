@@ -135,19 +135,27 @@ UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
     SDL_Rect rect;
     SDL_GetDisplayUsableBounds(0, &rect);
     if (size.width == FillWindowSize.width)
-        size.width = rect.w;
+        size.width = static_cast<Pixel>(rect.w);
     if (size.height == FillWindowSize.height)
-        size.height = rect.h;
+        size.height = static_cast<Pixel>(rect.h);
 
     // Create the backend window
     Core::String str(windowTitle);
     window = SDL_CreateWindow(
         str.c_str(),
-        pos.x, pos.y,
-        size.width, size.height,
+        static_cast<Pixel>(pos.x), static_cast<Pixel>(pos.y),
+        static_cast<int>(size.width), static_cast<int>(size.height),
         ToWindowFlags(windowFlags) | SDL_WINDOW_VULKAN
     );
     kFEnsure(window, "UI::App::CreateBackendWindow: Couldn't create window '", SDL_GetError(), '\'');
+
+    if (!Core::HasFlags(windowFlags, WindowFlags::Borderless) && windowSize.height == FillWindowSize.height) {
+        int top, left, bottom, right;
+        if (SDL_GetWindowBordersSize(window, &top, &left, &bottom, &right) < 0)
+            return;
+        SDL_SetWindowSize(window, static_cast<int>(size.width), static_cast<int>(size.height) - top);
+        SDL_SetWindowPosition(window, 0, top);
+    }
 }
 
 UI::App::~App(void) noexcept

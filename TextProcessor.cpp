@@ -15,14 +15,17 @@ using namespace kF;
 namespace kF::UI
 {
     /** @brief Single glyph instance */
-    struct alignas_half_cacheline Glyph
+    struct alignas_quarter_cacheline Glyph
     {
         Area uv {};
         Point pos {};
         SpriteIndex spriteIndex {};
         Color color {};
+        Point rotationOrigin {};
+        float rotationAngle {};
+        bool vertical {};
     };
-    static_assert_alignof_half_cacheline(Glyph);
+    static_assert_alignof_quarter_cacheline(Glyph);
 
     /** @brief Pixel small optimized cache */
     using PixelCache = Core::SmallVector<Pixel, Core::CacheLineSize / sizeof(Pixel), UIAllocator>;
@@ -42,26 +45,39 @@ namespace kF::UI
     static_assert_fit_double_cacheline(ComputeParameters);
 
 
+    /** @brief Compute all glyphs of a text */
+    void ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
+
+    /** @brief Dispatch compute instantiation glyph of a text */
+    template<auto GetX, auto GetY, bool Reversed>
+    void DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
+
+
     /** @brief Compute all glyphs of a text in packed mode */
+    template<auto GetX, auto GetY, bool Reversed>
     void ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept;
 
-    /** @brief Compute all glyphs of a text in justified mode */
-    void ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept;
-
     /** @brief Compute the anchor of all glyphs within range */
+    template<auto GetX, auto GetY, bool Reversed>
     void ComputeGlyphPositions(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics) noexcept;
 
     /** @brief Apply the offset of all glyphs within range */
+    template<auto GetX, auto GetY, bool Reversed>
     void ApplyGlyphOffsets(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics, const Point offset) noexcept;
+
+
+    /** @brief Compute all glyphs of a text in justified mode */
+    template<auto GetX, auto GetY, bool Reversed>
+    void ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept;
 }
 
 template<>
 UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Text>(void) noexcept
 {
     return UI::PrimitiveProcessorModel {
-            .computeShader = GPU::Shader(IO::File(":/UI/Shaders/Text.comp.spv").queryResource()),
+        .computeShader = GPU::Shader(IO::File(":/UI/Shaders/Text.comp.spv").queryResource()),
         .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Glyph),
         .instanceAlignment = alignof(Glyph),
@@ -104,22 +120,60 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         params.spriteIndex = fontManager.spriteAt(text.fontIndex);
         params.pixelCache.clear();
 
-        // Compute glyphs areas
-        if (!text.justify) [[likely]]
-            ComputeGlyphPacked(out, params);
-        else
-            ComputeGlyphJustified(out, params);
+        // Dispatch
+        ComputeGlyph(text, out, params);
     }
 }
 
+static void UI::ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
+{
+    constexpr auto GetX = []<typename Type>(Type &&data) -> auto & {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+            return data.x;
+        } else {
+            return data.width;
+        }
+    };
+    constexpr auto GetY = []<typename Type>(Type &&data) -> auto & {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+            return data.y;
+        } else {
+            return data.height;
+        }
+    };
+
+    if (!text.vertical) [[likely]] {
+        if (!text.reversed) [[likely]] {
+            DispatchComputeGlyph<GetX, GetY, false>(text, out, params);
+        } else {
+            DispatchComputeGlyph<GetX, GetY, true>(text, out, params);
+        }
+    } else {
+        if (!text.reversed) [[likely]] {
+            DispatchComputeGlyph<GetY, GetX, false>(text, out, params);
+        } else {
+            DispatchComputeGlyph<GetY, GetX, true>(text, out, params);
+        }
+    }
+}
+
+template<auto GetX, auto GetY, bool Reversed>
+static void UI::DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
+{
+    // Compute glyphs areas
+    if (!text.justify) [[likely]]
+        ComputeGlyphPacked<GetX, GetY, Reversed>(out, params);
+    else
+        ComputeGlyphJustified<GetX, GetY, Reversed>(out, params);
+};
+
+template<auto GetX, auto GetY, bool Reversed>
 static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept
 {
     constexpr auto UpdateMetrics = [](ComputeParameters &params, const Point &pos, Size &metrics) {
-        metrics = Size {
-            .width = std::max(metrics.width, pos.x),
-            .height = metrics.height + params.lineHeight
-        };
-        params.pixelCache.push(pos.x);
+        GetX(metrics) = std::max(GetX(metrics), GetX(pos));
+        GetY(metrics) = GetY(metrics) + params.lineHeight;
+        params.pixelCache.push(GetX(pos));
     };
 
     const auto begin = out;
@@ -134,16 +188,18 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
                 .uv = uv,
                 .pos = pos,
                 .spriteIndex = params.spriteIndex,
-                .color = params.text->color
+                .color = params.text->color,
+                .rotationOrigin = {},
+                .rotationAngle = params.text->rotationAngle
             };
-            pos.x += uv.size.width;
+            GetX(pos) += GetX(uv.size);
             ++out;
         } else if (const bool isTab = unicode == '\t'; unicode == ' ' | isTab) {
-            pos.x += params.spaceWidth * (1 + 3 * isTab);
+            GetX(pos) += params.spaceWidth * (1 + 3 * isTab);
         } else [[unlikely]] {
             UpdateMetrics(params, pos, metrics);
-            pos.x = 0;
-            pos.y += params.lineHeight;
+            GetX(pos) = 0;
+            GetY(pos) += params.lineHeight;
         }
     }
     UpdateMetrics(params, pos, metrics);
@@ -153,9 +209,10 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
         return;
 
     // Compute anchor
-    ComputeGlyphPositions(begin, out, params, metrics);
+    ComputeGlyphPositions<GetX, GetY, Reversed>(begin, out, params, metrics);
 }
 
+template<auto GetX, auto GetY, bool Reversed>
 static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics) noexcept
 {
     // Compute global offset
@@ -212,39 +269,51 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to, cons
 
     // Apply offsets
     offset += params.text->area.pos;
-    ApplyGlyphOffsets(from, to, params, metrics, offset);
+    ApplyGlyphOffsets<GetX, GetY, Reversed>(from, to, params, metrics, offset);
 }
 
+template<auto GetX, auto GetY, bool Reversed>
 static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset) noexcept
 {
     constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, auto &&computeFunc) {
+        const Point rotationOrigin = offset + metrics / 2.0f;
         auto lineWidthIt = params.pixelCache.begin();
         std::uint32_t index {};
-        Pixel oldY = from->pos.y;
+        Pixel oldY = GetY(from->pos);
         auto currentOffset = computeFunc(offset, metrics, *lineWidthIt);
         for (auto it = from; it != to; ++it) {
-            if (oldY != it->pos.y) [[unlikely]] {
-                oldY = it->pos.y;
+            if (oldY != GetY(it->pos)) [[unlikely]] {
+                oldY = GetY(it->pos);
                 ++lineWidthIt;
                 currentOffset = computeFunc(offset, metrics, *lineWidthIt);
             }
             it->pos += currentOffset;
+            it->rotationOrigin = rotationOrigin;
         }
     };
 
     switch (params.text->alignment) {
     case TextAlignment::Left:
-        for (auto it = from; it != to; ++it)
+    {
+        const Point rotationOrigin = offset + metrics / 2.0f;
+        for (auto it = from; it != to; ++it) {
             it->pos += offset;
+            it->rotationOrigin = rotationOrigin;
+        }
         break;
+    }
     case TextAlignment::Center:
         ApplyOffsets(from, to, params, metrics, offset, [](const Point offset, const Size metrics, const Pixel lineWidth) {
-            return offset + Point(metrics.width / 2.0f - lineWidth / 2.0f, 0.0f);
+            Point point {};
+            GetX(point) = GetX(metrics) / 2.0f - lineWidth / 2.0f;
+            return offset + point;
         });
         break;
     case TextAlignment::Right:
         ApplyOffsets(from, to, params, metrics, offset, [](const Point offset, const Size metrics, const Pixel lineWidth) {
-            return offset + Point(metrics.width - lineWidth, 0.0f);
+            Point point {};
+            GetX(point) = GetX(metrics) - lineWidth;
+            return offset + point;
         });
         break;
     default:
@@ -252,9 +321,10 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
     }
 }
 
+template<auto GetX, auto GetY, bool Reversed>
 static void UI::ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept
 {
-    ComputeGlyphPacked(out, params);
+    ComputeGlyphPacked<GetX, GetY, Reversed>(out, params);
     // auto from = params.text->str.begin();
     // auto to = from;
     // const auto end = params.text->str.end();

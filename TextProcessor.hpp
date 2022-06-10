@@ -14,13 +14,16 @@ namespace kF::UI
     /** @brief Text primitive */
     struct alignas_cacheline Text : public PrimitiveTag<"Text">
     {
-        Area area {};
-        std::string_view str {};
-        FontIndex fontIndex {};
-        Color color {};
-        Anchor anchor {};
-        TextAlignment alignment {};
-        bool justify {};
+        Area area {}; // Text area
+        std::string_view str {}; // Text string
+        FontIndex fontIndex {}; // Text font
+        Color color {}; // Text color
+        Anchor anchor {}; // Text anchor inside its area
+        TextAlignment alignment {}; // Text alignment
+        bool justify {}; // Text justification
+        bool vertical {}; // Vertical text layout
+        bool reversed {}; // Reversed letter order
+        float rotationAngle {}; // Rotation in radians
     };
     static_assert_fit_cacheline(Text);
 
