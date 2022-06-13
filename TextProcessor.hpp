@@ -19,7 +19,7 @@ namespace kF::UI
         FontIndex fontIndex {}; // Text font
         Color color {}; // Text color
         Anchor anchor {}; // Text anchor inside its area
-        TextAlignment alignment {}; // Text alignment
+        TextAlignment textAlignment {}; // Text alignment
         bool justify {}; // Text justification
         bool vertical {}; // Vertical text layout
         bool reversed {}; // Reversed letter order

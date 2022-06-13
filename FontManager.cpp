@@ -164,7 +164,7 @@ UI::FontManager::MapSize UI::FontManager::collectGlyphs(const FT_Face fontFace, 
         const FT_Glyph_Metrics &metrics = fontFace->glyph->metrics;
         if (metrics.horiAdvance) [[likely]] {
             // Ensure we have enough horizontal space to render the glyph
-            glyphArea.size.width = static_cast<Pixel>(metrics.horiAdvance) / 64.0f + 1.0f;
+            glyphArea.size.width = static_cast<Pixel>(metrics.horiAdvance) / 64.0f;
             auto nextX = glyphArea.pos.x + glyphArea.size.width + 1.0f;
             if (nextX >= pixelMapWidth) [[unlikely]] {
                 nextX = glyphArea.size.width + 1.0f;

@@ -115,6 +115,13 @@ namespace kF::UI
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static PainterArea Make(Functor &&functor, Args &&...args) noexcept;
+
+        /** @brief Wrap any paint functor class within a painter area
+         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
     };
     static_assert_fit_half_cacheline(PainterArea);
 

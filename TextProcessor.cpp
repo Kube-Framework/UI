@@ -293,7 +293,7 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
 
     const Point rotationOrigin = offset + metrics / 2.0f;
 
-    switch (params.text->alignment) {
+    switch (params.text->textAlignment) {
     case TextAlignment::Left:
         for (auto it = from; it != to; ++it) {
             it->pos += offset;
