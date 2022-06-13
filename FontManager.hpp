@@ -127,7 +127,7 @@ private:
 
     /** @brief Generate a unique font name from a path and a model */
     [[nodiscard]] inline Core::HashedName GenerateFontName(const std::string_view &path, const FontModel &model) noexcept
-        { return Core::ContinueHash(Core::Hash(path), std::string_view(reinterpret_cast<const char *>(&model), sizeof(FontModel))); }
+        { return Core::Hash(path) + model.pixelHeight; }
 
 
     // Cacheline 0

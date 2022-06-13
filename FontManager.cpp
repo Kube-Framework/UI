@@ -34,7 +34,7 @@ UI::Font UI::FontManager::add(const std::string_view &path, const FontModel &mod
     // Try to find an existing instance of the queried font
     const auto fontName = GenerateFontName(path, model);
     if (const auto it = _fontNames.find(fontName); it != _fontNames.end()) [[likely]] {
-        const FontIndex fontIndex { static_cast<FontIndex::IndexType>(std::distance(it, _fontNames.end())) - 1 };
+        const FontIndex fontIndex { static_cast<FontIndex::IndexType>(std::distance(_fontNames.begin(), it)) };
         ++_fontCounters.at(fontIndex);
         return Font(*this, fontIndex);
     }
@@ -140,7 +140,7 @@ UI::FontManager::MapSize UI::FontManager::collectGlyphs(const FT_Face fontFace, 
     // Setup compute cache
     FT_UInt glyphIndex {};
     auto unicode = FT_Get_First_Char(fontFace, &glyphIndex);
-    Area glyphArea { .size = { .height = static_cast<Pixel>(fontFace->size->metrics.height) / 64.0f } };
+    Area glyphArea { Point(), Size(0.0f, static_cast<Pixel>(fontFace->size->metrics.height) / 64.0f) };
 
     // Compute map size
     MapSize mapSize {
@@ -164,7 +164,7 @@ UI::FontManager::MapSize UI::FontManager::collectGlyphs(const FT_Face fontFace, 
         const FT_Glyph_Metrics &metrics = fontFace->glyph->metrics;
         if (metrics.horiAdvance) [[likely]] {
             // Ensure we have enough horizontal space to render the glyph
-            glyphArea.size.width = static_cast<Pixel>(metrics.horiAdvance) / 64.0f;
+            glyphArea.size.width = static_cast<Pixel>(metrics.horiAdvance) / 64.0f + 1.0f;
             auto nextX = glyphArea.pos.x + glyphArea.size.width + 1.0f;
             if (nextX >= pixelMapWidth) [[unlikely]] {
                 nextX = glyphArea.size.width + 1.0f;

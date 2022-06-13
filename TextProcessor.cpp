@@ -23,7 +23,7 @@ namespace kF::UI
         Color color {};
         Point rotationOrigin {};
         float rotationAngle {};
-        bool vertical {};
+        float vertical {};
     };
     static_assert_alignof_quarter_cacheline(Glyph);
 
@@ -189,10 +189,10 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
                 .pos = pos,
                 .spriteIndex = params.spriteIndex,
                 .color = params.text->color,
-                .rotationOrigin = {},
-                .rotationAngle = params.text->rotationAngle
+                .rotationAngle = params.text->rotationAngle,
+                .vertical = static_cast<float>(params.text->vertical)
             };
-            GetX(pos) += GetX(uv.size);
+            GetX(pos) += uv.size.width;
             ++out;
         } else if (const bool isTab = unicode == '\t'; unicode == ' ' | isTab) {
             GetX(pos) += params.spaceWidth * (1 + 3 * isTab);
@@ -275,8 +275,7 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to, cons
 template<auto GetX, auto GetY, bool Reversed>
 static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset) noexcept
 {
-    constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, auto &&computeFunc) {
-        const Point rotationOrigin = offset + metrics / 2.0f;
+    constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, const Point rotationOrigin, auto &&computeFunc) {
         auto lineWidthIt = params.pixelCache.begin();
         std::uint32_t index {};
         Pixel oldY = GetY(from->pos);
@@ -292,25 +291,24 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
         }
     };
 
+    const Point rotationOrigin = offset + metrics / 2.0f;
+
     switch (params.text->alignment) {
     case TextAlignment::Left:
-    {
-        const Point rotationOrigin = offset + metrics / 2.0f;
         for (auto it = from; it != to; ++it) {
             it->pos += offset;
             it->rotationOrigin = rotationOrigin;
         }
         break;
-    }
     case TextAlignment::Center:
-        ApplyOffsets(from, to, params, metrics, offset, [](const Point offset, const Size metrics, const Pixel lineWidth) {
+        ApplyOffsets(from, to, params, metrics, offset, rotationOrigin, [](const Point offset, const Size metrics, const Pixel lineWidth) {
             Point point {};
             GetX(point) = GetX(metrics) / 2.0f - lineWidth / 2.0f;
             return offset + point;
         });
         break;
     case TextAlignment::Right:
-        ApplyOffsets(from, to, params, metrics, offset, [](const Point offset, const Size metrics, const Pixel lineWidth) {
+        ApplyOffsets(from, to, params, metrics, offset, rotationOrigin, [](const Point offset, const Size metrics, const Pixel lineWidth) {
             Point point {};
             GetX(point) = GetX(metrics) - lineWidth;
             return offset + point;
