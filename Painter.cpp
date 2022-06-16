@@ -15,6 +15,16 @@ UI::Painter::~Painter(void) noexcept
         DeallocateQueueData(queue);
 }
 
+void UI::Painter::setClip(const Area &area) noexcept
+{
+    if (!_clips.empty() && _clips.back().indexOffset == _offset.indexOffset)
+        return;
+    _clips.push(ClipCache {
+        .area = area,
+        .indexOffset = _offset.indexOffset
+    });
+}
+
 void UI::Painter::registerPrimitive(const Core::HashedName name, const PrimitiveProcessorModel &model) noexcept
 {
     // Ensure the primitive is not already registered
@@ -35,6 +45,9 @@ void UI::Painter::clear(void) noexcept
 {
     // Reset vertex & index offsets
     _offset = InstanceOffset {};
+
+    // Reset clips
+    _clips.clear();
 
     // Set each queue size to 0 as any primitive is ensured to be trivial
     for (auto &queue : _queues)

@@ -14,4 +14,6 @@ void UI::Internal::TraverseContext::setupContext(const std::uint32_t count, Tree
     _nodeBegin = nodeBegin;
     _areaBegin = areaBegin;
     _depthBegin = depthBegin;
+    _clipAreas.clear();
+    _clipDepths.clear();
 }

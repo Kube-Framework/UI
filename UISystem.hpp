@@ -36,17 +36,23 @@ namespace kF::UI
 /** @brief UI renderer system */
 class alignas_double_cacheline kF::UI::UISystem
     : public ECS::System<"UISystem", PresentPipeline, UIAllocator,
+        // Base (all items share these components)
         TreeNode,
         Area,
         Depth,
+        // Layout
         Constraints,
-        Transform,
         Layout,
-        Timer,
+        Transform,
+        // Paint
         PainterArea,
+        Clip,
+        // Input
         MouseEventArea,
         MotionEventArea,
         KeyEventReceiver,
+        // Time
+        Timer,
         Animator
     >
 {
@@ -66,7 +72,7 @@ public:
 
 
     /** @brief Get scene max depth */
-    [[nodiscard]] Depth maxDepth(void) const noexcept { return _maxDepth; }
+    [[nodiscard]] DepthUnit maxDepth(void) const noexcept { return _maxDepth; }
 
 
     /** @brief Set clear color of UI renderer */
@@ -217,7 +223,7 @@ private:
     GPU::FrameIndex _invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
     bool _invalidateTree { true };
     std::int64_t _lastTick {};
-    Depth _maxDepth {};
+    DepthUnit _maxDepth {};
     // Cacheline N + 1
     Internal::TraverseContext _traverseContext {};
     // Cacheline N + 2 -> N + 3
@@ -232,7 +238,7 @@ private:
     Renderer _renderer;
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);
-static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 13);
+static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 14);
 
 #include "Item.ipp"
 #include "UISystem.ipp"

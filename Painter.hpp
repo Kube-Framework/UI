@@ -16,14 +16,14 @@ namespace kF::UI
 }
 
 /** @brief Painter is responsible to manage primitive queues */
-class alignas_cacheline kF::UI::Painter
+class alignas_double_cacheline kF::UI::Painter
 {
 public:
     /** @brief Initial allocation count of each primitive */
     static constexpr std::uint32_t InitialAllocationCount { 8 };
 
     /** @brief Small optimized vector of primitive names */
-    using Names = Core::SmallVector<Core::HashedName, (Core::CacheLineEighthSize * 3) / sizeof(Core::HashedName), UIAllocator>;
+    using Names = Core::SmallVector<Core::HashedName, (Core::CacheLineEighthSize * 4) / sizeof(Core::HashedName), UIAllocator>;
 
     /** @brief Offset of an instance */
     struct InstanceOffset
@@ -66,6 +66,16 @@ public:
     /** @brief Vector of primitive queues */
     using Queues = Core::Vector<Queue, UIAllocator>;
 
+    /** @brief Scissor clipping area */
+    struct alignas_half_cacheline ClipCache
+    {
+        Area area {};
+        std::uint32_t indexOffset {};
+    };
+
+    /** @brief Vector of clip rectangles */
+    using Clips = Core::Vector<ClipCache, UIAllocator>;
+
 
     /** @brief Destructor */
     ~Painter(void) noexcept;
@@ -84,11 +94,22 @@ public:
     void draw(const Primitive * const primitiveBegin, const Primitive * const primitiveEnd) noexcept;
 
 
+    /** @brief Get current Painter clip area */
+    [[nodiscard]] inline Area currentClip(void) noexcept { return _clips.empty() ? Area {} : _clips.back().area; }
+
+    /** @brief Set current clip area of painter
+     *  @note This clip will be used for each draw until 'setClip' is called again */
+    void setClip(const Area &area) noexcept;
+
+    /** @brief Get current clip list of painter */
+    [[nodiscard]] inline const Clips &clips(void) noexcept { return _clips; }
+
+
     /** @brief Get current vertex count of painter */
-    [[nodiscard]] std::uint32_t vertexCount(void) noexcept { return _offset.vertexOffset; }
+    [[nodiscard]] inline std::uint32_t vertexCount(void) noexcept { return _offset.vertexOffset; }
 
     /** @brief Get current index count of painter */
-    [[nodiscard]] std::uint32_t indexCount(void) noexcept { return _offset.indexOffset; }
+    [[nodiscard]] inline std::uint32_t indexCount(void) noexcept { return _offset.indexOffset; }
 
 
 public: // Renderer reserved functions
@@ -113,9 +134,11 @@ private:
 
     // Cacheline 0
     Names _names {};
-    InstanceOffset _offset {};
     Queues _queues {};
+    // Cacheline 1
+    Clips _clips {};
+    InstanceOffset _offset {};
 };
-static_assert_fit_cacheline(kF::UI::Painter);
+static_assert_fit_double_cacheline(kF::UI::Painter);
 
 #include "Painter.ipp"

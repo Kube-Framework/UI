@@ -15,7 +15,7 @@ namespace kF::UI::Internal
 }
 
 /** @brief Traversal context */
-class alignas_cacheline kF::UI::Internal::TraverseContext
+class alignas_double_cacheline kF::UI::Internal::TraverseContext
 {
 public:
     /** @brief Entity children counter, used to retain indexes during traversing phase */
@@ -63,7 +63,24 @@ public:
         { _entity = entity; _entityIndex = entityIndex; }
 
 
+    /** @brief Get clip area range */
+    [[nodiscard]] inline Core::IteratorRange<const Area *> clipAreas(void) const noexcept
+        { return _clipAreas.toRange(); }
+
+    /** @brief Get clip depths range */
+    [[nodiscard]] inline Core::IteratorRange<const DepthUnit *> clipDepths(void) const noexcept
+        { return _clipDepths.toRange(); }
+
+    /** @brief Push a clip into the clip list */
+    void setClip(const Area &area, const DepthUnit depth) noexcept
+        { _clipAreas.push(area); _clipDepths.push(depth); }
+
+    /** @brief Push a clip into the clip list */
+    [[nodiscard]] Area currentClip(void) const noexcept
+        { return _clipAreas.empty() ? Area() : _clipAreas.back(); }
+
 private:
+    // Cacheline 0
     Core::Vector<Constraints, UIAllocator> _constraints {};
     Core::Vector<Counter, UIAllocator> _counters {};
     TreeNode *_nodeBegin {};
@@ -71,5 +88,8 @@ private:
     Depth *_depthBegin {};
     ECS::Entity _entity {};
     ECS::EntityIndex _entityIndex {};
+    // Cacheline 1
+    Core::Vector<Area> _clipAreas {};
+    Core::SmallVector<DepthUnit, Core::CacheLineHalfSize / sizeof(DepthUnit)> _clipDepths {};
 };
-static_assert_fit_cacheline(kF::UI::Internal::TraverseContext);
+static_assert_fit_double_cacheline(kF::UI::Internal::TraverseContext);

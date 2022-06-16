@@ -206,12 +206,31 @@ bool UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
 
 void UI::UISystem::processPainterAreas(void) noexcept
 {
-    const auto &table = getTable<PainterArea>();
     auto &painter = _renderer.painter();
+    const auto &paintTable = getTable<PainterArea>();
+    const auto &areaTable = getTable<Area>();
+    const auto &depthTable = getTable<Depth>();
+    const auto clipAreas = _traverseContext.clipAreas();
+    const auto clipDepths = _traverseContext.clipDepths();
+    std::uint32_t clipIndex {};
+    const std::uint32_t clipCount { clipDepths.size<std::uint32_t>() };
+    auto nextClipDepth = clipCount ? clipDepths[0] : ~static_cast<DepthUnit>(0);
 
     painter.clear();
-    for (std::uint32_t index = 0u; const PainterArea &handler : table) {
-        const Area &area = get<Area>(table.entities().at(index++));
+    for (std::uint32_t index = 0u; const PainterArea &handler : paintTable) {
+        const auto entity = paintTable.entities().at(index++);
+        const auto entityIndex = areaTable.getUnstableIndex(entity);
+        const Area &area = areaTable.atIndex(entityIndex);
+
+        if (depthTable.atIndex(entityIndex).depth >= nextClipDepth) [[unlikely]] {
+            painter.setClip(clipAreas[clipIndex]);
+            if (++clipIndex != clipCount) [[likely]]
+                nextClipDepth = clipDepths[clipIndex];
+            else
+                nextClipDepth = ~static_cast<DepthUnit>(0);
+        }
+
+        // Paint self
         if (handler.event) [[likely]]
             handler.event(painter, area);
     }
@@ -250,7 +269,7 @@ void UI::UISystem::processAreas(void) noexcept
     }
 
     // Reset depth cache before traversal
-    _maxDepth = Depth {};
+    _maxDepth = DepthUnit {};
 
     // Traverse from top to bottom
     traverseAreas();
@@ -264,10 +283,10 @@ void UI::UISystem::processAreas(void) noexcept
 void UI::UISystem::sortTables(void) noexcept
 {
     const auto ascentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
-        return depthTable.get(lhs) < depthTable.get(rhs);
+        return depthTable.get(lhs).depth < depthTable.get(rhs).depth;
     };
     const auto descentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
-        return depthTable.get(lhs) > depthTable.get(rhs);
+        return depthTable.get(lhs).depth > depthTable.get(rhs).depth;
     };
 
     getTable<PainterArea>().sort(ascentCompareFunc);
@@ -405,20 +424,33 @@ void UI::UISystem::traverseAreas(void) noexcept
 {
     using namespace Internal;
 
-    // Set depth
-    _traverseContext.depth() = ++_maxDepth;
+    // Set self depth
+    _traverseContext.depth().depth = _maxDepth++;
 
-    // kFInfo("[traverseAreas] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex(), ", area ", _traverseContext.area(), " and depth ", _traverseContext.depth());
+    // kFInfo("[traverseAreas] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex(), ", area ", _traverseContext.area(), " and depth ", _traverseContext.depth().depth);
 
+    Area lastClip {};
+    bool clip { false };
     const auto &node = _traverseContext.node();
     {
-        auto &area = _traverseContext.area();
-
         // Build position of children using the context node area
+        auto &area = _traverseContext.area();
         if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]] {
             computeChildrenArea(area, Anchor::Center);
         } else [[unlikely]] {
             buildLayoutArea(area);
+        }
+
+        // Process clip
+        const auto &clipTable = getTable<Clip>();
+        const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
+        if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
+            clip = true;
+            lastClip = _traverseContext.currentClip();
+            _traverseContext.setClip(
+                Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding),
+                _maxDepth
+            );
         }
     }
 
@@ -428,6 +460,13 @@ void UI::UISystem::traverseAreas(void) noexcept
         _traverseContext.setupEntity(node.children.at(childIndex++), childEntityIndex);
         traverseAreas();
     }
+
+    // Set max child depth
+    _traverseContext.depth().maxChildDepth = _maxDepth - 1;
+
+    // Restore previous clip
+    if (clip) [[unlikely]]
+        _traverseContext.setClip(lastClip, _maxDepth);
 }
 
 void UI::UISystem::buildLayoutArea(const Area &contextArea) noexcept

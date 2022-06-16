@@ -172,6 +172,7 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
             BlendFactor::One, BlendFactor::Zero, BlendOp::Add
         )
     };
+    const DynamicState dynamicStates[] { DynamicState::Scissor };
 
     return Pipeline(
         GraphicPipelineModel(
@@ -188,7 +189,7 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
             MultisampleModel(),
             DepthStencilModel(),
             ColorBlendModel(std::begin(colorBlendAttachments), std::end(colorBlendAttachments)),
-            DynamicStateModel(),
+            DynamicStateModel(std::begin(dynamicStates), std::end(dynamicStates)),
             pipelineLayout,
             Parent().renderPassManager().renderPassAt(RenderPassIndex),
             GraphicSubpassIndex
@@ -499,7 +500,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         SubpassContents::Inline
     );
 
-    // Draw all vertices in one command
+    // Prepare pipeline
     recorder.bindPipeline(PipelineBindPoint::Graphics, _cache.graphicPipeline);
     recorder.bindVertexBuffer(0, frameCache.buffers.deviceBuffer, frameCache.buffers.verticesOffset);
     recorder.bindIndexBuffer(frameCache.buffers.deviceBuffer, IndexType::Uint32, frameCache.buffers.indicesOffset);
@@ -507,8 +508,48 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         PipelineBindPoint::Graphics, _cache.graphicPipelineLayout,
         0, _uiSystem->spriteManager().descriptorSet()
     );
-    recorder.drawIndexed(_painter.indexCount());
-    // kFInfo("recorder.drawIndexed(_painter.indexCount()); | 2 ", std::chrono::high_resolution_clock::now().time_since_epoch().count());
+
+    // Utility to conve<rt from clip Area to scissor Rect2D
+    const auto toScissor = [extent](const auto &area) {
+        if (area == Area())
+            return Rect2D { Offset2D(), extent };
+        else
+            return Rect2D(
+                Offset2D(static_cast<int>(area.pos.x), static_cast<int>(area.pos.y)),
+                Extent2D(static_cast<int>(area.size.width), static_cast<int>(area.size.height))
+            );
+    };
+
+    // Reset scissor
+    recorder.setScissor(toScissor(Area()));
+
+    // Loop over each clip and draw all vertices between them
+    const auto indexCount = _painter.indexCount();
+    auto clip = _painter.clips().begin();
+    const auto clipEnd = _painter.clips().end();
+    std::uint32_t indexOffset {};
+    const auto drawSection = [](const auto &recorder, const auto indexOffset, const auto drawCount) {
+        if (drawCount) [[likely]]
+            recorder.drawIndexed(drawCount, 1, indexOffset);
+    };
+
+    while (true) {
+        // Clip list not exhausted
+        if (clip != clipEnd) [[likely]] {
+            // Draw from current offset to clip offset
+            drawSection(recorder, indexOffset, clip->indexOffset - indexOffset);
+            // Set next offset and scissor
+            indexOffset = clip->indexOffset;
+            const auto scissor = toScissor(clip->area);
+            recorder.setScissor(scissor);
+            ++clip;
+        // Clip list exhausted
+        } else {
+            // Draw from current offset to the end
+            drawSection(recorder, indexOffset, indexCount - indexOffset);
+            break;
+        }
+    }
 
     // End render pass
     recorder.endRenderPass();

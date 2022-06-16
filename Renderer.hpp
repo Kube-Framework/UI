@@ -32,7 +32,7 @@ public:
     using PrimitiveIndex = std::uint32_t;
 
     /** @brief Cache of renderer */
-    struct alignas_double_cacheline Cache
+    struct alignas_cacheline Cache
     {
         // Cacheline 0
         //   General
@@ -45,7 +45,7 @@ public:
         GPU::PipelineLayout graphicPipelineLayout;
         GPU::Pipeline graphicPipeline;
     };
-    static_assert_fit_double_cacheline(Cache);
+    static_assert_fit_cacheline(Cache);
 
     /** @brief Frame GPU Cache */
     struct alignas_cacheline FrameBuffers
@@ -192,14 +192,14 @@ private:
     void recordComputeCommand(const GPU::CommandRecorder &recorder) noexcept;
 
 
-    // Cacheline 0
+    // Cacheline 0 & 1
     Painter _painter {};
-    // Cacheline 1
+    // Cacheline 2
     UISystem *_uiSystem {};
     PerFrameCaches _perFrameCaches {};
     PrimitiveCaches _primitiveCaches {};
     GPU::ClearColorValue _clearColorValue {};
-    // Cacheline 2 & 3
+    // Cacheline 3
     Cache _cache;
 };
 static_assert_alignof_double_cacheline(kF::UI::Renderer);

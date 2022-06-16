@@ -20,24 +20,33 @@ namespace kF::UI
     class MotionEvent;
     class KeyEvent;
 
-    /** @brief Depth */
-    using Depth = std::uint32_t;
+    /** @brief Depth unit */
+    using DepthUnit = std::uint32_t;
+
+    /** @brief Depth cache */
+    struct Depth
+    {
+        DepthUnit depth {};
+        DepthUnit maxChildDepth {};
+    };
 
     /** @brief Component flags */
     enum class ComponentFlags : std::uint32_t
     {
         None                = 0b0,
-        TreeNode            = 0b00000000001,
-        Area                = 0b00000000010,
-        Depth               = 0b00000000100,
-        Constraints         = 0b00000001000,
-        Transform           = 0b00000010000,
-        Layout              = 0b00000100000,
-        Timer               = 0b00001000000,
-        PainterArea         = 0b00010000000,
-        MouseEventArea      = 0b00100000000,
-        KeyEventReceiver    = 0b01000000000,
-        Animator            = 0b10000000000
+        TreeNode            = 0b0000000000001,
+        Area                = 0b0000000000010,
+        Depth               = 0b0000000000100,
+        Constraints         = 0b0000000001000,
+        Layout              = 0b0000000010000,
+        Transform           = 0b0000000100000,
+        PainterArea         = 0b0000001000000,
+        Clip                = 0b0000010000000,
+        MouseEventArea      = 0b0000100000000,
+        MotionEventArea     = 0b0001000000000,
+        KeyEventReceiver    = 0b0010000000000,
+        Timer               = 0b0100000000000,
+        Animator            = 0b1000000000000
     };
 
 
@@ -54,7 +63,7 @@ namespace kF::UI
     /** @brief Tree Node Type */
     struct alignas_half_cacheline TreeNode
     {
-        /** @brief Children vector is small optimized to fit half cacheline */
+        /** @brief Small optimized children vector */
         using Children = Core::SmallVector<ECS::Entity,
             (Core::CacheLineQuarterSize - sizeof(ECS::Entity) - sizeof(ComponentFlags)) / sizeof(ECS::Entity),
             UIAllocator
@@ -125,6 +134,13 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(PainterArea);
 
+    /** @brief Clip, only applies to children */
+    struct alignas_quarter_cacheline Clip
+    {
+        Padding padding {};
+    };
+    static_assert_fit_quarter_cacheline(Clip);
+
     /** @brief Mouse handler */
     struct alignas_half_cacheline MouseEventArea
     {
@@ -151,16 +167,19 @@ namespace kF::UI
     template<typename ...Components>
     concept ComponentRequirements = (
         (
-            std::same_as<Components, TreeNode>
-            || std::same_as<Components, Area>
-            || std::same_as<Components, Constraints>
-            || std::same_as<Components, Transform>
-            || std::same_as<Components, Layout>
-            || std::same_as<Components, Timer>
-            || std::same_as<Components, PainterArea>
-            || std::same_as<Components, MouseEventArea>
-            || std::same_as<Components, KeyEventReceiver>
-            || std::same_as<Components, Animator>
+            std::is_same_v<Components, TreeNode>
+            || std::is_same_v<Components, Area>
+            || std::is_same_v<Components, Depth>
+            || std::is_same_v<Components, Constraints>
+            || std::is_same_v<Components, Layout>
+            || std::is_same_v<Components, Transform>
+            || std::is_same_v<Components, PainterArea>
+            || std::is_same_v<Components, Clip>
+            || std::is_same_v<Components, MouseEventArea>
+            || std::is_same_v<Components, MotionEventArea>
+            || std::is_same_v<Components, KeyEventReceiver>
+            || std::is_same_v<Components, Timer>
+            || std::is_same_v<Components, Animator>
         ) && ...
     );
 
@@ -173,20 +192,26 @@ namespace kF::UI
             return ComponentFlags::TreeNode;
         else if constexpr (std::is_same_v<Component, Area>)
             return ComponentFlags::Area;
+        else if constexpr (std::is_same_v<Component, Depth>)
+            return ComponentFlags::Depth;
         else if constexpr (std::is_same_v<Component, Constraints>)
             return ComponentFlags::Constraints;
-        else if constexpr (std::is_same_v<Component, Transform>)
-            return ComponentFlags::Transform;
         else if constexpr (std::is_same_v<Component, Layout>)
             return ComponentFlags::Layout;
-        else if constexpr (std::is_same_v<Component, Timer>)
-            return ComponentFlags::Timer;
+        else if constexpr (std::is_same_v<Component, Transform>)
+            return ComponentFlags::Transform;
         else if constexpr (std::is_same_v<Component, PainterArea>)
             return ComponentFlags::PainterArea;
+        else if constexpr (std::is_same_v<Component, Clip>)
+            return ComponentFlags::Clip;
         else if constexpr (std::is_same_v<Component, MouseEventArea>)
             return ComponentFlags::MouseEventArea;
+        else if constexpr (std::is_same_v<Component, MotionEventArea>)
+            return ComponentFlags::MotionEventArea;
         else if constexpr (std::is_same_v<Component, KeyEventReceiver>)
             return ComponentFlags::KeyEventReceiver;
+        else if constexpr (std::is_same_v<Component, Timer>)
+            return ComponentFlags::Timer;
         else if constexpr (std::is_same_v<Component, Animator>)
             return ComponentFlags::Animator;
         else
