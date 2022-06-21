@@ -50,6 +50,7 @@ class alignas_double_cacheline kF::UI::UISystem
         // Input
         MouseEventArea,
         MotionEventArea,
+        WheelEventArea,
         KeyEventReceiver,
         // Time
         Timer,
@@ -132,6 +133,9 @@ private:
 
     /** @brief Process a single MotionEvent by traversing MotionEventArea instances */
     void processMotionEventAreas(const MotionEvent &event) noexcept;
+
+    /** @brief Process a single WheelEvent by traversing WheelEventArea instances */
+    void processWheelEventAreas(const WheelEvent &event) noexcept;
 
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
@@ -233,6 +237,7 @@ private:
     // Cacheline N + 5
     EventQueuePtr<MouseEvent> _mouseQueue {};
     EventQueuePtr<MotionEvent> _motionQueue {};
+    EventQueuePtr<WheelEvent> _wheelQueue {};
     EventQueuePtr<KeyEvent> _keyQueue {};
     // Cacheline N + 6 -> N + 9
     Renderer _renderer;

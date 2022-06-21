@@ -50,7 +50,7 @@ public:
 
 
     /** @brief Get the list of children */
-    [[nodiscard]] inline const Children &children(void) noexcept { return _children; }
+    [[nodiscard]] inline const Children &children(void) const noexcept { return _children; }
 
     /** @brief Add a child to item children list */
     template<typename Derived, typename ...Args>
@@ -71,9 +71,19 @@ public:
     /** @brief Remove a child from children list using its index */
     void removeChild(const std::uint32_t index) noexcept;
 
+    /** @brief Remove a range of children */
+    void removeChild(const std::uint32_t from, const std::uint32_t to) noexcept;
+
+
+    /** @brief Remove all children */
+    void clearChildren(void) noexcept;
+
+
     /** @brief Swap two children's position */
-    void swapChildren(const std::uint32_t source, const std::uint32_t destination) noexcept
-        { std::swap(_children[source], _children[destination]); }
+    void swapChildren(const std::uint32_t source, const std::uint32_t destination) noexcept;
+
+    /** @brief Move children */
+    void moveChildren(const std::uint32_t from, const std::uint32_t to, const std::uint32_t destination) noexcept;
 
 
     /** @brief Attach components to Item */
@@ -115,15 +125,12 @@ public:
      *  @note You must not use this entity index to attach or dettach any components ! */
     [[nodiscard]] static inline ECS::Entity GetEntity(const Item &item) noexcept { return item._entity; }
 
+protected:
+    /** @brief Get an unsafe mutable list of children */
+    [[nodiscard]] inline Children &childrenUnsafe(void) noexcept { return _children; }
+
+
 private:
-    // vtable pointer
-    UISystem *_uiSystem {};
-    Item *_parent {};
-    ComponentFlags _componentFlags {};
-    ECS::Entity _entity {};
-    Children _children {};
-
-
     /** @brief Add a child to item children list */
     Item &addChild(ItemPtr &&item) noexcept;
 
@@ -137,5 +144,13 @@ private:
     /** @brief Unmark components as being dettached */
     template<typename ...Components>
     inline void unmarkComponents(void) noexcept;
+
+
+    // vtable pointer
+    UISystem *_uiSystem {};
+    Item *_parent {};
+    ComponentFlags _componentFlags {};
+    ECS::Entity _entity {};
+    Children _children {};
 };
 static_assert_fit_cacheline(kF::UI::Item);

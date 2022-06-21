@@ -14,5 +14,7 @@ inline kF::UI::EventQueuePtr<EventType> kF::UI::EventSystem::addEventQueue(void)
         return _motionQueues.push(EventQueuePtr<EventType>::Make());
     } else if constexpr (std::is_same_v<EventType, KeyEvent>) {
         return _keyQueues.push(EventQueuePtr<EventType>::Make());
+    } else if constexpr (std::is_same_v<EventType, WheelEvent>) {
+        return _wheelQueues.push(EventQueuePtr<EventType>::Make());
     }
 }

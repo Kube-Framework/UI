@@ -13,6 +13,7 @@ namespace kF::UI
 {
     struct MouseEvent;
     struct MotionEvent;
+    struct WheelEvent;
     struct KeyEvent;
 
 
@@ -313,6 +314,15 @@ struct alignas_half_cacheline kF::UI::MotionEvent
     std::uint32_t timestamp {};
 };
 static_assert_fit_half_cacheline(kF::UI::MotionEvent);
+
+/** @brief Describe a wheel event */
+struct alignas_half_cacheline kF::UI::WheelEvent
+{
+    Point pos {};
+    Point offset {};
+    std::uint32_t timestamp {};
+};
+static_assert_fit_half_cacheline(kF::UI::WheelEvent);
 
 /** @brief Describe a key event (single key action) */
 struct alignas_quarter_cacheline kF::UI::KeyEvent

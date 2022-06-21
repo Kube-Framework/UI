@@ -40,6 +40,7 @@ UI::UISystem::UISystem(void) noexcept
         _renderer(*this),
         _mouseQueue(parent().getSystem<EventSystem>().addEventQueue<MouseEvent>()),
         _motionQueue(parent().getSystem<EventSystem>().addEventQueue<MotionEvent>()),
+        _wheelQueue(parent().getSystem<EventSystem>().addEventQueue<WheelEvent>()),
         _keyQueue(parent().getSystem<EventSystem>().addEventQueue<KeyEvent>())
 {
     GPU::GPUObject::Parent().viewSizeDispatcher().add([this] {
@@ -106,6 +107,10 @@ void kF::UI::UISystem::processEventHandlers(void) noexcept
         for (const auto &event : range)
             processMotionEventAreas(event);
     });
+    _wheelQueue->consume([this](const auto &range) {
+        for (const auto &event : range)
+            processWheelEventAreas(event);
+    });
     _keyQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processKeyEventReceivers(event);
@@ -139,6 +144,23 @@ void kF::UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcep
 
     for (std::uint32_t index {}; const auto &handler : motionTable) {
         auto &area = areaTable.get(motionTable.entities().at(index++));
+        if (area.contains(event.pos)) [[unlikely]] {
+            const auto flags = handler.event(event, area);
+            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
+                invalidate();
+            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+                break;
+        }
+    }
+}
+
+void kF::UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
+{
+    auto &areaTable = getTable<Area>();
+    auto &wheelTable = getTable<WheelEventArea>();
+
+    for (std::uint32_t index {}; const auto &handler : wheelTable) {
+        auto &area = areaTable.get(wheelTable.entities().at(index++));
         if (area.contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
@@ -614,24 +636,25 @@ kF::UI::Pixel kF::UI::UISystem::ComputeDistributedSize([[maybe_unused]] Pixel &f
 }
 
 template<kF::UI::Internal::BoundType Bound>
-kF::UI::Pixel kF::UI::UISystem::ComputeSize(const Pixel parent, const Pixel min, const Pixel max) noexcept
+kF::UI::Pixel kF::UI::UISystem::ComputeSize([[maybe_unused]] const Pixel parent, [[maybe_unused]] const Pixel min, const Pixel max) noexcept
 {
     using namespace Internal;
 
-    Pixel out;
+    constexpr auto ComputeInfinite = [](const auto parent, const auto min) {
+        return std::max(parent, min);
+    };
 
     if constexpr (Bound == BoundType::Unknown) {
         if (max == PixelInfinity) [[likely]]
-            out = std::min(std::max(parent, min), max);
+            return ComputeInfinite(parent, min);
         else [[unlikely]]
-            out = std::min(std::max(max, min), parent);
+            return max;
     } else {
         if constexpr (Bound == BoundType::Infinite)
-            out = std::min(std::max(parent, min), max);
+            return ComputeInfinite(parent, min);
         else
-            out = std::min(std::max(max, min), parent);
+            return max;
     }
-    return out;
 }
 
 void UI::UISystem::ComputePosition(Area &area, const Area &contextArea, const Anchor anchor) noexcept
@@ -704,8 +727,8 @@ void kF::UI::UISystem::applyTransform(const ECS::EntityIndex entityIndex, Area &
         area.size.height * transform.scale.height
     });
     area.pos = Point {
-        area.pos.x + area.size.width * transform.origin.x - scaledSize.width * transform.origin.x,
-        area.pos.y + area.size.height * transform.origin.y - scaledSize.height * transform.origin.y
+        area.pos.x + transform.offset.x + area.size.width * transform.origin.x - scaledSize.width * transform.origin.x,
+        area.pos.y + transform.offset.y + area.size.height * transform.origin.y - scaledSize.height * transform.origin.y
     };
     area.size = scaledSize;
 }

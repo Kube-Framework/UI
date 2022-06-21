@@ -22,6 +22,7 @@ bool UI::EventSystem::tick(void) noexcept
     // Clear all caches
     _mouseEvents.clear();
     _motionEvents.clear();
+    _wheelEvents.clear();
     _keyEvents.clear();
 
     // Collect all events
@@ -78,8 +79,9 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
         }
         break;
     case SDL_MOUSEMOTION:
+        _lastWheelPosition = Point(static_cast<Pixel>(event.motion.x), static_cast<Pixel>(event.motion.y));
         _motionEvents.push(MotionEvent {
-            .pos = Point(static_cast<Pixel>(event.motion.x), static_cast<Pixel>(event.motion.y)),
+            .pos = _lastWheelPosition,
             .motion = Point(static_cast<Pixel>(event.motion.xrel), static_cast<Pixel>(event.motion.yrel)),
             .buttons = static_cast<Button>(event.motion.state),
             .modifiers = Modifier::None,
@@ -104,6 +106,13 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .state = static_cast<bool>(event.key.state),
             .repeat = static_cast<bool>(event.key.repeat),
             .timestamp = event.key.timestamp
+        });
+        break;
+    case SDL_MOUSEWHEEL:
+        _wheelEvents.push(WheelEvent {
+            .pos = _lastWheelPosition,
+            .offset = Point(event.wheel.preciseX, event.wheel.preciseY),
+            .timestamp = event.wheel.timestamp
         });
         break;
     case SDL_QUIT:
@@ -137,5 +146,6 @@ void kF::UI::EventSystem::dispatchEvents(void) noexcept
 
     dispatch(_mouseQueues, _mouseEvents);
     dispatch(_motionQueues, _motionEvents);
+    dispatch(_wheelQueues, _wheelEvents);
     dispatch(_keyQueues, _keyEvents);
 }

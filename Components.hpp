@@ -18,7 +18,38 @@ namespace kF::UI
     class Painter;
     class MouseEvent;
     class MotionEvent;
+    class WheelEvent;
     class KeyEvent;
+
+    /** @brief Component flags */
+    enum class ComponentFlags : std::uint32_t
+    {
+        None                = 0b0,
+        TreeNode            = 0b00000000000001,
+        Area                = 0b00000000000010,
+        Depth               = 0b00000000000100,
+        Constraints         = 0b00000000001000,
+        Layout              = 0b00000000010000,
+        Transform           = 0b00000000100000,
+        PainterArea         = 0b00000001000000,
+        Clip                = 0b00000010000000,
+        MouseEventArea      = 0b00000100000000,
+        MotionEventArea     = 0b00001000000000,
+        WheelEventArea      = 0b00010000000000,
+        KeyEventReceiver    = 0b00100000000000,
+        Timer               = 0b01000000000000,
+        Animator            = 0b10000000000000
+    };
+
+    /** @brief Flags used as return type to indicate propagation and frame invalidation of an event */
+    enum class EventFlags : std::uint32_t
+    {
+        Stop                    = 0b00,
+        Propagate               = 0b01,
+        Invalidate              = 0b10,
+        InvalidateAndPropagate  = 0b11
+    };
+
 
     /** @brief Depth unit */
     using DepthUnit = std::uint32_t;
@@ -29,36 +60,6 @@ namespace kF::UI
         DepthUnit depth {};
         DepthUnit maxChildDepth {};
     };
-
-    /** @brief Component flags */
-    enum class ComponentFlags : std::uint32_t
-    {
-        None                = 0b0,
-        TreeNode            = 0b0000000000001,
-        Area                = 0b0000000000010,
-        Depth               = 0b0000000000100,
-        Constraints         = 0b0000000001000,
-        Layout              = 0b0000000010000,
-        Transform           = 0b0000000100000,
-        PainterArea         = 0b0000001000000,
-        Clip                = 0b0000010000000,
-        MouseEventArea      = 0b0000100000000,
-        MotionEventArea     = 0b0001000000000,
-        KeyEventReceiver    = 0b0010000000000,
-        Timer               = 0b0100000000000,
-        Animator            = 0b1000000000000
-    };
-
-
-    /** @brief Flags used as return type to indicate propagation and frame invalidation of an event */
-    enum class EventFlags : std::uint32_t
-    {
-        Stop                    = 0b00,
-        Propagate               = 0b01,
-        Invalidate              = 0b10,
-        InvalidateAndPropagate  = 0b11,
-    };
-
 
     /** @brief Tree Node Type */
     struct alignas_half_cacheline TreeNode
@@ -79,7 +80,7 @@ namespace kF::UI
     struct alignas_half_cacheline Transform
     {
         Point origin {}; // Relative origin point [0, 1]
-        Size scale {}; // Relative scale [-inf, inf]
+        Size scale { 1.0f, 1.0f }; // Relative scale [-inf, inf]
         Size minSize {}; // Absolute minimum size after scaling
         Point offset {}; // Absolute translation offset
     };
@@ -155,6 +156,13 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(MotionEventArea);
 
+    /** @brief Wheel handler */
+    struct alignas_half_cacheline WheelEventArea
+    {
+        Core::Functor<EventFlags(const WheelEvent &, const Area &), UIAllocator> event {};
+    };
+    static_assert_fit_half_cacheline(WheelEventArea);
+
     /** @brief Key handler */
     struct alignas_half_cacheline KeyEventReceiver
     {
@@ -177,6 +185,7 @@ namespace kF::UI
             || std::is_same_v<Components, Clip>
             || std::is_same_v<Components, MouseEventArea>
             || std::is_same_v<Components, MotionEventArea>
+            || std::is_same_v<Components, WheelEventArea>
             || std::is_same_v<Components, KeyEventReceiver>
             || std::is_same_v<Components, Timer>
             || std::is_same_v<Components, Animator>
@@ -208,6 +217,8 @@ namespace kF::UI
             return ComponentFlags::MouseEventArea;
         else if constexpr (std::is_same_v<Component, MotionEventArea>)
             return ComponentFlags::MotionEventArea;
+        else if constexpr (std::is_same_v<Component, WheelEventArea>)
+            return ComponentFlags::WheelEventArea;
         else if constexpr (std::is_same_v<Component, KeyEventReceiver>)
             return ComponentFlags::KeyEventReceiver;
         else if constexpr (std::is_same_v<Component, Timer>)
