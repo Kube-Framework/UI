@@ -44,6 +44,7 @@ void UI::ItemListModel::onListModelEvent(const ListModelEvent &event) noexcept
 
 void UI::ItemListModel::onInsert(const ListModelEvent::Insert &data) noexcept
 {
+    kFInfo("ItemListModel::onInsert: ", data.from, ", ", data.to);
     kFAssert(data.from < data.to,
         "UI::ItemListModel::onInsert: Invalid event range (", data.from, ", ", data.to, ")");
 
@@ -55,6 +56,7 @@ void UI::ItemListModel::onInsert(const ListModelEvent::Insert &data) noexcept
 
 void UI::ItemListModel::onErase(const ListModelEvent::Erase &data) noexcept
 {
+    kFInfo("ItemListModel::onErase: ", data.from, ", ", data.to);
     kFAssert(data.from < data.to,
         "UI::ItemListModel::onErase: Invalid event range (", data.from, ", ", data.to, ")");
 
@@ -64,6 +66,7 @@ void UI::ItemListModel::onErase(const ListModelEvent::Erase &data) noexcept
 
 void UI::ItemListModel::onUpdate(const ListModelEvent::Update &data) noexcept
 {
+    kFInfo("ItemListModel::onUpdate: ", data.from, ", ", data.to);
     kFAssert(data.from < data.to,
         "UI::ItemListModel::onUpdate: Invalid event range (", data.from, ", ", data.to, ")");
 
@@ -73,28 +76,15 @@ void UI::ItemListModel::onUpdate(const ListModelEvent::Update &data) noexcept
 
 void UI::ItemListModel::onResize(const ListModelEvent::Resize &data) noexcept
 {
+    kFInfo("ItemListModel::onResize: ", data.count);
     onErase(ListModelEvent::Erase { 0, _modelSize });
     onInsert(ListModelEvent::Insert { 0, data.count });
 }
 
 void UI::ItemListModel::onMove(const ListModelEvent::Move &data) noexcept
 {
+    kFInfo("ItemListModel::onMove: ", data.from, data.to, data.out);
     kFAssert(data.from < data.to && (data.out < data.from || data.out > data.to),
         "UI::ItemListModel::onMove: Invalid event range (", data.from, ", ", data.to, ")");
-    auto from = data.from;
-    auto to = data.to;
-    auto out = data.out;
-    if (out < from) {
-        const auto tmp = from;
-        from = out;
-        out = to;
-        to = tmp;
-    } else if (out)
-        ++out;
-
-    const auto it = childrenUnsafe().begin();
-    std::rotate(it + from, it + to, it + out);
-
-    const auto treeIt = get<TreeNode>().children.begin();
-    std::rotate(treeIt + from, treeIt + to, treeIt + out);
+    moveChild(data.from, data.to, data.out);
 }

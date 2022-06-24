@@ -320,6 +320,7 @@ struct alignas_half_cacheline kF::UI::WheelEvent
 {
     Point pos {};
     Point offset {};
+    Modifier modifiers {};
     std::uint32_t timestamp {};
 };
 static_assert_fit_half_cacheline(kF::UI::WheelEvent);

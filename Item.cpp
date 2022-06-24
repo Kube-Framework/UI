@@ -16,33 +16,17 @@ UI::Item::~Item(void) noexcept
     if (!_entity) [[unlikely]]
         return;
 
-    // Detach runtime components
-    _uiSystem->dettach<TreeNode, Area, Depth>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Constraints))
-        _uiSystem->dettach<Constraints>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Layout))
-        _uiSystem->dettach<Layout>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Transform))
-        _uiSystem->dettach<Transform>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::PainterArea))
-        _uiSystem->dettach<PainterArea>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Clip))
-        _uiSystem->dettach<Clip>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::MouseEventArea))
-        _uiSystem->dettach<MouseEventArea>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::MotionEventArea))
-        _uiSystem->dettach<MotionEventArea>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::WheelEventArea))
-        _uiSystem->dettach<WheelEventArea>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::KeyEventReceiver))
-        _uiSystem->dettach<KeyEventReceiver>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Timer))
-        _uiSystem->dettach<Timer>(_entity);
-    if (Core::HasFlags(_componentFlags, ComponentFlags::Animator))
-        _uiSystem->dettach<Animator>(_entity);
+    // // Dettach each component if it exists
+    // []<typename ...Components>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
+    //         std::type_identity<std::tuple<Components...>>) {
+    //     ([](UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags) {
+    //         if (Core::HasFlags(componentFlags, GetComponentFlag<Components>()))
+    //             uiSystem.dettach<Components>(entity);
+    //     }(uiSystem, entity, componentFlags), ...);
+    // }(*_uiSystem, _entity, _componentFlags, std::type_identity<UISystem::ComponentsTuple> {});
 
     // Remove the entity from UISystem
-    _uiSystem->removeUnsafe(_entity);
+    _uiSystem->remove(_entity);
 }
 
 UI::Item::Item(void) noexcept
@@ -98,7 +82,7 @@ void UI::Item::removeChild(const std::uint32_t index) noexcept
 
 void UI::Item::removeChild(const std::uint32_t from, const std::uint32_t to) noexcept
 {
-    kFAssert(from < _children.size() && to < _children.size() && from < to,
+    kFAssert(from < _children.size() && to <= _children.size() && from < to,
         "UI::Item::removeChild: Invalid arguments [", from, ", ", to, "] out of range [0, ", _children.size(), '[');
     _children.erase(_children.begin() + from, _children.begin() + to);
     auto &treeNode = get<TreeNode>();
@@ -112,14 +96,32 @@ void UI::Item::clearChildren(void) noexcept
     treeNode.children.clear();
 }
 
-void UI::Item::swapChildren(const std::uint32_t source, const std::uint32_t destination) noexcept
+void UI::Item::swapChild(const std::uint32_t source, const std::uint32_t output) noexcept
 {
-    std::swap(_children[source], _children[destination]);
+    std::swap(_children[source], _children[output]);
     auto &treeNode = get<TreeNode>();
-    std::swap(treeNode.children[source], treeNode.children[destination]);
+    std::swap(treeNode.children[source], treeNode.children[output]);
 }
 
-void UI::Item::moveChildren(const std::uint32_t from, const std::uint32_t to, const std::uint32_t destination) noexcept
+void UI::Item::moveChild(const std::uint32_t from_, const std::uint32_t to_, const std::uint32_t output_) noexcept
 {
+    kFAssert(output_ < from_ || output_ > to_,
+        "UI::Item::moveChild: Invalid move range [", from_, ", ", to_, "] -> ", output_);
 
+    auto from = from_;
+    auto to = to_;
+    auto output = output_;
+    if (output < from) {
+        const auto tmp = from;
+        from = output;
+        output = to;
+        to = tmp;
+    } else if (output)
+        ++output;
+
+    const auto it = childrenUnsafe().begin();
+    std::rotate(it + from, it + to, it + output);
+
+    const auto treeIt = get<TreeNode>().children.begin();
+    std::rotate(treeIt + from, treeIt + to, treeIt + output);
 }

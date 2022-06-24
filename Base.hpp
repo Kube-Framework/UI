@@ -182,6 +182,9 @@ namespace kF::UI
 
         /** @brief Apply padding to an area */
         [[nodiscard]] static constexpr Area ApplyPadding(const Area &area, const Padding &padding) noexcept;
+
+        /** @brief Apply clip to an area */
+        [[nodiscard]] static constexpr Area ApplyClip(const Area &area, const Area &clipArea) noexcept;
     };
 
 
@@ -203,6 +206,12 @@ namespace kF::UI
         Pixel value {};
     };
 
+    /** @brief Constraints strict specifier */
+    struct Strict
+    {
+        Pixel value {};
+    };
+
     /** @brief Constraints range specifier */
     struct Range
     {
@@ -212,7 +221,11 @@ namespace kF::UI
 
     /** @brief Requirements of a constraint specifier */
     template<typename Type>
-    concept ConstraintSpecifierRequirements = std::same_as<Type, Fill> || std::same_as<Type, Hug> || std::same_as<Type, Fixed> || std::same_as<Type, Range>;
+    concept ConstraintSpecifierRequirements = std::same_as<Type, Fill>
+            || std::same_as<Type, Hug>
+            || std::same_as<Type, Fixed>
+            || std::same_as<Type, Strict>
+            || std::same_as<Type, Range>;
 
     /** @brief Constraints */
     struct alignas_quarter_cacheline Constraints
@@ -289,6 +302,21 @@ namespace kF::UI
 
         /** @brief Fill right radius with a single value */
         [[nodiscard]] static constexpr Radius MakeRight(const Pixel value) noexcept { return Radius(0.0f, value, 0.0f, value); }
+    };
+
+    constexpr auto GetXAxis = []<typename Type>(Type &&data) -> auto & {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+            return data.x;
+        } else {
+            return data.width;
+        }
+    };
+    constexpr auto GetYAxis = []<typename Type>(Type &&data) -> auto & {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+            return data.y;
+        } else {
+            return data.height;
+        }
     };
 }
 

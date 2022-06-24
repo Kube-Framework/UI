@@ -34,6 +34,22 @@ inline kF::UI::ListModelEvent::ListModelEvent(const DataType &data_) noexcept
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
+inline void kF::UI::ListModel<Container, Allocator>::invalidate(const ConstIterator from, const ConstIterator to) noexcept
+{
+    const auto begin_ = begin();
+    invalidate(static_cast<Range>(std::distance(begin_, from)), static_cast<Range>(std::distance(begin_, to)));
+}
+
+template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
+inline void kF::UI::ListModel<Container, Allocator>::invalidate(const Range from, const Range to) noexcept
+{
+    _eventDispatcher.dispatch(ListModelEvent::Update {
+        .from = from,
+        .to = to
+    });
+}
+
+template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 template<typename ...Args>
 inline kF::UI::ListModel<Container, Allocator>::Type &kF::UI::ListModel<Container, Allocator>::push(Args &&...args) noexcept
 {
@@ -61,22 +77,24 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertDefault(const Iterator pos, const Range count) noexcept
 {
     const auto index = static_cast<Range>(std::distance(begin(), pos));
-    _container.insertDefault(pos, count);
+    const auto it = _container.insertDefault(pos, count);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
+    return it;
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertFill(const Iterator pos, const Range count, const Type &value) noexcept
 {
     const auto index = static_cast<Range>(std::distance(begin(), pos));
-    _container.insertFill(pos, count, value);
+    const auto it = _container.insertFill(pos, count, value);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
+    return it;
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
@@ -85,11 +103,12 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = static_cast<Range>(std::distance(begin(), pos));
     const auto count = static_cast<Range>(std::distance(from, to));
-    _container.insert(pos, from, to);
+    const auto it = _container.insert(pos, from, to);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
+    return it;
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
@@ -98,11 +117,12 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = static_cast<Range>(std::distance(begin(), pos));
     const auto count = static_cast<Range>(std::distance(from, to));
-    _container.insert(pos, from, to, std::forward<Map>(map));
+    const auto it = _container.insert(pos, from, to, std::forward<Map>(map));
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
+    return it;
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
@@ -110,11 +130,12 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = static_cast<Range>(std::distance(begin(), from));
     const auto count = static_cast<Range>(std::distance(from, to));
-    _container.erase(from, to);
+    const auto it = _container.erase(from, to);
     _eventDispatcher.dispatch(ListModelEvent::Erase {
         .from = index,
         .to = index + count
     });
+    return it;
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>

@@ -127,32 +127,17 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
 
 static void UI::ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
 {
-    constexpr auto GetX = []<typename Type>(Type &&data) -> auto & {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
-            return data.x;
-        } else {
-            return data.width;
-        }
-    };
-    constexpr auto GetY = []<typename Type>(Type &&data) -> auto & {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
-            return data.y;
-        } else {
-            return data.height;
-        }
-    };
-
     if (!text.vertical) [[likely]] {
         if (!text.reversed) [[likely]] {
-            DispatchComputeGlyph<GetX, GetY, false>(text, out, params);
+            DispatchComputeGlyph<GetXAxis, GetYAxis, false>(text, out, params);
         } else {
-            DispatchComputeGlyph<GetX, GetY, true>(text, out, params);
+            DispatchComputeGlyph<GetXAxis, GetYAxis, true>(text, out, params);
         }
     } else {
         if (!text.reversed) [[likely]] {
-            DispatchComputeGlyph<GetY, GetX, false>(text, out, params);
+            DispatchComputeGlyph<GetYAxis, GetXAxis, false>(text, out, params);
         } else {
-            DispatchComputeGlyph<GetY, GetX, true>(text, out, params);
+            DispatchComputeGlyph<GetYAxis, GetXAxis, true>(text, out, params);
         }
     }
 }

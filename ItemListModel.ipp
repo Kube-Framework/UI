@@ -3,6 +3,8 @@
  * @ Description: ItemListModel
  */
 
+#include <Kube/Core/Log.hpp>
+
 #include "ItemListModel.hpp"
 
 template<typename ListModelType, typename Delegate>
@@ -14,6 +16,7 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
         using DelegateItemType = std::remove_cvref_t<std::tuple_element_t<0, Decomposer::ArgsTuple>>;
         auto &child = parent.insertChild<Item>(index);
         delegate(child, (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)]);
+        kFInfo("UI::ItemListModel::setup: DELEGATE ", Item::GetEntity(child));
     };
 
     // Setup list model & connect to its event dispatcher

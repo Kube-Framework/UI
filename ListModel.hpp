@@ -133,6 +133,18 @@ public:
     /** @brief Get ListModel's event dispatcher */
     [[nodiscard]] auto &eventDispatcher(void) noexcept { return _eventDispatcher; }
 
+    /** @brief Invalidate an element that must be updated */
+    inline void invalidate(const ConstIterator at) noexcept { invalidate(at, at + 1); }
+
+    /** @brief Invalidate a range of iterators that must be updated */
+    void invalidate(const ConstIterator from, const ConstIterator to) noexcept;
+
+    /** @brief Invalidate an index that must be updated */
+    inline void invalidate(const Range at) noexcept { invalidate(at, at + 1); }
+
+    /** @brief Invalidate a range of indexes that must be updated */
+    void invalidate(const Range from, const Range to) noexcept;
+
 
     /** @brief Fast non-empty check */
     [[nodiscard]] inline operator bool(void) const noexcept { return _container.operator bool(); }

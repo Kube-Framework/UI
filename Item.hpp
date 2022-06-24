@@ -80,10 +80,14 @@ public:
 
 
     /** @brief Swap two children's position */
-    void swapChildren(const std::uint32_t source, const std::uint32_t destination) noexcept;
+    void swapChild(const std::uint32_t source, const std::uint32_t output) noexcept;
 
     /** @brief Move children */
-    void moveChildren(const std::uint32_t from, const std::uint32_t to, const std::uint32_t destination) noexcept;
+    inline void moveChild(const std::uint32_t source, const std::uint32_t output) noexcept
+        { return moveChild(source, source + 1u, output); }
+
+    /** @brief Move children */
+    void moveChild(const std::uint32_t from, const std::uint32_t to, const std::uint32_t output) noexcept;
 
 
     /** @brief Attach components to Item */

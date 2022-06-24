@@ -58,6 +58,8 @@ class alignas_double_cacheline kF::UI::UISystem
     >
 {
 public:
+    static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
+
     /** @brief Virtual destructor */
     ~UISystem(void) noexcept override;
 
@@ -123,6 +125,10 @@ private:
 
     /** @brief Validate a single frame */
     void validateFrame(const GPU::FrameIndex frame) noexcept;
+
+
+    /** @brief Get the clipped area of an entity */
+    [[nodiscard]] Area getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept;
 
 
     /** @brief Process each event handler by consuming its queue */

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <Kube/Core/TupleUtils.hpp>
 #include <Kube/Core/Functor.hpp>
 #include <Kube/Core/SmallVector.hpp>
 #include <Kube/ECS/Base.hpp>
@@ -20,26 +21,7 @@ namespace kF::UI
     class MotionEvent;
     class WheelEvent;
     class KeyEvent;
-
-    /** @brief Component flags */
-    enum class ComponentFlags : std::uint32_t
-    {
-        None                = 0b0,
-        TreeNode            = 0b00000000000001,
-        Area                = 0b00000000000010,
-        Depth               = 0b00000000000100,
-        Constraints         = 0b00000000001000,
-        Layout              = 0b00000000010000,
-        Transform           = 0b00000000100000,
-        PainterArea         = 0b00000001000000,
-        Clip                = 0b00000010000000,
-        MouseEventArea      = 0b00000100000000,
-        MotionEventArea     = 0b00001000000000,
-        WheelEventArea      = 0b00010000000000,
-        KeyEventReceiver    = 0b00100000000000,
-        Timer               = 0b01000000000000,
-        Animator            = 0b10000000000000
-    };
+    enum class ComponentFlags : std::uint32_t;
 
     /** @brief Flags used as return type to indicate propagation and frame invalidation of an event */
     enum class EventFlags : std::uint32_t
@@ -72,19 +54,20 @@ namespace kF::UI
 
         Children children {};
         ECS::Entity parent {};
-        ComponentFlags componentFlags { ComponentFlags::None };
+        ComponentFlags componentFlags {};
     };
     static_assert_fit_half_cacheline(TreeNode);
 
     /** @brief Transform describes a 2D space transformation */
-    struct alignas_half_cacheline Transform
+    struct alignas_cacheline Transform
     {
         Point origin {}; // Relative origin point [0, 1]
         Size scale { 1.0f, 1.0f }; // Relative scale [-inf, inf]
         Size minSize {}; // Absolute minimum size after scaling
         Point offset {}; // Absolute translation offset
+        Core::Functor<void(Transform &, Area &), UIAllocator> event {}; // Runtime transform event
     };
-    static_assert_fit_half_cacheline(Transform);
+    static_assert_fit_cacheline(Transform);
 
     /** @brief Layout describes the children distribution of an item */
     struct alignas_half_cacheline Layout
@@ -103,7 +86,6 @@ namespace kF::UI
         Core::Functor<bool(std::uint64_t delta), UIAllocator> event {};
         std::int64_t interval {};
         std::int64_t elapsed {};
-        // bool singleShot {}; ??
     };
     static_assert_fit_cacheline(Timer);
 
@@ -170,64 +152,52 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(KeyEventReceiver);
 
+    /** @brief Component flags */
+    enum class ComponentFlags : std::uint32_t
+    {
+        None                = 0b0,
+        TreeNode            = 0b00000000000001,
+        Area                = 0b00000000000010,
+        Depth               = 0b00000000000100,
+        Constraints         = 0b00000000001000,
+        Layout              = 0b00000000010000,
+        Transform           = 0b00000000100000,
+        PainterArea         = 0b00000001000000,
+        Clip                = 0b00000010000000,
+        MouseEventArea      = 0b00000100000000,
+        MotionEventArea     = 0b00001000000000,
+        WheelEventArea      = 0b00010000000000,
+        KeyEventReceiver    = 0b00100000000000,
+        Timer               = 0b01000000000000,
+        Animator            = 0b10000000000000
+    };
+
+    /** @brief Component types */
+    using ComponentsTuple = std::tuple<
+        TreeNode,
+        Area,
+        Depth,
+        Constraints,
+        Layout,
+        Transform,
+        PainterArea,
+        Clip,
+        MouseEventArea,
+        MotionEventArea,
+        WheelEventArea,
+        KeyEventReceiver,
+        Timer,
+        Animator
+    >;
 
     /** @brief Concept of an UI component */
     template<typename ...Components>
-    concept ComponentRequirements = (
-        (
-            std::is_same_v<Components, TreeNode>
-            || std::is_same_v<Components, Area>
-            || std::is_same_v<Components, Depth>
-            || std::is_same_v<Components, Constraints>
-            || std::is_same_v<Components, Layout>
-            || std::is_same_v<Components, Transform>
-            || std::is_same_v<Components, PainterArea>
-            || std::is_same_v<Components, Clip>
-            || std::is_same_v<Components, MouseEventArea>
-            || std::is_same_v<Components, MotionEventArea>
-            || std::is_same_v<Components, WheelEventArea>
-            || std::is_same_v<Components, KeyEventReceiver>
-            || std::is_same_v<Components, Timer>
-            || std::is_same_v<Components, Animator>
-        ) && ...
-    );
-
+    concept ComponentRequirements = (... || Core::TupleContainsElement<Components, ComponentsTuple>);
 
     /** @brief Get component type flag */
-    template<typename Component>
+    template<ComponentRequirements Component>
     [[nodiscard]] constexpr ComponentFlags GetComponentFlag(void) noexcept
-    {
-        if constexpr (std::is_same_v<Component, TreeNode>)
-            return ComponentFlags::TreeNode;
-        else if constexpr (std::is_same_v<Component, Area>)
-            return ComponentFlags::Area;
-        else if constexpr (std::is_same_v<Component, Depth>)
-            return ComponentFlags::Depth;
-        else if constexpr (std::is_same_v<Component, Constraints>)
-            return ComponentFlags::Constraints;
-        else if constexpr (std::is_same_v<Component, Layout>)
-            return ComponentFlags::Layout;
-        else if constexpr (std::is_same_v<Component, Transform>)
-            return ComponentFlags::Transform;
-        else if constexpr (std::is_same_v<Component, PainterArea>)
-            return ComponentFlags::PainterArea;
-        else if constexpr (std::is_same_v<Component, Clip>)
-            return ComponentFlags::Clip;
-        else if constexpr (std::is_same_v<Component, MouseEventArea>)
-            return ComponentFlags::MouseEventArea;
-        else if constexpr (std::is_same_v<Component, MotionEventArea>)
-            return ComponentFlags::MotionEventArea;
-        else if constexpr (std::is_same_v<Component, WheelEventArea>)
-            return ComponentFlags::WheelEventArea;
-        else if constexpr (std::is_same_v<Component, KeyEventReceiver>)
-            return ComponentFlags::KeyEventReceiver;
-        else if constexpr (std::is_same_v<Component, Timer>)
-            return ComponentFlags::Timer;
-        else if constexpr (std::is_same_v<Component, Animator>)
-            return ComponentFlags::Animator;
-        else
-            return ComponentFlags::None;
-    }
+        { return static_cast<ComponentFlags>(1u << Core::TupleElementIndex<Component, ComponentsTuple, std::uint32_t>); }
 }
 
 #include "Components.ipp"

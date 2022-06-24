@@ -17,8 +17,6 @@ UI::Painter::~Painter(void) noexcept
 
 void UI::Painter::setClip(const Area &area) noexcept
 {
-    if (!_clips.empty() && _clips.back().indexOffset == _offset.indexOffset)
-        return;
     _clips.push(ClipCache {
         .area = area,
         .indexOffset = _offset.indexOffset

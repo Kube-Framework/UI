@@ -97,6 +97,35 @@ bool UI::UISystem::tick(void) noexcept
     return true;
 }
 
+kF::UI::Area kF::UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept
+{
+    const auto &clipDepths = _traverseContext.clipDepths();
+    if (clipDepths.empty())
+        return area;
+
+    // Find depth index
+    const auto depth = get<UI::Depth>(entity).depth;
+    std::uint32_t index {};
+    const auto count = clipDepths.size<std::uint32_t>();
+    while (index != count && clipDepths[index] < depth) [[likely]]
+        ++index;
+
+    // Query clip area
+    const auto &clipAreas = _traverseContext.clipAreas();
+    const Area *clip {};
+    if (index == count) // Last
+        clip = &clipAreas.back();
+    else if (index) // index - 1
+        clip = &clipAreas.at(index - 1);
+
+    // If a clip has been found, apply it to entity's Area
+    if (clip && *clip != Area {}) [[likely]]
+        return UI::Area::ApplyClip(area, *clip);
+    // Else return entity's Area
+    else
+        return area;
+}
+
 void kF::UI::UISystem::processEventHandlers(void) noexcept
 {
     _mouseQueue->consume([this](const auto &range) {
@@ -122,11 +151,10 @@ void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
     auto &areaTable = getTable<Area>();
     auto &mouseTable = getTable<MouseEventArea>();
 
-    // for (std::uint32_t index = mouseTable.count(); const auto &handler : Core::IteratorRange { mouseTable.rbegin(), mouseTable.rend() }) {
-    //     auto &area = areaTable.get(mouseTable.entities().at(--index));
     for (std::uint32_t index {}; const auto &handler : mouseTable) {
-        auto &area = areaTable.get(mouseTable.entities().at(index++));
-        if (area.contains(event.pos)) [[unlikely]] {
+        const auto entity = mouseTable.entities().at(index++);
+        auto &area = areaTable.get(entity);
+        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             // kFInfo("[processMouseEventAreas] Area ", area, " hit by ", event.pos);
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
@@ -143,8 +171,9 @@ void kF::UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcep
     auto &motionTable = getTable<MotionEventArea>();
 
     for (std::uint32_t index {}; const auto &handler : motionTable) {
-        auto &area = areaTable.get(motionTable.entities().at(index++));
-        if (area.contains(event.pos)) [[unlikely]] {
+        const auto entity = motionTable.entities().at(index++);
+        auto &area = areaTable.get(entity);
+        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
@@ -160,8 +189,9 @@ void kF::UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
     auto &wheelTable = getTable<WheelEventArea>();
 
     for (std::uint32_t index {}; const auto &handler : wheelTable) {
-        auto &area = areaTable.get(wheelTable.entities().at(index++));
-        if (area.contains(event.pos)) [[unlikely]] {
+        const auto entity = wheelTable.entities().at(index++);
+        auto &area = areaTable.get(entity);
+        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
@@ -228,6 +258,8 @@ bool UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
 
 void UI::UISystem::processPainterAreas(void) noexcept
 {
+    constexpr auto MaxDepth = ~static_cast<DepthUnit>(0);
+
     auto &painter = _renderer.painter();
     const auto &paintTable = getTable<PainterArea>();
     const auto &areaTable = getTable<Area>();
@@ -236,25 +268,34 @@ void UI::UISystem::processPainterAreas(void) noexcept
     const auto clipDepths = _traverseContext.clipDepths();
     std::uint32_t clipIndex {};
     const std::uint32_t clipCount { clipDepths.size<std::uint32_t>() };
-    auto nextClipDepth = clipCount ? clipDepths[0] : ~static_cast<DepthUnit>(0);
+    auto nextClipDepth = clipCount ? clipDepths[0] : MaxDepth;
 
     painter.clear();
     for (std::uint32_t index = 0u; const PainterArea &handler : paintTable) {
+        // Skip invisible item
+        if (!handler.event) [[unlikely]]
+            continue;
+
+        // Query Area
         const auto entity = paintTable.entities().at(index++);
         const auto entityIndex = areaTable.getUnstableIndex(entity);
         const Area &area = areaTable.atIndex(entityIndex);
 
-        if (depthTable.atIndex(entityIndex).depth >= nextClipDepth) [[unlikely]] {
-            painter.setClip(clipAreas[clipIndex]);
-            if (++clipIndex != clipCount) [[likely]]
-                nextClipDepth = clipDepths[clipIndex];
-            else
-                nextClipDepth = ~static_cast<DepthUnit>(0);
+        // Process clip
+        if (nextClipDepth != MaxDepth) [[likely]] {
+            const auto depth = depthTable.atIndex(entityIndex).depth;
+            while (depth >= nextClipDepth) [[unlikely]] {
+                painter.setClip(clipAreas[clipIndex]);
+                if (++clipIndex != clipCount) [[likely]] {
+                    nextClipDepth = clipDepths[clipIndex];
+                } else {
+                    nextClipDepth = MaxDepth;
+                }
+            }
         }
 
         // Paint self
-        if (handler.event) [[likely]]
-            handler.event(painter, area);
+        handler.event(painter, area);
     }
 }
 
@@ -408,10 +449,14 @@ void UI::UISystem::buildLayoutConstraints(Constraints &constraints) noexcept
     }
 
     const auto &padding = layout.padding;
-    constraints.maxSize += Size(
-        static_cast<Pixel>(hugWidth) * padding.left + padding.right,
-        static_cast<Pixel>(hugHeight) * padding.top + padding.bottom
-    );
+    if (hugWidth) {
+        constraints.maxSize.width += padding.left + padding.right;
+        constraints.minSize.width = std::max(constraints.minSize.width, constraints.maxSize.width);
+    }
+    if (hugHeight) {
+        constraints.maxSize.height += padding.top + padding.bottom;
+        constraints.minSize.height = std::max(constraints.minSize.height, constraints.maxSize.height);
+    }
 }
 
 template<kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate AccumulateY>
@@ -454,33 +499,34 @@ void UI::UISystem::traverseAreas(void) noexcept
     Area lastClip {};
     bool clip { false };
     const auto &node = _traverseContext.node();
-    {
-        // Build position of children using the context node area
-        auto &area = _traverseContext.area();
-        if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]] {
-            computeChildrenArea(area, Anchor::Center);
-        } else [[unlikely]] {
-            buildLayoutArea(area);
+    auto &area = _traverseContext.area();
+
+    // Build position of children using the context node area
+    if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
+        computeChildrenArea(area, Anchor::Center);
+    else [[unlikely]]
+        buildLayoutArea(area);
+
+    if (const auto &nodeCounter = _traverseContext.counter(); !nodeCounter.empty()) [[likely]] {
+        { // Process clip
+            const auto &clipTable = getTable<Clip>();
+            const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
+            if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
+                clip = true;
+                lastClip = _traverseContext.currentClip();
+                _traverseContext.setClip(
+                    Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding),
+                    _maxDepth
+                );
+            }
         }
 
-        // Process clip
-        const auto &clipTable = getTable<Clip>();
-        const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
-        if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
-            clip = true;
-            lastClip = _traverseContext.currentClip();
-            _traverseContext.setClip(
-                Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding),
-                _maxDepth
-            );
+        // Traverse each child
+        std::uint32_t childIndex { 0u };
+        for (const auto childEntityIndex : nodeCounter) {
+            _traverseContext.setupEntity(node.children.at(childIndex++), childEntityIndex);
+            traverseAreas();
         }
-    }
-
-    // Traverse each child
-    std::uint32_t childIndex { 0u };
-    for (const auto childEntityIndex : _traverseContext.counter()) {
-        _traverseContext.setupEntity(node.children.at(childIndex++), childEntityIndex);
-        traverseAreas();
     }
 
     // Set max child depth
@@ -545,7 +591,7 @@ void kF::UI::UISystem::computeDistributedChildrenArea(const Area &contextArea, c
 {
     using namespace Internal;
 
-    auto &counter = _traverseContext.counter();
+    const auto &counter = _traverseContext.counter();
     const auto childCount = static_cast<Pixel>(counter.size());
     const auto totalSpacing = layout.spacing * (childCount - 1.0f);
     Point flexCount {};
@@ -644,16 +690,20 @@ kF::UI::Pixel kF::UI::UISystem::ComputeSize([[maybe_unused]] const Pixel parent,
         return std::max(parent, min);
     };
 
+    constexpr auto ComputeFinite = [](const auto parent, const auto min, const auto max) {
+        return std::max(std::min(parent, max), min);
+    };
+
     if constexpr (Bound == BoundType::Unknown) {
         if (max == PixelInfinity) [[likely]]
             return ComputeInfinite(parent, min);
         else [[unlikely]]
-            return max;
+            return ComputeFinite(parent, min, max);
     } else {
         if constexpr (Bound == BoundType::Infinite)
             return ComputeInfinite(parent, min);
         else
-            return max;
+            return ComputeFinite(parent, min, max);
     }
 }
 
@@ -720,7 +770,11 @@ void kF::UI::UISystem::applyTransform(const ECS::EntityIndex entityIndex, Area &
 
     // Apply child scale transformation
     const auto entity = getTable<TreeNode>().entities().at(entityIndex);
-    const auto &transform = get<Transform>(entity);
+    auto &transform = get<Transform>(entity);
+
+    // Update transform
+    if (transform.event) [[unlikely]]
+        transform.event(transform, area);
 
     const auto scaledSize = Size::Max(transform.minSize, Size {
         area.size.width * transform.scale.width,

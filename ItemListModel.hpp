@@ -22,7 +22,7 @@ public:
     virtual ~ItemListModel(void) noexcept override = default;
 
     /** @brief Default constructor */
-    ItemListModel(void) noexcept;
+    ItemListModel(void) noexcept = default;
 
     /** @brief Model and delegate constructor */
     template<typename ListModelType, typename Delegate>

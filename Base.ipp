@@ -291,38 +291,42 @@ constexpr kF::UI::Area kF::UI::Area::ApplyPadding(const Area &area, const Paddin
     };
 }
 
+constexpr kF::UI::Area kF::UI::Area::ApplyClip(const Area &area, const Area &clipArea) noexcept
+{
+    Area clipped;
+
+    clipped.pos.x = std::max(area.pos.x, clipArea.pos.x);
+    clipped.pos.y = std::max(area.pos.y, clipArea.pos.y);
+    clipped.size.width = std::min(clipped.pos.x + area.size.width, clipArea.pos.x + clipArea.size.width) - clipped.pos.x;
+    clipped.size.height = std::min(clipped.pos.y + area.size.height, clipArea.pos.y + clipArea.size.height) - clipped.pos.y;
+    return clipped;
+}
+
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {
+    constexpr auto ApplySpecifier = []<typename Specifier>(const Specifier specifier, Pixel &min, Pixel &max) {
+        if constexpr (std::is_same_v<Specifier, Fill>) {
+            min = specifier.min;
+            max = PixelInfinity;
+        } else if constexpr (std::is_same_v<Specifier, Hug>) {
+            min = specifier.min;
+            max = PixelHug;
+        } else if constexpr (std::is_same_v<Specifier, Fixed>) {
+            max = specifier.value;
+        } else if constexpr (std::is_same_v<Specifier, Strict>) {
+            min = specifier.value;
+            max = specifier.value;
+        } else if constexpr (std::is_same_v<Specifier, Range>) {
+            min = specifier.min;
+            max = specifier.max;
+        }
+    };
+
     Constraints constraints;
 
-    if constexpr (std::is_same_v<WidthSpecifier, Fill>) {
-        constraints.minSize.width = widthSpecifier.min;
-        constraints.maxSize.width = PixelInfinity;
-    } else if constexpr (std::is_same_v<WidthSpecifier, Hug>) {
-        constraints.minSize.width = widthSpecifier.min;
-        constraints.maxSize.width = PixelHug;
-    } else if constexpr (std::is_same_v<WidthSpecifier, Fixed>) {
-        constraints.minSize.width = widthSpecifier.value;
-        constraints.maxSize.width = widthSpecifier.value;
-    } else if constexpr (std::is_same_v<WidthSpecifier, Range>) {
-        constraints.minSize.width = widthSpecifier.min;
-        constraints.maxSize.width = widthSpecifier.max;
-    }
-
-    if constexpr (std::is_same_v<HeightSpecifier, Fill>) {
-        constraints.minSize.height = heightSpecifier.min;
-        constraints.maxSize.height = PixelInfinity;
-    } else if constexpr (std::is_same_v<HeightSpecifier, Hug>) {
-        constraints.minSize.height = heightSpecifier.min;
-        constraints.maxSize.height = PixelHug;
-    } else if constexpr (std::is_same_v<HeightSpecifier, Fixed>) {
-        constraints.minSize.height = heightSpecifier.value;
-        constraints.maxSize.height = heightSpecifier.value;
-    } else if constexpr (std::is_same_v<HeightSpecifier, Range>) {
-        constraints.minSize.height = heightSpecifier.min;
-        constraints.maxSize.height = heightSpecifier.max;
-    }
+    ApplySpecifier(widthSpecifier, constraints.minSize.width, constraints.maxSize.width);
+    ApplySpecifier(heightSpecifier, constraints.minSize.height, constraints.maxSize.height);
 
     return constraints;
 }
