@@ -92,13 +92,13 @@ public:
 
     /** @brief Attach components to Item */
     template<typename ...Components>
-        requires ComponentRequirements<Components...>
+        requires kF::UI::ComponentRequirements<Components...>
     Item &attach(Components &&...components) noexcept;
 
     /** @brief Try to attach components to Item
      *  @note Any component is already attached will be overwrited */
     template<typename ...Components>
-        requires ComponentRequirements<Components...>
+        requires kF::UI::ComponentRequirements<Components...>
     Item &attachUpdate(Components &&...components) noexcept;
 
     /** @brief Try to update components of Item
@@ -109,12 +109,12 @@ public:
 
     /** @brief Detach components from Item */
     template<typename ...Components>
-        requires ComponentRequirements<Components...>
+        requires kF::UI::ComponentRequirements<Components...>
     void dettach(void) noexcept;
 
     /** @brief Detach components from Item */
     template<typename ...Components>
-        requires ComponentRequirements<Components...>
+        requires kF::UI::ComponentRequirements<Components...>
     void tryDettach(void) noexcept;
 
 
