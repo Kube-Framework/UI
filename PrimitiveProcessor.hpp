@@ -45,7 +45,7 @@ namespace kF::UI
         /** @brief Insert instances from a list of primitives
          *  @note If you don't specialize, the default behavior is to copy primitive as instances (1:1 mapping) */
         template<kF::UI::PrimitiveKind Primitive>
-        [[nodiscard]] inline void InsertInstances(
+        inline void InsertInstances(
                 const Primitive * const primitiveBegin, const Primitive * const primitiveEnd,
                 std::uint8_t * const instanceBegin) noexcept
             { std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive * const>(instanceBegin)); }

@@ -22,12 +22,13 @@ class kF::UI::Animator
 {
 public:
     /** @brief State of an animation */
-    struct AnimationState
+    struct alignas_quarter_cacheline AnimationState
     {
         const Animation *animation {};
         std::int64_t elapsed : 63;
         std::int64_t reverse : 1;
     };
+    static_assert_fit_quarter_cacheline(AnimationState);
 
     /** @brief Compute the optimized value count */
     static constexpr auto OptimizedCount = Core::CacheLineQuarterSize / sizeof(AnimationState);

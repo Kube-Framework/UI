@@ -46,31 +46,31 @@ namespace kF::UI
 
 
     /** @brief Compute all glyphs of a text */
-    void ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
+    static void ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
 
     /** @brief Dispatch compute instantiation glyph of a text */
     template<auto GetX, auto GetY, bool Reversed>
-    void DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
+    static void DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
 
 
     /** @brief Compute all glyphs of a text in packed mode */
     template<auto GetX, auto GetY, bool Reversed>
-    void ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept;
+    static void ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept;
 
     /** @brief Compute the anchor of all glyphs within range */
     template<auto GetX, auto GetY, bool Reversed>
-    void ComputeGlyphPositions(Glyph * const from, Glyph * const to,
+    static void ComputeGlyphPositions(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics) noexcept;
 
     /** @brief Apply the offset of all glyphs within range */
     template<auto GetX, auto GetY, bool Reversed>
-    void ApplyGlyphOffsets(Glyph * const from, Glyph * const to,
+    static void ApplyGlyphOffsets(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics, const Point offset) noexcept;
 
 
     /** @brief Compute all glyphs of a text in justified mode */
     template<auto GetX, auto GetY, bool Reversed>
-    void ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept;
+    static void ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept;
 }
 
 template<>
@@ -179,8 +179,8 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
             };
             GetX(pos) += uv.size.width;
             ++out;
-        } else if (const bool isTab = unicode == '\t'; unicode == ' ' | isTab) {
-            GetX(pos) += params.spaceWidth * (1 + 3 * isTab);
+        } else if (const bool isTab = unicode == '\t'; (unicode == ' ') | isTab) {
+            GetX(pos) += params.spaceWidth * (1.0f + 3.0f * static_cast<float>(isTab));
         } else [[unlikely]] {
             UpdateMetrics(params, pos, metrics);
             GetX(pos) = 0;
@@ -262,7 +262,6 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
 {
     constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, const Point rotationOrigin, auto &&computeFunc) {
         auto lineWidthIt = params.pixelCache.begin();
-        std::uint32_t index {};
         Pixel oldY = GetY(from->pos);
         auto currentOffset = computeFunc(offset, metrics, *lineWidthIt);
         for (auto it = from; it != to; ++it) {
@@ -308,39 +307,4 @@ template<auto GetX, auto GetY, bool Reversed>
 static void UI::ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept
 {
     ComputeGlyphPacked<GetX, GetY, Reversed>(out, params);
-    // auto from = params.text->str.begin();
-    // auto to = from;
-    // const auto end = params.text->str.end();
-    // Pixel totalLineWidth {};
-
-    // // Loop over all characters
-    // while (from != end) {
-    //     totalLineWidth = Pixel {};
-    //     // Compute all words of a strict line
-    //     while (from != end && *from == '\n') {
-    //         // Compute word width
-    //         Pixel wordWidth {};
-    //         const auto old = from;
-    //         for (to = from; to != end && !std::isspace(*to); ++to) {
-    //             const auto index = params.glyphIndexSet->at(*to);
-    //             const auto &uv = params.glyphUVs->at(index);
-    //             wordWidth += uv.size.width * params.mapSize.width;
-    //         }
-    //         if (wordWidth) [[likely]]
-    //             params.pixelCache.push(wordWidth);
-    //         totalLineWidth += wordWidth;
-    //         if (totalLineWidth > params.area.size.width)
-
-    //         // Compute space width
-    //         wordWidth = Pixel {};
-    //         while (to != end && (*to == ' ' | *to == '\t')) {
-    //             wordWidth += params.spaceWidth * ((3.0f * to == '\t') + 1.0f);
-    //         }
-    //         if (wordWidth) [[likely]]
-    //             params.pixelCache.push(wordWidth);
-    //     }
-
-    //     // Clear cache
-    //     params.pixelCache.clear();
-    // }
 }

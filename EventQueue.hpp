@@ -60,7 +60,6 @@ public:
 
     /** @brief Consume events of the queue */
     template<typename Functor>
-        requires std::is_invocable_v<Functor, const kF::UI::EventQueue<EventType>::Range &>
     void consume(Functor &&functor) noexcept;
 
 

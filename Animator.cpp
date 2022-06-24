@@ -56,7 +56,7 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
         const auto &animation = *state.animation;
         const auto totalElapsed = std::min(state.elapsed + elapsed, animation.duration);
         const auto ratio = static_cast<float>(totalElapsed) / static_cast<float>(animation.duration);
-        const auto reversedRatio = !state.reverse ? ratio : 1.0 - ratio;
+        const auto reversedRatio = !state.reverse ? ratio : 1.0f - ratio;
         animation.tickEvent(reversedRatio);
         if (animation.duration != totalElapsed) [[likely]] {
             state.elapsed = totalElapsed;

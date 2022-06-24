@@ -59,7 +59,7 @@ public:
 
         /** @brief Compute total byte capacity of queue */
         [[nodiscard]] inline std::uint32_t totalByteCapacity(void) const noexcept
-            { return capacity * (instanceSize + sizeof(InstanceOffset)); }
+            { return capacity * (instanceSize + static_cast<std::uint32_t>(sizeof(InstanceOffset))); }
     };
     static_assert_fit_half_cacheline(Queue);
 

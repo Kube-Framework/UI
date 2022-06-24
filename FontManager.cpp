@@ -86,14 +86,14 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
     std::uint32_t glyphCount {};
     auto unicode = FT_Get_First_Char(fontFace, &glyphIndex);
     for (std::uint32_t index {}; glyphIndex; ++index) {
-        fontCache.glyphIndexSet.add(unicode, index);
+        fontCache.glyphIndexSet.add(static_cast<wchar_t>(unicode), index);
         unicode = FT_Get_Next_Char(fontFace, unicode, &glyphIndex);
         ++glyphCount;
     }
     fontCache.glyphCount = glyphCount;
 
     { // Set font size
-        const auto scaledPixelHeight = UI::ScalePixel(fontCache.model.pixelHeight, uiSystem.windowDPI().vertical);
+        const auto scaledPixelHeight = UI::ScalePixel(static_cast<Pixel>(fontCache.model.pixelHeight), uiSystem.windowDPI().vertical);
         auto code = FT_Set_Pixel_Sizes(fontFace, 0, fontCache.model.pixelHeight);
         if (!code)
             code = FT_Activate_Size(fontFace->size);

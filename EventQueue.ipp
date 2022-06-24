@@ -41,7 +41,6 @@ inline void kF::UI::EventQueue<EventType>::produce(const Range &range) noexcept
 
 template<kF::UI::EventRequirements EventType>
 template<typename Functor>
-    requires std::is_invocable_v<Functor, const kF::UI::EventQueue<EventType>::Range &>
 inline void kF::UI::EventQueue<EventType>::consume(Functor &&functor) noexcept
 {
     Node *consumedHead {};

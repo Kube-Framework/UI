@@ -53,7 +53,7 @@ public:
         Size mapSize {};
         Pixel spaceWidth {};
         Pixel lineHeight {};
-        int maxUnderBaseline {};
+        Pixel maxUnderBaseline {};
     };
     static_assert_fit_double_cacheline(FontCache);
 

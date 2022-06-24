@@ -143,7 +143,7 @@ UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
     Core::String str(windowTitle);
     window = SDL_CreateWindow(
         str.c_str(),
-        static_cast<Pixel>(pos.x), static_cast<Pixel>(pos.y),
+        static_cast<int>(pos.x), static_cast<int>(pos.y),
         static_cast<int>(size.width), static_cast<int>(size.height),
         ToWindowFlags(windowFlags) | SDL_WINDOW_VULKAN
     );

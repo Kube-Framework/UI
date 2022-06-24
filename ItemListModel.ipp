@@ -13,8 +13,8 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
     // Setup delegate
     _delegate = [delegate = std::forward<Delegate>(delegate)](ItemListModel &parent, void * const model, const std::uint32_t index) {
         using Decomposer = Core::FunctionDecomposerHelper<Delegate>;
-        using DelegateItemType = std::remove_cvref_t<std::tuple_element_t<0, Decomposer::ArgsTuple>>;
-        auto &child = parent.insertChild<Item>(index);
+        using DelegateItemType = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+        auto &child = parent.insertChild<DelegateItemType>(index);
         delegate(child, (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)]);
         kFInfo("UI::ItemListModel::setup: DELEGATE ", Item::GetEntity(child));
     };

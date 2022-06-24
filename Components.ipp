@@ -8,7 +8,7 @@
 template<auto Functor, typename ...Args>
 inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
 {
-    constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto) {
+    static constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto) {
         if constexpr (std::is_invocable_v<Arg>)
             return arg();
         else
@@ -25,7 +25,7 @@ inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
 template<typename Functor, typename ...Args>
 inline kF::UI::PainterArea kF::UI::PainterArea::Make(Functor &&functor, Args &&...args) noexcept
 {
-    constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto)  {
+    static constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto)  {
         if constexpr (std::is_invocable_v<Arg>)
             return arg();
         else
@@ -42,7 +42,7 @@ inline kF::UI::PainterArea kF::UI::PainterArea::Make(Functor &&functor, Args &&.
 template<typename Functor, typename ...Args>
 inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
 {
-    constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto)  {
+    static constexpr auto ForwardArg = []<typename Arg>(Arg &&arg) -> decltype(auto)  {
         if constexpr (std::is_invocable_v<Arg>)
             return arg();
         else

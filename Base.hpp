@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <limits>
+
 #include <Kube/Core/StaticSafeAllocator.hpp>
 
 namespace kF::UI
