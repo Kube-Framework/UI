@@ -49,6 +49,11 @@ public:
     [[nodiscard]] inline ComponentFlags componentFlags(void) const noexcept { return _componentFlags; }
 
 
+    /** @brief Get the parent Item as ItemType */
+    template<typename ItemType = Item>
+        requires std::derived_from<ItemType, Item>
+    [[nodiscard]] inline ItemType &parent(void) const noexcept { return *reinterpret_cast<ItemType *>(_parent); }
+
     /** @brief Get the list of children */
     [[nodiscard]] inline const Children &children(void) const noexcept { return _children; }
 

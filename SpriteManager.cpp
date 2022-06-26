@@ -47,7 +47,9 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
                     Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
                 )
             },
-            { GPU::DescriptorBindingFlags::PartiallyBound }
+            {
+                Core::MakeFlags(GPU::DescriptorBindingFlags::UpdateAfterBind, GPU::DescriptorBindingFlags::UpdateUnusedWhilePending, GPU::DescriptorBindingFlags::PartiallyBound)
+            }
         )),
         _descriptorPool(GPU::DescriptorPool::Make(
             GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
@@ -242,11 +244,13 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
     _fence.wait();
 }
 
-void UI::SpriteManager::removeUnsafe(const SpriteIndex spriteIndex) noexcept
+void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcept
 {
     // Check sprite reference counter
     if (--_spriteCounters.at(spriteIndex)) [[likely]]
         return;
+
+    // @todo Fix remove bug
 
     // Reset sprite name
     _spriteNames.at(spriteIndex) = 0u;

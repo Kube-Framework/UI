@@ -43,8 +43,14 @@ public:
     inline Font(FontManager &manager, const FontIndex index) noexcept
         : _manager(&manager), _index(index) {}
 
+    /** @brief Copy constructor */
+    Font(const Font &other) noexcept;
+
     /** @brief Move constructor */
     Font(Font &&other) noexcept;
+
+    /** @brief Copy assignment */
+    Font &operator=(const Font &other) noexcept;
 
     /** @brief Move assignment */
     Font &operator=(Font &&other) noexcept;

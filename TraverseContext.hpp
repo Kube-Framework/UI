@@ -89,7 +89,7 @@ private:
     ECS::Entity _entity {};
     ECS::EntityIndex _entityIndex {};
     // Cacheline 1
-    Core::Vector<Area> _clipAreas {};
-    Core::SmallVector<DepthUnit, Core::CacheLineHalfSize / sizeof(DepthUnit)> _clipDepths {};
+    Core::Vector<Area, UIAllocator> _clipAreas {};
+    Core::SmallVector<DepthUnit, Core::CacheLineHalfSize / sizeof(DepthUnit), UIAllocator> _clipDepths {};
 };
 static_assert_fit_double_cacheline(kF::UI::Internal::TraverseContext);

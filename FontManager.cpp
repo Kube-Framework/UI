@@ -249,7 +249,7 @@ UI::FontManager::MapBuffer UI::FontManager::renderGlyphs(const FT_Face fontFace,
     return buffer;
 }
 
-void UI::FontManager::removeUnsafe(const FontIndex fontIndex) noexcept
+void UI::FontManager::decrementRefCount(const FontIndex fontIndex) noexcept
 {
     // Check font reference counter
     if (--_fontCounters.at(fontIndex)) [[likely]]

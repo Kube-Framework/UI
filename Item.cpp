@@ -16,7 +16,7 @@ UI::Item::~Item(void) noexcept
     if (!_entity) [[unlikely]]
         return;
 
-    // // Dettach each component if it exists
+    // Dettach each component if it exists
     // []<typename ...Components>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
     //         std::type_identity<std::tuple<Components...>>) {
     //     ([](UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags) {
@@ -26,6 +26,7 @@ UI::Item::~Item(void) noexcept
     // }(*_uiSystem, _entity, _componentFlags, std::type_identity<UISystem::ComponentsTuple> {});
 
     // Remove the entity from UISystem
+    // _uiSystem->removeUnsafe(_entity);
     _uiSystem->remove(_entity);
 }
 

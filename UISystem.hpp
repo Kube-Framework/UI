@@ -226,26 +226,25 @@ private:
     [[nodiscard]] static DPI GetWindowDPI(void) noexcept;
 
 
-    // Cacheline N
-    Size _windowSize {};
-    DPI _windowDPI {};
-    ItemPtr _root {};
-    GPU::FrameIndex _invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
-    bool _invalidateTree { true };
-    std::int64_t _lastTick {};
-    DepthUnit _maxDepth {};
-    // Cacheline N + 1
+    // Cacheline N -> N + 1
     Internal::TraverseContext _traverseContext {};
     // Cacheline N + 2 -> N + 3
     SpriteManager _spriteManager {};
     // Cacheline N + 4
     FontManager _fontManager {};
-    // Cacheline N + 5
+    // Cacheline N + 5 -> N + 6
+    ItemPtr _root {};
+    Size _windowSize {};
+    DPI _windowDPI {};
+    DepthUnit _maxDepth {};
+    GPU::FrameIndex _invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
+    bool _invalidateTree { true };
+    std::int64_t _lastTick {};
     EventQueuePtr<MouseEvent> _mouseQueue {};
     EventQueuePtr<MotionEvent> _motionQueue {};
     EventQueuePtr<WheelEvent> _wheelQueue {};
     EventQueuePtr<KeyEvent> _keyQueue {};
-    // Cacheline N + 6 -> N + 9
+    // Cacheline N + 7 -> N + 10
     Renderer _renderer;
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);

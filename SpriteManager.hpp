@@ -79,9 +79,12 @@ public:
 
 
 public: // Unsafe functions reserved for internal usage
+    /** @brief Increment the reference count of a sprite */
+    inline void incrementRefCount(const SpriteIndex spriteIndex) noexcept { ++_spriteCounters.at(spriteIndex); }
+
     /** @brief Remove a sprite from the manager
      *  @note If the sprite is still used elswhere, this function does not deallocate its memory */
-    void removeUnsafe(const SpriteIndex spriteIndex) noexcept;
+    void decrementRefCount(const SpriteIndex spriteIndex) noexcept;
 
 
     /** @brief Get internal DescriptorSetLayout */
@@ -106,7 +109,6 @@ private:
     // Cacheline 1
     std::uint32_t _maxSpriteCount {};
     GPU::Sampler _sampler;
-    GPU::Sampler _sampler2;
     GPU::DescriptorSetLayout _descriptorSetLayout;
     GPU::DescriptorPool _descriptorPool;
     GPU::DescriptorSetHandle _descriptorSet;
@@ -114,4 +116,4 @@ private:
     GPU::CommandHandle _command;
     GPU::Fence _fence {};
 };
-// static_assert_fit_double_cacheline(kF::UI::SpriteManager);
+static_assert_fit_double_cacheline(kF::UI::SpriteManager);

@@ -81,9 +81,12 @@ public:
 
 
 public: // Unsafe functions reserved for internal usage
+    /** @brief Increment the reference count of a font */
+    inline void incrementRefCount(const FontIndex fontIndex) noexcept { ++_fontCounters.at(fontIndex); }
+
     /** @brief Remove a font from the manager
      *  @note If the font is still used elswhere, this function does not deallocate its memory */
-    void removeUnsafe(const FontIndex fontIndex) noexcept;
+    void decrementRefCount(const FontIndex fontIndex) noexcept;
 
 
     /** @brief Get map size of a font instance */

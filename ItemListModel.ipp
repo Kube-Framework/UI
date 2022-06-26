@@ -7,16 +7,24 @@
 
 #include "ItemListModel.hpp"
 
-template<typename ListModelType, typename Delegate>
-inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&delegate) noexcept
+template<typename ListModelType, typename Delegate, typename ...Args>
+inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
 {
     // Setup delegate
-    _delegate = [delegate = std::forward<Delegate>(delegate)](ItemListModel &parent, void * const model, const std::uint32_t index) {
+    _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemListModel &parent, void * const model, const std::uint32_t index) {
+        // Query first argument of the delegate using FunctionDecomposer
         using Decomposer = Core::FunctionDecomposerHelper<Delegate>;
-        using DelegateItemType = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
-        auto &child = parent.insertChild<DelegateItemType>(index);
-        delegate(child, (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)]);
-        kFInfo("UI::ItemListModel::setup: DELEGATE ", Item::GetEntity(child));
+        using ModelData = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+
+        ModelData *child {};
+        auto &modelData = (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)];
+        if constexpr (std::is_constructible_v<ModelData, typename ListModelType::Type &, Args...>)
+            child = &parent.insertChild<ModelData>(index, modelData, args...);
+        else if constexpr (std::is_constructible_v<ModelData, Args..., typename ListModelType::Type &>)
+            child = &parent.insertChild<ModelData>(index, args..., modelData);
+        else
+            child = &parent.insertChild<ModelData>(index);
+        delegate(*child, modelData);
     };
 
     // Setup list model & connect to its event dispatcher
@@ -30,4 +38,10 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
     // Insert list model items
     if (_modelSize) [[likely]]
         onInsert(ListModelEvent::Insert { 0, _modelSize });
+}
+
+template<typename ItemType, typename ListModelType, typename ...Args>
+inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Args &&...args) noexcept
+{
+    setup(listModel, [](ItemType &, const ListModelType::Type &) {}, std::forward<Args>(args)...);
 }

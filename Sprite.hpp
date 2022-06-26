@@ -42,9 +42,14 @@ public:
     inline Sprite(SpriteManager &manager, const SpriteIndex index) noexcept
         : _manager(&manager), _index(index) {}
 
+    /** @brief Copy constructor */
+    Sprite(const Sprite &other) noexcept;
+
     /** @brief Move constructor */
     Sprite(Sprite &&other) noexcept;
 
+    /** @brief Copy assignment */
+    Sprite &operator=(const Sprite &other) noexcept;
 
     /** @brief Move assignment */
     Sprite &operator=(Sprite &&other) noexcept;
