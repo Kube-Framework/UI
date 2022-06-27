@@ -82,9 +82,6 @@ public:
     };
     static_assert_fit_double_cacheline(FrameCache);
 
-    /** @brief Per frame caches */
-    using PerFrameCaches = GPU::PerFrameCache<FrameCache, UIAllocator>;
-
     /** @brief Cache of a primitive */
     struct alignas_cacheline PrimitiveCache
     {
@@ -116,7 +113,7 @@ public:
     [[nodiscard]] inline const Painter &painter(void) const noexcept { return _painter; }
 
     /** @brief Get current frame index */
-    [[nodiscard]] inline GPU::FrameIndex currentFrame(void) const noexcept { return _perFrameCaches.currentFrame(); }
+    [[nodiscard]] inline GPU::FrameIndex currentFrame(void) const noexcept { return _perFrameCache.currentFrame(); }
 
 
     /** @brief Register a primitive to the Renderer and its Painter */
@@ -196,7 +193,7 @@ private:
     Painter _painter {};
     // Cacheline 2
     UISystem *_uiSystem {};
-    PerFrameCaches _perFrameCaches {};
+    GPU::PerFrameCache<FrameCache, UIAllocator> _perFrameCache {};
     PrimitiveCaches _primitiveCaches {};
     GPU::ClearColorValue _clearColorValue {};
     // Cacheline 3

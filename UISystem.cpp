@@ -51,7 +51,10 @@ UI::UISystem::UISystem(void) noexcept
 
     // Rebuild graph
     auto &graph = taskGraph();
-    auto &computeTask = graph.add<&Renderer::batchPrimitives>(&_renderer);
+    auto &computeTask = graph.add([this] {
+        _spriteManager.prepareFrameCache();
+        _renderer.batchPrimitives();
+    });
     auto &transferTask = graph.add<&Renderer::transferPrimitives>(&_renderer);
     auto &dispatchTask = graph.add<&Renderer::dispatchInvalidFrame>(&_renderer);
     dispatchTask.after(computeTask);

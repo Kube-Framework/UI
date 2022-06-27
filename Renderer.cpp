@@ -14,7 +14,7 @@ using namespace kF;
 
 UI::Renderer::~Renderer(void) noexcept
 {
-    _perFrameCaches.release();
+    _perFrameCache.release();
     _primitiveCaches.clear();
 }
 
@@ -55,7 +55,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
     using namespace GPU;
 
     // Setup per frame descriptor pools
-    _perFrameCaches.resize(parent().frameCount(), [this] {
+    _perFrameCache.resize(parent().frameCount(), [this] {
         FrameCache cache {
             .commandPool = CommandPool(QueueType::Graphics, CommandPoolCreateFlags::Transient),
             .computeSetPool = DescriptorPool::Make(DescriptorPoolCreateFlags::None, 1, {
@@ -71,7 +71,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
 
     // Make sure that we set the current frame when acquired
     parent().frameAcquiredDispatcher().add([this](const FrameIndex frameIndex) {
-        _perFrameCaches.setCurrentFrame(frameIndex);
+        _perFrameCache.setCurrentFrame(frameIndex);
     });
 
     // Make sure that we set the current frame when acquired
@@ -216,7 +216,7 @@ bool UI::Renderer::prepare(void) noexcept
     const auto indicesSectionSize = Core::AlignOffset(
         static_cast<std::uint32_t>(sizeof(PrimitiveIndex)) * _painter.indexCount(), _cache.minAlignment
     );
-    FrameCache &frameCache = _perFrameCaches.current();
+    FrameCache &frameCache = _perFrameCache.current();
 
     // Store offsets into frame buffers cache
     frameCache.buffers.instancesOffset = contextSectionSize;
@@ -313,7 +313,7 @@ std::uint32_t UI::Renderer::computeDynamicOffsets(void) noexcept
 
 void UI::Renderer::transferPrimitives(void) noexcept
 {
-    auto &frameCache = _perFrameCaches.current();
+    auto &frameCache = _perFrameCache.current();
 
     // Begin memory map
     const auto mappedMemory = frameCache.buffers.stagingAllocation.beginMemoryMap<std::uint8_t>();
@@ -359,7 +359,7 @@ void UI::Renderer::batchPrimitives(void) noexcept
 {
     using namespace GPU;
 
-    FrameCache &frameCache = _perFrameCaches.current();
+    FrameCache &frameCache = _perFrameCache.current();
 
     // Record compute command
     frameCache.commandPool.reset();
@@ -375,7 +375,7 @@ void UI::Renderer::recordComputeCommand(const GPU::CommandRecorder &recorder) no
 {
     using namespace GPU;
 
-    const auto &frameCache = _perFrameCaches.current();
+    const auto &frameCache = _perFrameCache.current();
 
     // Dispatch each primitive pipeline
     for (const PrimitiveCache &primitiveCache : _primitiveCaches) {
@@ -414,7 +414,7 @@ void UI::Renderer::dispatch(const bool isInvalidated) noexcept
 {
     using namespace GPU;
 
-    FrameCache &frameCache = _perFrameCaches.current();
+    FrameCache &frameCache = _perFrameCache.current();
 
     // If no memory is mapped then no compute command has been recorded, we has to reset command pool
     if (!isInvalidated) [[likely]]
@@ -449,7 +449,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
 {
     using namespace GPU;
 
-    FrameCache &frameCache = _perFrameCaches.current();
+    FrameCache &frameCache = _perFrameCache.current();
     auto &gpu = parent();
     const auto extent = gpu.swapchain().extent();
 

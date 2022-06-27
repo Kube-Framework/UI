@@ -6,6 +6,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <Kube/Core/Assert.hpp>
 #include <Kube/GPU/GPU.hpp>
 #include <Kube/GPU/Buffer.hpp>
 #include <Kube/GPU/DescriptorSetUpdate.hpp>
@@ -51,17 +52,32 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
                 Core::MakeFlags(GPU::DescriptorBindingFlags::UpdateAfterBind, GPU::DescriptorBindingFlags::UpdateUnusedWhilePending, GPU::DescriptorBindingFlags::PartiallyBound)
             }
         )),
-        _descriptorPool(GPU::DescriptorPool::Make(
-            GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
-            1,
-            {
-                GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount)
-            }
-        )),
-        _descriptorSet(_descriptorPool.allocate(_descriptorSetLayout)),
         _commandPool(GPU::QueueType::Transfer, GPU::CommandPoolCreateFlags::Transient),
-        _command(_commandPool.add(GPU::CommandLevel::Primary))
+        _command(_commandPool.add(GPU::CommandLevel::Primary)),
+        _perFrameCache(parent().frameCount(), [this] {
+            FrameCache frameCache {
+                .descriptorPool = GPU::DescriptorPool::Make(
+                    GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
+                    1,
+                    {
+                        GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount)
+                    }
+                ),
+                .descriptorSet = frameCache.descriptorPool.allocate(_descriptorSetLayout)
+            };
+            return frameCache;
+        })
 {
+    parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) { _perFrameCache.setCurrentFrame(frameIndex); });
+
+    // Add default sprite
+    const Color defaultBufferData { 255, 80, 255, 255 };
+    const auto defaultSpriteIndex = addImpl(Core::HashedName {});
+    kFEnsure(defaultSpriteIndex == DefaultSprite, "UI::SpriteManager: Implementation error");
+    load(defaultSpriteIndex, SpriteBuffer {
+        .data = &defaultBufferData,
+        .extent = GPU::Extent2D { 1, 1 }
+    });
 }
 
 UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
@@ -74,7 +90,8 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
     const auto spriteName = Core::Hash(path);
     if (const auto it = _spriteNames.find(spriteName); it != _spriteNames.end()) [[likely]] {
         const auto spriteIndex = static_cast<SpriteIndex>(std::distance(_spriteNames.begin(), it));
-        ++_spriteCounters.at(spriteIndex);
+        if (++_spriteCounters.at(spriteIndex) == 1) [[unlikely]]
+            cancelDelayedRemove(spriteIndex);
         return Sprite(*this, spriteIndex);
     }
 
@@ -230,15 +247,13 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
         _fence
     );
 
-    // Update descriptor set to reference loaded sprite
-    const DescriptorImageInfo imageInfo(
-        _sampler,
-        spriteCache.imageView,
-        ImageLayout::ShaderReadOnlyOptimal
-    );
-    DescriptorSetUpdate::UpdateWrite({
-        DescriptorSetWriteModel(_descriptorSet, 0, spriteIndex, DescriptorType::CombinedImageSampler, &imageInfo, &imageInfo + 1)
-    });
+    // Add insert events to frame caches
+    for (auto &frameCache : _perFrameCache) {
+        frameCache.events.push(Event {
+            .type = Event::Type::Add,
+            .spriteIndex = spriteIndex
+        });
+    }
 
     // Wait until transfer completed
     _fence.wait();
@@ -250,19 +265,112 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
     if (--_spriteCounters.at(spriteIndex)) [[likely]]
         return;
 
-    // @todo Fix remove bug
+    // Add remove events to frame caches
+    for (auto &frameCache : _perFrameCache) {
+        const auto it = frameCache.events.find([spriteIndex](const auto &event) { return event.spriteIndex == spriteIndex; });
+        if (it != frameCache.events.end()) [[unlikely]]
+            frameCache.events.erase(it);
+        frameCache.events.push(Event {
+            .type = Event::Type::Remove,
+            .spriteIndex = spriteIndex
+        });
+    }
 
-    // Reset sprite name
-    _spriteNames.at(spriteIndex) = 0u;
-
-    // Reset sprite cache
-    _spriteCaches.at(spriteIndex) = SpriteCache {};
-
-    // Insert sprite index into free list
-    _spriteFreeList.push(spriteIndex);
+    _spriteDelayedRemoves.push(SpriteDelayedRemove {
+        .spriteIndex = spriteIndex
+    });
 }
 
-UI::Size UI::SpriteManager::spriteSizeAt(const SpriteIndex spriteIndex) const noexcept
+void UI::SpriteManager::prepareFrameCache(void) noexcept
 {
-    return _spriteCaches.at(spriteIndex).size;
+    updateDelayedRemoves();
+
+    auto &currentCache = _perFrameCache.current();
+    const auto eventCount = currentCache.events.size();
+
+    if (!eventCount) [[likely]]
+        return;
+
+    // Prepare image infos
+    Core::SmallVector<GPU::DescriptorImageInfo, 8, ResourceAllocator> imageInfos(
+        eventCount,
+        [this, &currentCache](const auto index) {
+            const auto &event = currentCache.events.at(index);
+            kFInfo("!! EVENT ", event.type == Event::Type::Add ? "Add" : "Remove", " ", event.spriteIndex);
+            const auto targetSprite = event.type == Event::Type::Add ? event.spriteIndex : DefaultSprite;
+            kFEnsure(_spriteCaches.at(targetSprite).imageView != GPU::NullHandle, "ERRRROOOR");
+            return GPU::DescriptorImageInfo(
+                _sampler,
+                _spriteCaches.at(targetSprite).imageView,
+                GPU::ImageLayout::ShaderReadOnlyOptimal
+            );
+        }
+    );
+
+    // Prepare descriptor set write models
+    Core::SmallVector<GPU::DescriptorSetWriteModel, 8, ResourceAllocator> models(
+        eventCount,
+        [this, &currentCache, &imageInfos](const auto index) {
+            return GPU::DescriptorSetWriteModel(
+                currentCache.descriptorSet,
+                0,
+                currentCache.events.at(index).spriteIndex,
+                GPU::DescriptorType::CombinedImageSampler,
+                imageInfos.begin() + index, imageInfos.begin() + index + 1
+            );
+        }
+    );
+
+    // Clear events
+    currentCache.events.clear();
+
+    // Write descriptors
+    GPU::DescriptorSetUpdate::UpdateWrite(models.begin(), models.end());
+}
+
+void UI::SpriteManager::updateDelayedRemoves(void) noexcept
+{
+    const auto end = _spriteDelayedRemoves.end();
+    const auto it = std::remove_if(_spriteDelayedRemoves.begin(), end,
+        [this, frameCount = _perFrameCache.count()](auto &delayedRemove) {
+            if (++delayedRemove.elapsedFrames < frameCount) [[likely]]
+                return false;
+            if (!_spriteCounters.at(delayedRemove.spriteIndex)) [[likely]] {
+                kFInfo("!! DESTROY ", delayedRemove.spriteIndex);
+                // Reset sprite name
+                _spriteNames.at(delayedRemove.spriteIndex) = 0u;
+
+                // Reset sprite cache
+                _spriteCaches.at(delayedRemove.spriteIndex) = SpriteCache {};
+
+                // Insert sprite index into free list
+                _spriteFreeList.push(delayedRemove.spriteIndex);
+            }
+            return true;
+        }
+    );
+
+    if (it != end)
+        _spriteDelayedRemoves.erase(it, end);
+}
+
+void UI::SpriteManager::cancelDelayedRemove(const SpriteIndex spriteIndex) noexcept
+{
+    const auto it = _spriteDelayedRemoves.find([spriteIndex](const auto &delayedRemove) { return delayedRemove.spriteIndex == spriteIndex; });
+
+    kFAssert(it != _spriteDelayedRemoves.end(), "UI::SpriteManager::cancelDelayedRemove: Implementation error");
+    _spriteDelayedRemoves.erase(it);
+
+    for (auto &frameCache : _perFrameCache) {
+        const auto end = frameCache.events.end();
+        const auto it = frameCache.events.find([spriteIndex](const auto &event) { return event.spriteIndex == spriteIndex; });
+        if (it != end) {
+            frameCache.events.erase(it, end);
+        } else {
+            frameCache.events.push(Event {
+                .type = Event::Type::Add,
+                .spriteIndex = spriteIndex
+            });
+        }
+    }
 }
