@@ -20,16 +20,6 @@ typedef struct FT_FaceRec_ *FT_Face;
 namespace kF::UI
 {
     class FontManager;
-
-    /** @brief Describes a font */
-    struct FontModel
-    {
-        FontSize pixelHeight {};
-
-        /** @brief Comparison operator */
-        [[nodiscard]] bool operator==(const FontModel &other) const noexcept = default;
-        [[nodiscard]] bool operator!=(const FontModel &other) const noexcept = default;
-    };
 }
 
 /** @brief Font manager abstract the management of bindless textures */

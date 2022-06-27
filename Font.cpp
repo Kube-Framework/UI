@@ -3,7 +3,8 @@
  * @ Description: Font
  */
 
-#include "FontManager.hpp"
+#include "App.hpp"
+#include "UISystem.hpp"
 
 using namespace kF;
 
@@ -11,6 +12,11 @@ UI::Font::~Font(void) noexcept
 {
     if (_manager)
         _manager->decrementRefCount(_index);
+}
+
+UI::Font::Font(const std::string_view &path, const FontModel &fontModel) noexcept
+    : Font(App::Get().uiSystem().fontManager().add(path, fontModel))
+{
 }
 
 UI::Font::Font(const Font &other) noexcept

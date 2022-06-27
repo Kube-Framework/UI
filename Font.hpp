@@ -27,6 +27,16 @@ namespace kF::UI
         /** @brief Implicit conversion to value */
         [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
     };
+
+    /** @brief Describes a font */
+    struct FontModel
+    {
+        FontSize pixelHeight {};
+
+        /** @brief Comparison operator */
+        [[nodiscard]] bool operator==(const FontModel &other) const noexcept = default;
+        [[nodiscard]] bool operator!=(const FontModel &other) const noexcept = default;
+    };
 }
 
 /** @brief Font class manager the lifecycle of a Font */
@@ -42,6 +52,9 @@ public:
     /** @brief Constructor */
     inline Font(FontManager &manager, const FontIndex index) noexcept
         : _manager(&manager), _index(index) {}
+
+    /** @brief Global manager constructor */
+    Font(const std::string_view &path, const FontModel &fontModel) noexcept;
 
     /** @brief Copy constructor */
     Font(const Font &other) noexcept;

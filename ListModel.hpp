@@ -146,6 +146,9 @@ public:
     void invalidate(const Range from, const Range to) noexcept;
 
 
+    /** @brief Fast empty check */
+    [[nodiscard]] inline bool empty(void) const noexcept { return _container.empty(); }
+
     /** @brief Fast non-empty check */
     [[nodiscard]] inline operator bool(void) const noexcept { return _container.operator bool(); }
 

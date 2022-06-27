@@ -192,12 +192,12 @@ namespace kF::UI
 
     /** @brief Concept of an UI component */
     template<typename ...Components>
-    concept ComponentRequirements = (... || Core::TupleContainsElement<Components, ComponentsTuple>);
+    concept ComponentRequirements = (... || Core::TupleContainsElement<std::remove_cvref_t<Components>, ComponentsTuple>);
 
     /** @brief Get component type flag */
     template<ComponentRequirements Component>
     [[nodiscard]] constexpr ComponentFlags GetComponentFlag(void) noexcept
-        { return static_cast<ComponentFlags>(1u << Core::TupleElementIndex<Component, ComponentsTuple, std::uint32_t>); }
+        { return static_cast<ComponentFlags>(1u << Core::TupleElementIndex<std::remove_cvref_t<Component>, ComponentsTuple, std::uint32_t>); }
 }
 
 #include "Components.ipp"

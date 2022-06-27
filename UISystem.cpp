@@ -776,10 +776,10 @@ void kF::UI::UISystem::applyTransform(const ECS::EntityIndex entityIndex, Area &
     if (transform.event) [[unlikely]]
         transform.event(transform, area);
 
-    const auto scaledSize = Size::Max(transform.minSize, Size {
-        area.size.width * transform.scale.width,
-        area.size.height * transform.scale.height
-    });
+    const auto scaledSize = Size {
+        transform.minSize.width + (area.size.width - transform.minSize.width) * transform.scale.width,
+        transform.minSize.height + (area.size.height - transform.minSize.height) * transform.scale.height
+    };
     area.pos = Point {
         area.pos.x + transform.offset.x + area.size.width * transform.origin.x - scaledSize.width * transform.origin.x,
         area.pos.y + transform.offset.y + area.size.height * transform.origin.y - scaledSize.height * transform.origin.y

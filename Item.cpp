@@ -13,21 +13,25 @@ using namespace kF;
 
 UI::Item::~Item(void) noexcept
 {
+    // Dettach each component if it exists
+    constexpr auto DettachComponents = []<typename ...Components>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
+            std::type_identity<std::tuple<Components...>>) {
+        constexpr auto DettachComponent = []<typename Component>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
+            std::type_identity<Component>) {
+            if (Core::HasFlags(componentFlags, GetComponentFlag<Component>()))
+                uiSystem.dettach<Component>(entity);
+        };
+
+        (DettachComponent(uiSystem, entity, componentFlags, std::type_identity<Components> {}), ...);
+    };
+
     if (!_entity) [[unlikely]]
         return;
 
-    // Dettach each component if it exists
-    // []<typename ...Components>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
-    //         std::type_identity<std::tuple<Components...>>) {
-    //     ([](UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags) {
-    //         if (Core::HasFlags(componentFlags, GetComponentFlag<Components>()))
-    //             uiSystem.dettach<Components>(entity);
-    //     }(uiSystem, entity, componentFlags), ...);
-    // }(*_uiSystem, _entity, _componentFlags, std::type_identity<UISystem::ComponentsTuple> {});
+    DettachComponents(*_uiSystem, _entity, _componentFlags, std::type_identity<UISystem::ComponentsTuple> {});
 
     // Remove the entity from UISystem
-    // _uiSystem->removeUnsafe(_entity);
-    _uiSystem->remove(_entity);
+    _uiSystem->removeUnsafe(_entity);
 }
 
 UI::Item::Item(void) noexcept
@@ -92,9 +96,11 @@ void UI::Item::removeChild(const std::uint32_t from, const std::uint32_t to) noe
 
 void UI::Item::clearChildren(void) noexcept
 {
-    _children.clear();
-    auto &treeNode = get<TreeNode>();
-    treeNode.children.clear();
+    if (!_children.empty()) {
+        _children.clear();
+        auto &treeNode = get<TreeNode>();
+        treeNode.children.clear();
+    }
 }
 
 void UI::Item::swapChild(const std::uint32_t source, const std::uint32_t output) noexcept
