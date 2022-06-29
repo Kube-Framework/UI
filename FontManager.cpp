@@ -5,8 +5,8 @@
 
 #include <cmath>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+// #define STB_IMAGE_WRITE_IMPLEMENTATION
+// #include <stb_image_write.h>
 
 #include <freetype/freetype.h>
 #include <freetype/ftsizes.h>
@@ -113,8 +113,8 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
         .extent = GPU::Extent2D { mapSize.width, mapSize.height }
     });
 
-    // Save bitmap as a file
-    ::stbi_write_bmp("bitmap.bmp", mapSize.width, mapSize.height, 4, buffer.data());
+    // // Save bitmap as a file
+    // ::stbi_write_bmp("bitmap.bmp", mapSize.width, mapSize.height, 4, buffer.data());
 
     kFInfo("Font: ", fontIndex,
         "\n\tNum glyphs: ", fontFace->num_glyphs,

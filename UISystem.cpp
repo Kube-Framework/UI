@@ -18,7 +18,7 @@ UI::Size UI::UISystem::GetWindowSize(void) noexcept
     const auto extent = GPU::GPUObject::Parent().swapchain().extent();
     kFEnsure(extent.width && extent.height,
         "UI::UISystem::GetWindowSize: Couldn't retreive display DPI");
-    return Size(extent.width, extent.height);
+    return Size(static_cast<Pixel>(extent.width), static_cast<Pixel>(extent.height));
 }
 
 UI::DPI UI::UISystem::GetWindowDPI(void) noexcept
@@ -37,11 +37,11 @@ UI::UISystem::~UISystem(void) noexcept
 UI::UISystem::UISystem(void) noexcept
     :   _windowSize(GetWindowSize()),
         _windowDPI(GetWindowDPI()),
-        _renderer(*this),
         _mouseQueue(parent().getSystem<EventSystem>().addEventQueue<MouseEvent>()),
         _motionQueue(parent().getSystem<EventSystem>().addEventQueue<MotionEvent>()),
         _wheelQueue(parent().getSystem<EventSystem>().addEventQueue<WheelEvent>()),
-        _keyQueue(parent().getSystem<EventSystem>().addEventQueue<KeyEvent>())
+        _keyQueue(parent().getSystem<EventSystem>().addEventQueue<KeyEvent>()),
+        _renderer(*this)
 {
     GPU::GPUObject::Parent().viewSizeDispatcher().add([this] {
         _windowSize = GetWindowSize();
@@ -483,7 +483,7 @@ void kF::UI::UISystem::ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noe
         if (lhs != PixelInfinity)
             lhs = rhs == PixelInfinity ? PixelInfinity : lhs + rhs;
     } else {
-        if (lhs == PixelInfinity | rhs == PixelInfinity) [[likely]]
+        if ((lhs == PixelInfinity) | (rhs == PixelInfinity)) [[likely]]
             lhs = std::min(lhs, rhs);
         else
             lhs = std::max(lhs, rhs);

@@ -3,8 +3,13 @@
  * @ Description: Sprite manager
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wconversion"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#pragma GCC diagnostic pop
 
 #include <Kube/Core/Assert.hpp>
 #include <Kube/GPU/GPU.hpp>
@@ -89,7 +94,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
     // Try to find an existing instance of the queried sprite
     const auto spriteName = Core::Hash(path);
     if (const auto it = _spriteNames.find(spriteName); it != _spriteNames.end()) [[likely]] {
-        const auto spriteIndex = static_cast<SpriteIndex>(std::distance(_spriteNames.begin(), it));
+        const auto spriteIndex = SpriteIndex { _spriteNames.indexOf(it) };
         if (++_spriteCounters.at(spriteIndex) == 1) [[unlikely]]
             cancelDelayedRemove(spriteIndex);
         return Sprite(*this, spriteIndex);
@@ -296,7 +301,6 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
         eventCount,
         [this, &currentCache](const auto index) {
             const auto &event = currentCache.events.at(index);
-            kFInfo("!! EVENT ", event.type == Event::Type::Add ? "Add" : "Remove", " ", event.spriteIndex);
             const auto targetSprite = event.type == Event::Type::Add ? event.spriteIndex : DefaultSprite;
             kFEnsure(_spriteCaches.at(targetSprite).imageView != GPU::NullHandle, "ERRRROOOR");
             return GPU::DescriptorImageInfo(
@@ -336,7 +340,6 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
             if (++delayedRemove.elapsedFrames < frameCount) [[likely]]
                 return false;
             if (!_spriteCounters.at(delayedRemove.spriteIndex)) [[likely]] {
-                kFInfo("!! DESTROY ", delayedRemove.spriteIndex);
                 // Reset sprite name
                 _spriteNames.at(delayedRemove.spriteIndex) = 0u;
 

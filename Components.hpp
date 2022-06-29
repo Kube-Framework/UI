@@ -101,6 +101,22 @@ namespace kF::UI
         template<auto Functor, typename ...Args>
         [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
 
+        /** @brief Wrap any non-const member paint functor within a painter area
+         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static PainterArea Make(ClassType * const instance, Args &&...args) noexcept;
+
+        /** @brief Wrap any const member paint functor within a painter area
+         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static PainterArea Make(const ClassType * const instance, Args &&...args) noexcept;
+
         /** @brief Wrap any static paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments

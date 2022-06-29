@@ -72,6 +72,10 @@ public:
         { reset(); setup<ItemType>(listModel, std::forward<Args>(args)...); }
 
 
+    /** @brief Traverse list of delegate items */
+    template<typename Functor>
+    inline void traverseItemList(Functor &&functor) noexcept;
+
 private:
     /** @brief Setup list model with a list model and a custom delegate */
     template<typename ListModelType, typename Delegate, typename ...Args>
