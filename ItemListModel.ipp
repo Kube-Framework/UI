@@ -43,7 +43,7 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
     _disconnect = [](void * const listModel, const std::uint32_t handle) noexcept {
         reinterpret_cast<ListModelType * const>(listModel)->eventDispatcher().remove(handle);
     };
-    _dispatcherHandle = listModel.eventDispatcher().add([this](const auto &event) { onListModelEvent(event); });
+    _dispatcherHandle = listModel.eventDispatcher().template add<&ItemListModel::onListModelEvent>(this);
     _modelSize = listModel.size();
 
     // Insert list model items

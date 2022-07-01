@@ -208,9 +208,6 @@ private:
     [[nodiscard]] static Pixel ComputeSize(const Pixel parent, const Pixel min, const Pixel max) noexcept;
 
 
-    /** @brief Compute position of an item using its context area and an anchor */
-    static void ComputePosition(Area &area, const Area &contextArea, const Anchor anchor) noexcept;
-
     /** @brief Compute position of a distributed item using its context area and an anchor */
     template<Internal::Axis DistributionAxis>
     static void ComputeDistributedPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept;

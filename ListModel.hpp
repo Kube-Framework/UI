@@ -380,6 +380,11 @@ public:
     [[nodiscard]] inline Core::IteratorRange<ConstIterator> toRange(void) const noexcept
         { return _container.toRange(); }
 
+
+    /** @brief Get the index of an iterator */
+    [[nodiscard]] inline Range indexOf(const ConstIterator pos) const noexcept
+        { return _container.indexOf(pos); }
+
 private:
     Container _container {};
     Core::RemovableDispatcher<void(const ListModelEvent &), Allocator> _eventDispatcher {};

@@ -27,7 +27,6 @@ inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
     };
 }
 
-
 template<auto MemberFunction, typename ClassType, typename ...Args>
     requires std::is_member_function_pointer_v<decltype(MemberFunction)>
 inline kF::UI::PainterArea kF::UI::PainterArea::Make(ClassType * const instance, Args &&...args) noexcept

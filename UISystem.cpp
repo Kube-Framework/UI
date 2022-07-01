@@ -581,8 +581,7 @@ void UI::UISystem::computeChildrenArea(const Area &contextArea, const Anchor anc
         );
 
         // Compute pos
-        area.pos = area.pos;
-        ComputePosition(area, contextArea, anchor);
+        area = Area::ApplyAnchor(contextArea, area.size, anchor);
 
         // Apply children transform
         applyTransform(childEntityIndex, area);
@@ -710,39 +709,6 @@ kF::UI::Pixel kF::UI::UISystem::ComputeSize([[maybe_unused]] const Pixel parent,
     }
 }
 
-void UI::UISystem::ComputePosition(Area &area, const Area &contextArea, const Anchor anchor) noexcept
-{
-    area.pos = contextArea.pos;
-    switch (anchor) {
-    case Anchor::Center:
-        area.pos += (contextArea.size - area.size) / 2;
-        break;
-    case Anchor::Left:
-        area.pos += Size(0, contextArea.size.height / 2 - area.size.height / 2);
-        break;
-    case Anchor::Right:
-        area.pos += Size(contextArea.size.width - area.size.width, contextArea.size.height / 2 - area.size.height / 2);
-        break;
-    case Anchor::Top:
-        area.pos += Size(contextArea.size.width / 2 - area.size.width / 2, 0);
-        break;
-    case Anchor::Bottom:
-        area.pos += Size(contextArea.size.width / 2 - area.size.width / 2, contextArea.size.height - area.size.height);
-        break;
-    case Anchor::TopLeft:
-        break;
-    case Anchor::TopRight:
-        area.pos += Size(contextArea.size.width - area.size.width, 0);
-        break;
-    case Anchor::BottomLeft:
-        area.pos += Size(0, contextArea.size.height - area.size.height);
-        break;
-    case Anchor::BottomRight:
-        area.pos += Size(contextArea.size.width - area.size.width, contextArea.size.height - area.size.height);
-        break;
-    }
-}
-
 template<kF::UI::Internal::Axis DistributionAxis>
 void kF::UI::UISystem::ComputeDistributedPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept
 {
@@ -762,7 +728,7 @@ void kF::UI::UISystem::ComputeDistributedPosition(Point &offset, Area &area, con
         offset.y += area.size.height + spacing;
     }
 
-    ComputePosition(area, transformedArea, anchor);
+    area = Area::ApplyAnchor(transformedArea, area.size, anchor);
 }
 
 void kF::UI::UISystem::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept

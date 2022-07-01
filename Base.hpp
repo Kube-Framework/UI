@@ -187,6 +187,9 @@ namespace kF::UI
 
         /** @brief Apply clip to an area */
         [[nodiscard]] static constexpr Area ApplyClip(const Area &area, const Area &clipArea) noexcept;
+
+        /** @brief Apply anchor to a oosition a parent's child area from its size */
+        [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
     };
 
 

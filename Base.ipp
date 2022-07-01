@@ -302,6 +302,43 @@ constexpr kF::UI::Area kF::UI::Area::ApplyClip(const Area &area, const Area &cli
     return clipped;
 }
 
+constexpr kF::UI::Area kF::UI::Area::ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept
+{
+    Area child {
+        area.pos,
+        childSize
+    };
+    switch (anchor) {
+    case Anchor::Center:
+        child.pos += (area.size - child.size) / 2;
+        break;
+    case Anchor::Left:
+        child.pos += Size(0, area.size.height / 2 - child.size.height / 2);
+        break;
+    case Anchor::Right:
+        child.pos += Size(area.size.width - child.size.width, area.size.height / 2 - child.size.height / 2);
+        break;
+    case Anchor::Top:
+        child.pos += Size(area.size.width / 2 - child.size.width / 2, 0);
+        break;
+    case Anchor::Bottom:
+        child.pos += Size(area.size.width / 2 - child.size.width / 2, area.size.height - child.size.height);
+        break;
+    case Anchor::TopLeft:
+        break;
+    case Anchor::TopRight:
+        child.pos += Size(area.size.width - child.size.width, 0);
+        break;
+    case Anchor::BottomLeft:
+        child.pos += Size(0, area.size.height - child.size.height);
+        break;
+    case Anchor::BottomRight:
+        child.pos += Size(area.size.width - child.size.width, area.size.height - child.size.height);
+        break;
+    }
+    return child;
+}
+
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {

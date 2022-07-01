@@ -7,6 +7,7 @@
 
 #include <Kube/Core/TupleUtils.hpp>
 #include <Kube/Core/Functor.hpp>
+#include <Kube/Core/TrivialFunctor.hpp>
 #include <Kube/Core/SmallVector.hpp>
 #include <Kube/ECS/Base.hpp>
 
@@ -61,11 +62,14 @@ namespace kF::UI
     /** @brief Transform describes a 2D space transformation */
     struct alignas_cacheline Transform
     {
+        /** @brief Transform event functor */
+        using Event = Core::Functor<void(Transform &, Area &), UIAllocator>;
+
         Point origin {}; // Relative origin point [0, 1]
         Size scale { 1.0f, 1.0f }; // Relative scale [-inf, inf]
         Size minSize {}; // Absolute minimum size after scaling
         Point offset {}; // Absolute translation offset
-        Core::Functor<void(Transform &, Area &), UIAllocator> event {}; // Runtime transform event
+        Event event {}; // Runtime transform event
     };
     static_assert_fit_cacheline(Transform);
 
@@ -80,19 +84,26 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(Layout);
 
+    /** @brief Timer event functor */
+    using TimerEvent = Core::Functor<bool(std::uint64_t), UIAllocator>;
+
     /** @brief Timer handler */
     struct alignas_cacheline Timer
     {
-        Core::Functor<bool(std::uint64_t delta), UIAllocator> event {};
+        TimerEvent event {};
         std::int64_t interval {};
         std::int64_t elapsed {};
     };
     static_assert_fit_cacheline(Timer);
 
+
     /** @brief Painter handler */
     struct alignas_half_cacheline PainterArea
     {
-        Core::Functor<void(Painter &, const Area &), UIAllocator> event {};
+        /** @brief PainterArea event functor */
+        using Event = Core::Functor<void(Painter &, const Area &), UIAllocator>;
+
+        Event event {};
 
         /** @brief Wrap any static paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
@@ -143,28 +154,40 @@ namespace kF::UI
     /** @brief Mouse handler */
     struct alignas_half_cacheline MouseEventArea
     {
-        Core::Functor<EventFlags(const MouseEvent &, const Area &), UIAllocator> event {};
+        /** @brief MouseEventArea event functor */
+        using Event = Core::Functor<EventFlags(const MouseEvent &, const Area &), UIAllocator>;
+
+        Event event {};
     };
     static_assert_fit_half_cacheline(MouseEventArea);
 
     /** @brief Motion handler */
     struct alignas_half_cacheline MotionEventArea
     {
-        Core::Functor<EventFlags(const MotionEvent &, const Area &), UIAllocator> event {};
+        /** @brief MotionEventArea event functor */
+        using Event = Core::Functor<EventFlags(const MotionEvent &, const Area &), UIAllocator>;
+
+        Event event {};
     };
     static_assert_fit_half_cacheline(MotionEventArea);
 
     /** @brief Wheel handler */
     struct alignas_half_cacheline WheelEventArea
     {
-        Core::Functor<EventFlags(const WheelEvent &, const Area &), UIAllocator> event {};
+        /** @brief WheelEventArea event functor */
+        using Event = Core::Functor<EventFlags(const WheelEvent &, const Area &), UIAllocator>;
+
+        Event event {};
     };
     static_assert_fit_half_cacheline(WheelEventArea);
 
     /** @brief Key handler */
     struct alignas_half_cacheline KeyEventReceiver
     {
-        Core::Functor<EventFlags(const KeyEvent &), UIAllocator> event {};
+        /** @brief MouseEventArea event functor */
+        using Event = Core::Functor<EventFlags(const KeyEvent &), UIAllocator>;
+
+        Event event {};
     };
     static_assert_fit_half_cacheline(KeyEventReceiver);
 
