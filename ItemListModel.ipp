@@ -18,11 +18,22 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
 
         ItemType *child {};
         auto &modelData = (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)];
+        // #1 model, args...
         if constexpr (std::is_constructible_v<ItemType, typename ListModelType::Type &, Args...>)
             child = &parent.insertChild<ItemType>(index, modelData, args...);
+        // #2 args..., model
         else if constexpr (std::is_constructible_v<ItemType, Args..., typename ListModelType::Type &>)
             child = &parent.insertChild<ItemType>(index, args..., modelData);
-        else
+        // #3
+        else if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+            // #3A *model, args...
+            if constexpr (std::is_constructible_v<ItemType, decltype(*modelData), Args...>)
+                child = &parent.insertChild<ItemType>(index, *modelData, args...);
+            // #3B args..., *model
+            else if constexpr (std::is_constructible_v<ItemType, Args..., decltype(*modelData)>)
+                child = &parent.insertChild<ItemType>(index, args..., *modelData);
+        // #4 args...
+        } else
             child = &parent.insertChild<ItemType>(index);
         delegate(*child, modelData);
     };
