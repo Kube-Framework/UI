@@ -49,27 +49,27 @@ namespace kF::UI
     static void ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
 
     /** @brief Dispatch compute instantiation glyph of a text */
-    template<auto GetX, auto GetY, bool Reversed>
+    template<auto GetX, auto GetY>
     static void DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept;
 
 
     /** @brief Compute all glyphs of a text in packed mode */
-    template<auto GetX, auto GetY, bool Reversed>
+    template<auto GetX, auto GetY>
     static void ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept;
 
     /** @brief Compute the anchor of all glyphs within range */
-    template<auto GetX, auto GetY, bool Reversed>
+    template<auto GetX, auto GetY>
     static void ComputeGlyphPositions(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics) noexcept;
 
     /** @brief Apply the offset of all glyphs within range */
-    template<auto GetX, auto GetY, bool Reversed>
+    template<auto GetX, auto GetY>
     static void ApplyGlyphOffsets(Glyph * const from, Glyph * const to,
             const ComputeParameters &params, const Size metrics, const Point offset) noexcept;
 
 
     /** @brief Compute all glyphs of a text in justified mode */
-    template<auto GetX, auto GetY, bool Reversed>
+    template<auto GetX, auto GetY>
     static void ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept;
 }
 
@@ -127,32 +127,23 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
 
 static void UI::ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
 {
-    if (!text.vertical) [[likely]] {
-        if (!text.reversed) [[likely]] {
-            DispatchComputeGlyph<GetXAxis, GetYAxis, false>(text, out, params);
-        } else {
-            DispatchComputeGlyph<GetXAxis, GetYAxis, true>(text, out, params);
-        }
-    } else {
-        if (!text.reversed) [[likely]] {
-            DispatchComputeGlyph<GetYAxis, GetXAxis, false>(text, out, params);
-        } else {
-            DispatchComputeGlyph<GetYAxis, GetXAxis, true>(text, out, params);
-        }
-    }
+    if (!text.vertical) [[likely]]
+        DispatchComputeGlyph<GetXAxis, GetYAxis>(text, out, params);
+    else
+        DispatchComputeGlyph<GetYAxis, GetXAxis>(text, out, params);
 }
 
-template<auto GetX, auto GetY, bool Reversed>
+template<auto GetX, auto GetY>
 static void UI::DispatchComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
 {
     // Compute glyphs areas
     if (!text.justify) [[likely]]
-        ComputeGlyphPacked<GetX, GetY, Reversed>(out, params);
+        ComputeGlyphPacked<GetX, GetY>(out, params);
     else
-        ComputeGlyphJustified<GetX, GetY, Reversed>(out, params);
+        ComputeGlyphJustified<GetX, GetY>(out, params);
 };
 
-template<auto GetX, auto GetY, bool Reversed>
+template<auto GetX, auto GetY>
 static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexcept
 {
     constexpr auto UpdateMetrics = [](ComputeParameters &params, const Point &pos, Size &metrics) {
@@ -194,10 +185,10 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
         return;
 
     // Compute anchor
-    ComputeGlyphPositions<GetX, GetY, Reversed>(begin, out, params, metrics);
+    ComputeGlyphPositions<GetX, GetY>(begin, out, params, metrics);
 }
 
-template<auto GetX, auto GetY, bool Reversed>
+template<auto GetX, auto GetY>
 static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics) noexcept
 {
     // Compute global offset
@@ -254,10 +245,10 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to, cons
 
     // Apply offsets
     offset += params.text->area.pos;
-    ApplyGlyphOffsets<GetX, GetY, Reversed>(from, to, params, metrics, offset);
+    ApplyGlyphOffsets<GetX, GetY>(from, to, params, metrics, offset);
 }
 
-template<auto GetX, auto GetY, bool Reversed>
+template<auto GetX, auto GetY>
 static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset) noexcept
 {
     constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, const Point rotationOrigin, auto &&computeFunc) {
@@ -303,8 +294,8 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
     }
 }
 
-template<auto GetX, auto GetY, bool Reversed>
+template<auto GetX, auto GetY>
 static void UI::ComputeGlyphJustified(Glyph *&out, ComputeParameters &params) noexcept
 {
-    ComputeGlyphPacked<GetX, GetY, Reversed>(out, params);
+    ComputeGlyphPacked<GetX, GetY>(out, params);
 }

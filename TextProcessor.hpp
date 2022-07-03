@@ -22,7 +22,6 @@ namespace kF::UI
         TextAlignment textAlignment {}; // Text alignment
         bool justify {}; // Text justification
         bool vertical {}; // Vertical text layout
-        bool reversed {}; // Reversed letter order
         float rotationAngle {}; // Rotation in radians
     };
     static_assert_fit_cacheline(Text);

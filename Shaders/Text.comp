@@ -36,11 +36,6 @@ struct Quad
     vec2 p4;
 };
 
-vec2 toRelative(const vec2 point)
-{
-    return (point / context.halfWindowSize) - 1.0;
-}
-
 Quad getUVQuad(const Area uvArea, const vec2 spriteSheetSize, const float vertical)
 {
     const Area ruvArea = Area(
@@ -63,25 +58,14 @@ Quad getUVQuad(const Area uvArea, const vec2 spriteSheetSize, const float vertic
     );
 }
 
-Quad getQuad(const Area area, const vec2 rotationCosSin, const vec2 rotationOrigin, const float vertical)
+Quad getQuad(const Area area, const mat2 rotationMatrix, const vec2 rotationOrigin)
 {
-    const mat2 rotationMatrix = mat2(rotationCosSin.x, -rotationCosSin.y, rotationCosSin.y, rotationCosSin.x);
-
-    // const Quad tmp =
     return Quad(
         toRelative(applyRotation(rotationMatrix, rotationOrigin, area.pos)),
         toRelative(applyRotation(rotationMatrix, rotationOrigin, area.pos + vec2(area.size.x, 0.0))),
         toRelative(applyRotation(rotationMatrix, rotationOrigin, area.pos + area.size)),
         toRelative(applyRotation(rotationMatrix, rotationOrigin, area.pos + vec2(0.0, area.size.y)))
     );
-
-    // return Quad(
-    //     vertical * tmp.p4 - (vertical - 1.0) * tmp.p1,
-    //     vertical * tmp.p1 - (vertical - 1.0) * tmp.p2,
-    //     vertical * tmp.p2 - (vertical - 1.0) * tmp.p3,
-    //     vertical * tmp.p3 - (vertical - 1.0) * tmp.p4
-    // );
-
 }
 
 void main(void)
@@ -93,9 +77,13 @@ void main(void)
     const vec2 spriteSheetSize = textureSize(sprites[instance.spriteIndex], 0);
     const Quad uvQuad = getUVQuad(Area(instance.uvPos, instance.uvSize), spriteSheetSize, instance.vertical);
     // Compute relative area
-    const vec2 size = instance.vertical * instance.uvSize.yx - (instance.vertical - 1.0) * instance.uvSize;
     const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
-    const Quad quad = getQuad(Area(instance.pos, size), rotationCosSin, instance.rotationOrigin, instance.vertical);
+    vec2 size = instance.vertical * instance.uvSize.yx - (instance.vertical - 1.0) * instance.uvSize;
+    const mat2 rotationMatrix = mat2(
+        rotationCosSin.x, -rotationCosSin.y,
+        rotationCosSin.y, rotationCosSin.x
+    );
+    const Quad quad = getQuad(Area(instance.pos, size), rotationMatrix, instance.rotationOrigin);
 
     // debugPrintfEXT("> Instance %u sprite: (%u) APOS (%v2f) RPOS (%v2f) RSIZE (%v2f) UV (%v2f | %v2f) RUV (%v2f | %v2f)\n",
     //     instanceIndex, instance.spriteIndex, instance.pos, rPos, rSize, instance.uvPos, instance.uvSize, rUVPos, rUVSize);
@@ -105,11 +93,12 @@ void main(void)
     // Set vertices
     Vertex vertex;
     vertex.halfSize = size / 2.0;
-    vertex.center = instance.pos + vertex.halfSize;
+    vertex.center = applyRotation(rotationMatrix, instance.rotationOrigin, instance.pos + vertex.halfSize);
     vertex.radius = vec4(0.0);
-    vertex.spriteIndex = instance.spriteIndex; //NullSpriteIndex;
+    vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
     vertex.edgeSoftness = 0.0;
+    vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
     vertex.pos = quad.p1;
     vertex.uv = uvQuad.p1;

@@ -60,3 +60,13 @@ vec2 applyRotation(const mat2 matrix, const vec2 origin, const vec2 point)
 {
     return (matrix * (point - origin)) + origin;
 }
+
+vec2 toRelative(const vec2 point)
+{
+    return (point / context.halfWindowSize) - 1.0;
+}
+
+vec2 toAbsolute(const vec2 point)
+{
+    return (1.0 + point) * context.halfWindowSize;
+}

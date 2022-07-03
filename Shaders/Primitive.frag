@@ -38,7 +38,10 @@ float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, co
 
 mat2 getInversedRotationMatrix(const vec2 rotationCosSin)
 {
-    return inverse(mat2(rotationCosSin.x, -rotationCosSin.y, rotationCosSin.y, rotationCosSin.x));
+    return mat2(
+        rotationCosSin.x, rotationCosSin.y,
+        -rotationCosSin.y, rotationCosSin.x
+    );
 }
 
 vec2 applyRotation(const mat2 matrix, const vec2 origin, const vec2 point)
@@ -69,7 +72,6 @@ void main(void)
     const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize - fragEdgeSoftness, fragRadius);
     // Smooth the result by antialiasing
     const float smoothedAlpha =  1.0 - smoothstep(0.0, fragEdgeSoftness * 2.0, dist);
-
     // Apply final alpha
     outColor.a *= smoothedAlpha;
 }

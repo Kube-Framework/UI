@@ -65,11 +65,6 @@ vec2[4] getUVs(const vec2 size, const uint spriteIndex, const uint fillMode)
     return uvs;
 }
 
-vec2 toRelative(const vec2 point)
-{
-    return (point / context.halfWindowSize) - 1.0;
-}
-
 Quad getQuad(const Area area, const uint spriteIndex, const uint fillMode, const vec2 rotationCosSin)
 {
     Quad quad;
@@ -103,9 +98,9 @@ void main(void)
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
+    const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
     const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
     const Quad quad = getQuad(instance.area, instance.spriteIndex, instance.fillMode, rotationCosSin);
-    const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
 
     // debugPrintfEXT("> Instance %u sprite: (%u) pos: (%v2f) size: (%v2f) realPos: (%v2f) realSize: (%v2f) vertexOffset: verticesOffset %u indexOffset: %u color: (%u ==> %v4f)\n",
     //     instanceIndex, instance.spriteIndex, instance.area.pos, instance.area.size, pos, size, offset.vertexOffset, offset.indexOffset,
