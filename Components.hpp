@@ -76,11 +76,11 @@ namespace kF::UI
     /** @brief Layout describes the children distribution of an item */
     struct alignas_half_cacheline Layout
     {
-        Padding padding {};
-        Pixel spacing {};
         FlowType flowType { FlowType::Stack };
         Anchor anchor { Anchor::Center };
+        Pixel spacing {};
         SpacingType spacingType { SpacingType::Packed };
+        Padding padding {};
     };
     static_assert_fit_half_cacheline(Layout);
 

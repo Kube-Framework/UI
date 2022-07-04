@@ -1,15 +1,15 @@
 /**
  * @ Author: Matthieu Moinvaziri
- * @ Description: ItemListModel
+ * @ Description: ItemList
  */
 
 #include <Kube/Core/Assert.hpp>
 
-#include "ItemListModel.hpp"
+#include "ItemList.hpp"
 
 using namespace kF;
 
-void kF::UI::ItemListModel::reset(void) noexcept
+void kF::UI::ItemList::reset(void) noexcept
 {
     // Disconnect from dispatcher
     if (_listModel)
@@ -24,7 +24,7 @@ void kF::UI::ItemListModel::reset(void) noexcept
     clearChildren();
 }
 
-void UI::ItemListModel::onListModelEvent(const ListModelEvent &event) noexcept
+void UI::ItemList::onListModelEvent(const ListModelEvent &event) noexcept
 {
     switch (event.type) {
     case ListModelEvent::Type::Insert:
@@ -42,10 +42,10 @@ void UI::ItemListModel::onListModelEvent(const ListModelEvent &event) noexcept
     }
 }
 
-void UI::ItemListModel::onInsert(const ListModelEvent::Insert &data) noexcept
+void UI::ItemList::onInsert(const ListModelEvent::Insert &data) noexcept
 {
     kFAssert(data.from < data.to,
-        "UI::ItemListModel::onInsert: Invalid event range (", data.from, ", ", data.to, ")");
+        "UI::ItemList::onInsert: Invalid event range (", data.from, ", ", data.to, ")");
 
     _modelSize += data.to - data.from;
     for (auto it = data.from; it != data.to; ++it) {
@@ -53,33 +53,33 @@ void UI::ItemListModel::onInsert(const ListModelEvent::Insert &data) noexcept
     }
 }
 
-void UI::ItemListModel::onErase(const ListModelEvent::Erase &data) noexcept
+void UI::ItemList::onErase(const ListModelEvent::Erase &data) noexcept
 {
     kFAssert(data.from < data.to,
-        "UI::ItemListModel::onErase: Invalid event range (", data.from, ", ", data.to, ")");
+        "UI::ItemList::onErase: Invalid event range (", data.from, ", ", data.to, ")");
 
     _modelSize -= data.to - data.from;
     removeChild(data.from, data.to);
 }
 
-void UI::ItemListModel::onUpdate(const ListModelEvent::Update &data) noexcept
+void UI::ItemList::onUpdate(const ListModelEvent::Update &data) noexcept
 {
     kFAssert(data.from < data.to,
-        "UI::ItemListModel::onUpdate: Invalid event range (", data.from, ", ", data.to, ")");
+        "UI::ItemList::onUpdate: Invalid event range (", data.from, ", ", data.to, ")");
 
     onErase(ListModelEvent::Erase { data.from, data.to });
     onInsert(ListModelEvent::Insert { data.from, data.to });
 }
 
-void UI::ItemListModel::onResize(const ListModelEvent::Resize &data) noexcept
+void UI::ItemList::onResize(const ListModelEvent::Resize &data) noexcept
 {
     onErase(ListModelEvent::Erase { 0, _modelSize });
     onInsert(ListModelEvent::Insert { 0, data.count });
 }
 
-void UI::ItemListModel::onMove(const ListModelEvent::Move &data) noexcept
+void UI::ItemList::onMove(const ListModelEvent::Move &data) noexcept
 {
     kFAssert(data.from < data.to && (data.out < data.from || data.out > data.to),
-        "UI::ItemListModel::onMove: Invalid event range (", data.from, ", ", data.to, ")");
+        "UI::ItemList::onMove: Invalid event range (", data.from, ", ", data.to, ")");
     moveChild(data.from, data.to, data.out);
 }

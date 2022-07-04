@@ -1,17 +1,17 @@
 /**
  * @ Author: Matthieu Moinvaziri
- * @ Description: ItemListModel
+ * @ Description: ItemList
  */
 
 #include <Kube/Core/Log.hpp>
 
-#include "ItemListModel.hpp"
+#include "ItemList.hpp"
 
 template<typename ListModelType, typename Delegate, typename ...Args>
-inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
+inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
 {
     // Setup delegate
-    _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemListModel &parent, void * const model, const std::uint32_t index) {
+    _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemList &parent, void * const model, const std::uint32_t index) {
         // Query first argument of the delegate using FunctionDecomposer
         using Decomposer = Core::FunctionDecomposerHelper<Delegate>;
         using ItemType = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
@@ -43,7 +43,7 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
     _disconnect = [](void * const listModel, const std::uint32_t handle) noexcept {
         reinterpret_cast<ListModelType * const>(listModel)->eventDispatcher().remove(handle);
     };
-    _dispatcherHandle = listModel.eventDispatcher().template add<&ItemListModel::onListModelEvent>(this);
+    _dispatcherHandle = listModel.eventDispatcher().template add<&ItemList::onListModelEvent>(this);
     _modelSize = listModel.size();
 
     // Insert list model items
@@ -52,13 +52,13 @@ inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Delegate &&de
 }
 
 template<typename ItemType, typename ListModelType, typename ...Args>
-inline void kF::UI::ItemListModel::setup(ListModelType &listModel, Args &&...args) noexcept
+inline void kF::UI::ItemList::setup(ListModelType &listModel, Args &&...args) noexcept
 {
     setup(listModel, [](ItemType &, const ListModelType::Type &) {}, std::forward<Args>(args)...);
 }
 
 template<typename Functor>
-inline void kF::UI::ItemListModel::traverseItemList(Functor &&functor) noexcept
+inline void kF::UI::ItemList::traverseItemList(Functor &&functor) noexcept
 {
     // Query first argument of the Functor using FunctionDecomposer
     using Decomposer = Core::FunctionDecomposerHelper<Functor>;

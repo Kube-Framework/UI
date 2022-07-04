@@ -177,9 +177,36 @@ namespace kF::UI
         [[nodiscard]] constexpr bool operator!=(const Area &other) const noexcept = default;
 
 
+        /** @brief Get left coordinate */
+        [[nodiscard]] constexpr Pixel left(void) const noexcept { return pos.x; }
+
+        /** @brief Get right coordinate */
+        [[nodiscard]] constexpr Pixel right(void) const noexcept { return pos.x + size.width; }
+
+        /** @brief Get top coordinate */
+        [[nodiscard]] constexpr Pixel top(void) const noexcept { return pos.y; }
+
+        /** @brief Get bottom coordinate */
+        [[nodiscard]] constexpr Pixel bottom(void) const noexcept { return pos.y + size.height; }
+
+
+        /** @brief Get center X coordinate */
+        [[nodiscard]] constexpr Pixel centerX(void) const noexcept { return pos.x + size.width / 2.0f; }
+
+        /** @brief Get center Y coordinate */
+        [[nodiscard]] constexpr Pixel centerY(void) const noexcept { return pos.y + size.height / 2.0f; }
+
+        /** @brief Get center position */
+        [[nodiscard]] constexpr Point center(void) const noexcept { return Point(centerX(), centerY()); }
+
+
         /** @brief Check if a point intersect with area */
-        [[nodiscard]] inline bool contains(const Point &point) const noexcept
+        [[nodiscard]] constexpr bool contains(const Point &point) const noexcept
             { return pos.x <= point.x && pos.y <= point.y && pos.x + size.width >= point.x && pos.y + size.height >= point.y; }
+
+
+        /** @brief Create an Area of given 'size' centered to a given 'center' point */
+        [[nodiscard]] static constexpr Area MakeCenter(const Point center, const Size size) noexcept;
 
 
         /** @brief Apply padding to an area */

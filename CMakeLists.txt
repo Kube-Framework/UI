@@ -20,9 +20,9 @@ kube_add_library(UI
         Item.cpp
         Item.hpp
         Item.ipp
-        ItemListModel.cpp
-        ItemListModel.hpp
-        ItemListModel.ipp
+        ItemList.cpp
+        ItemList.hpp
+        ItemList.ipp
         ListModel.hpp
         ListModel.ipp
         Font.cpp

@@ -1,6 +1,6 @@
 /**
  * @ Author: Matthieu Moinvaziri
- * @ Description: ItemListModel
+ * @ Description: ItemList
  */
 
 #pragma once
@@ -12,18 +12,18 @@
 
 namespace kF::UI
 {
-    class ItemListModel;
+    class ItemList;
 }
 
 /** @brief Create a list of item synchronized with a ListModel */
-class kF::UI::ItemListModel : public UI::Item
+class kF::UI::ItemList : public UI::Item
 {
 public:
     /** @brief Virtual destructor */
-    virtual ~ItemListModel(void) noexcept override = default;
+    virtual ~ItemList(void) noexcept override = default;
 
     /** @brief Default constructor */
-    ItemListModel(void) noexcept = default;
+    ItemList(void) noexcept = default;
 
     /** @brief Model and delegate constructor
      *  @note The delegate Item type must be the first argument of the delegate functor
@@ -33,7 +33,7 @@ public:
      *          - ItemType(Args..., Model &)
     */
     template<typename ListModelType, typename Delegate, typename ...Args>
-    inline ItemListModel(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
+    inline ItemList(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
         { setup(listModel, std::forward<Delegate>(delegate), std::forward<Args>(args)...); }
 
     /** @brief Model and a generic delegate for ItemType constructor
@@ -43,7 +43,7 @@ public:
      *          - ItemType(Args..., Model &)
     */
     template<typename ListModelType, typename ItemType, typename ...Args>
-    inline ItemListModel(ListModelType &listModel, std::type_identity<ItemType>, Args &&...args) noexcept
+    inline ItemList(ListModelType &listModel, std::type_identity<ItemType>, Args &&...args) noexcept
         { setup<ItemType>(listModel, std::forward<Args>(args)...); }
 
 
@@ -113,11 +113,11 @@ private:
     /** @brief Disconnect function signature */
     using DisconnectFunc = void(*)(void * const, const std::uint32_t) noexcept;
 
-    Core::Functor<void(ItemListModel &, void * const, const std::uint32_t)> _delegate {};
+    Core::Functor<void(ItemList &, void * const, const std::uint32_t)> _delegate {};
     void *_listModel {};
     DisconnectFunc _disconnect {};
     std::uint32_t _dispatcherHandle {};
     std::uint32_t _modelSize {};
 };
 
-#include "ItemListModel.ipp"
+#include "ItemList.ipp"

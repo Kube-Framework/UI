@@ -277,6 +277,11 @@ namespace kF::UI
         { lhs.left /= rhs; lhs.right /= rhs; lhs.top /= rhs; lhs.bottom /= rhs; return lhs; }
 }
 
+constexpr kF::UI::Area kF::UI::Area::MakeCenter(const Point center, const Size size) noexcept
+{
+    return Area { center - size / 2.0f, size };
+}
+
 constexpr kF::UI::Area kF::UI::Area::ApplyPadding(const Area &area, const Padding &padding) noexcept
 {
     return Area {

@@ -82,9 +82,7 @@ TEST(Item, StackChildrenFill)
             .top = 6,
             .bottom = 8
         };
-        root.attach(UI::Layout {
-            .padding = padding
-        });
+        root.attach(UI::Layout { .padding = padding });
 
         ASSERT_FALSE(uiSystem.tick()); // We don't have any graphics to draw
 
@@ -123,9 +121,7 @@ TEST(Item, StackChildrenAdvanced)
             .top = 6,
             .bottom = 8
         };
-        root.attach(UI::Layout {
-            .padding = padding,
-        });
+        root.attach(UI::Layout { .padding = padding, });
         child2.attach(UI::Constraints::Make(UI::Fill(), UI::Fixed(halfWindowSize.height)));
         child3.attach(UI::Constraints::Make(UI::Fixed(halfWindowSize.width), UI::Fill()));
 
