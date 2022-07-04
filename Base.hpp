@@ -55,7 +55,9 @@ namespace kF::UI
     {
         Stack = 0x0,
         Column,
-        Row
+        Row,
+        FlexColumn,
+        FlexRow
     };
 
     /** @brief Layout Spacing Type */
@@ -336,19 +338,22 @@ namespace kF::UI
         [[nodiscard]] static constexpr Radius MakeRight(const Pixel value) noexcept { return Radius(0.0f, value, 0.0f, value); }
     };
 
-    constexpr auto GetXAxis = []<typename Type>(Type &&data) -> auto & {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+    /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
+    constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
             return data.x;
-        } else {
+        else
             return data.width;
-        }
     };
-    constexpr auto GetYAxis = []<typename Type>(Type &&data) -> auto & {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>) {
+
+    /** @brief Helper that interacts with a Point or a Size to retreive its Y axis component */
+    constexpr auto GetYAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
             return data.y;
-        } else {
+        else
             return data.height;
-        }
     };
 }
 

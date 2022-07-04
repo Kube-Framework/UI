@@ -10,6 +10,7 @@
 
 #include "EventSystem.hpp"
 #include "UISystem.hpp"
+#include "LayoutBuilder.hpp"
 
 using namespace kF;
 
@@ -83,8 +84,11 @@ bool UI::UISystem::tick(void) noexcept
 
     // If the tree is invalid, compute areas then paint
     if (_invalidateTree) {
-        // Process all areas
-        processAreas();
+        // Build layouts using LayoutBuilder
+        _maxDepth = Internal::LayoutBuilder(*this, _traverseContext).build();
+
+        // Sort component tables by depth
+        sortTables();
 
         // Process all paint handlers
         processPainterAreas();
@@ -98,6 +102,21 @@ bool UI::UISystem::tick(void) noexcept
     validateFrame(currentFrame);
 
     return true;
+}
+
+void UI::UISystem::sortTables(void) noexcept
+{
+    const auto ascentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
+        return depthTable.get(lhs).depth < depthTable.get(rhs).depth;
+    };
+    const auto descentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
+        return depthTable.get(lhs).depth > depthTable.get(rhs).depth;
+    };
+
+    getTable<PainterArea>().sort(ascentCompareFunc);
+    getTable<MouseEventArea>().sort(descentCompareFunc);
+    getTable<MotionEventArea>().sort(descentCompareFunc);
+    getTable<KeyEventReceiver>().sort(descentCompareFunc);
 }
 
 kF::UI::Area kF::UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept
@@ -158,7 +177,6 @@ void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
         const auto entity = mouseTable.entities().at(index++);
         auto &area = areaTable.get(entity);
         if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
-            // kFInfo("[processMouseEventAreas] Area ", area, " hit by ", event.pos);
             const auto flags = handler.event(event, area);
             if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
                 invalidate();
@@ -300,458 +318,4 @@ void UI::UISystem::processPainterAreas(void) noexcept
         // Paint self
         handler.event(painter, area);
     }
-}
-
-void UI::UISystem::processAreas(void) noexcept
-{
-    // kFInfo("UI::UISystem::processArea: Process begin");
-    auto &nodeTable = getTable<TreeNode>();
-    // Prepare context caches
-    _traverseContext.setupContext(nodeTable.count(), nodeTable.begin(), getTable<Area>().begin(), getTable<Depth>().begin());
-
-    // Traverse from each childrenless items to root
-    for (const auto &node : nodeTable) {
-        // If the node does not have children, we go upward from here
-        if (node.children.empty()) [[unlikely]] {
-            { // Setup the entity for traversal
-                const auto entityIndex = _traverseContext.entityIndexOf(node);
-                _traverseContext.setupEntity(
-                    nodeTable.entities().at(entityIndex),
-                    entityIndex
-                );
-            }
-            // Traverse from bottom to top
-            traverseConstraints();
-        }
-    }
-
-    { // Setup root entity from top to bottom traversal
-        const auto rootEntity = Item::GetEntity(*_root);
-        const auto rootEntityIndex = _traverseContext.entityIndexOf(nodeTable.get(rootEntity));
-        _traverseContext.setupEntity(rootEntity, rootEntityIndex);
-        auto &area = _traverseContext.areaAt(rootEntityIndex);
-        area.pos = Point {};
-        area.size = _windowSize;
-    }
-
-    // Reset depth cache before traversal
-    _maxDepth = DepthUnit {};
-
-    // Traverse from top to bottom
-    traverseAreas();
-
-    // Sort component tables by depth
-    sortTables();
-
-    // kFInfo("UI::UISystem::processArea: Process end\n");
-}
-
-void UI::UISystem::sortTables(void) noexcept
-{
-    const auto ascentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
-        return depthTable.get(lhs).depth < depthTable.get(rhs).depth;
-    };
-    const auto descentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
-        return depthTable.get(lhs).depth > depthTable.get(rhs).depth;
-    };
-
-    getTable<PainterArea>().sort(ascentCompareFunc);
-    getTable<MouseEventArea>().sort(descentCompareFunc);
-    getTable<MotionEventArea>().sort(descentCompareFunc);
-    getTable<KeyEventReceiver>().sort(descentCompareFunc);
-}
-
-void UI::UISystem::traverseConstraints(void) noexcept
-{
-    using namespace Internal;
-
-    constexpr auto GetCounterInsertIndex = [](const ECS::Entity entity, const TreeNode &parentNode, const Internal::TraverseContext::Counter &counter) -> std::uint32_t {
-        if (counter.empty()) [[likely]]
-            return 0u;
-        return std::min(
-            static_cast<std::uint32_t>(std::distance(parentNode.children.begin(), parentNode.children.find(entity))),
-            counter.size()
-        );
-    };
-
-    // kFInfo("[traverseConstraints] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex());
-
-    { // For each traversed node, we build constraints from children to parents
-        const auto entity = _traverseContext.entity();
-        TreeNode &node = _traverseContext.node();
-        Constraints &constraints = _traverseContext.constraints();
-
-        // If the node has explicit constraints use it, else we use default fill constraints
-        if (!Core::HasFlags(node.componentFlags, ComponentFlags::Constraints)) [[likely]] {
-            constraints = Constraints::Make(Fill(), Fill());
-        } else [[unlikely]] {
-            constraints = get<Constraints>(entity);
-        }
-        // kFInfo("[traverseConstraints] Entity constraints input: ", constraints);
-
-        // If the node has variable constraints and at least one child, compute its size accordingly to its children
-        if (!node.children.empty()) [[likely]] {
-            // Update self constraints depending on children constraints
-            if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
-                computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints, constraints.maxSize.width == PixelHug, constraints.maxSize.height == PixelHug);
-            else [[unlikely]]
-                buildLayoutConstraints(constraints);
-        }
-
-        // kFInfo("[traverseConstraints] Entity ", entity, " transformed constraints: ", constraints);
-
-        // Check if node has parent => stop traversal
-        if (!node.parent) [[unlikely]]
-            return;
-
-        // Setup parent node in traverse context
-        const auto entityIndex = _traverseContext.entityIndex();
-        const auto &parentNode = get<TreeNode>(node.parent);
-        const auto parentEntityIndex = _traverseContext.entityIndexOf(parentNode);
-        _traverseContext.setupEntity(node.parent, parentEntityIndex);
-
-        // Insert entity index into counter list
-        auto &counter = _traverseContext.counter();
-        const auto insertIndex = GetCounterInsertIndex(entity, parentNode, counter);
-        counter.insert(counter.begin() + insertIndex, entityIndex);
-
-        // Check if parent still has unvisited child => stop traversal
-        if (parentNode.children.size() != counter.size()) [[likely]]
-            return;
-    }
-
-    // Process parent constraints
-    traverseConstraints();
-}
-
-void UI::UISystem::buildLayoutConstraints(Constraints &constraints) noexcept
-{
-    using namespace Internal;
-
-    const bool hugWidth = constraints.maxSize.width == PixelHug;
-    const bool hugHeight = constraints.maxSize.height == PixelHug;
-
-    if (!hugWidth && !hugHeight) [[likely]]
-        return;
-
-    const auto &layout = get<Layout>(_traverseContext.entity());
-    switch (layout.flowType) {
-    case FlowType::Stack:
-        computeChildrenConstraints<Accumulate::No, Accumulate::No>(constraints, hugWidth, hugHeight);
-        break;
-    case FlowType::Column:
-        computeChildrenConstraints<Accumulate::No, Accumulate::Yes>(constraints, hugWidth, hugHeight);
-        if (const auto count = _traverseContext.node().children.size(); count)
-            constraints.maxSize.height += layout.spacing * static_cast<Pixel>(count - 1);
-        break;
-    case FlowType::Row:
-        computeChildrenConstraints<Accumulate::Yes, Accumulate::No>(constraints, hugWidth, hugHeight);
-        if (const auto count = _traverseContext.node().children.size(); count)
-            constraints.maxSize.width += layout.spacing * static_cast<Pixel>(count - 1);
-        break;
-    }
-
-    const auto &padding = layout.padding;
-    if (hugWidth) {
-        constraints.maxSize.width += padding.left + padding.right;
-        constraints.minSize.width = std::max(constraints.minSize.width, constraints.maxSize.width);
-    }
-    if (hugHeight) {
-        constraints.maxSize.height += padding.top + padding.bottom;
-        constraints.minSize.height = std::max(constraints.minSize.height, constraints.maxSize.height);
-    }
-}
-
-template<kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate AccumulateY>
-void kF::UI::UISystem::computeChildrenConstraints(Constraints &constraints, const bool hugWidth, const bool hugHeight) noexcept
-{
-    for (const auto childEntityIndex : _traverseContext.counter()) {
-        const auto &rhs = _traverseContext.constraintsAt(childEntityIndex);
-        if (hugWidth)
-            ComputeAxisHugConstraint<AccumulateX>(constraints.maxSize.width, rhs.maxSize.width);
-        if (hugHeight)
-            ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height);
-    }
-}
-
-template<kF::UI::Internal::Accumulate AccumulateValue>
-void kF::UI::UISystem::ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noexcept
-{
-    using namespace Internal;
-
-    if constexpr (AccumulateValue == Accumulate::Yes) {
-        if (lhs != PixelInfinity)
-            lhs = rhs == PixelInfinity ? PixelInfinity : lhs + rhs;
-    } else {
-        if ((lhs == PixelInfinity) | (rhs == PixelInfinity)) [[likely]]
-            lhs = std::min(lhs, rhs);
-        else
-            lhs = std::max(lhs, rhs);
-    }
-}
-
-void UI::UISystem::traverseAreas(void) noexcept
-{
-    using namespace Internal;
-
-    // Set self depth
-    _traverseContext.depth().depth = _maxDepth++;
-
-    // kFInfo("[traverseAreas] Traversing entity ", _traverseContext.entity(), " of index ", _traverseContext.entityIndex(), ", area ", _traverseContext.area(), " and depth ", _traverseContext.depth().depth);
-
-    Area lastClip {};
-    bool clip { false };
-    const auto &node = _traverseContext.node();
-    auto &area = _traverseContext.area();
-
-    // Build position of children using the context node area
-    if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
-        computeChildrenArea(area, Anchor::Center);
-    else [[unlikely]]
-        buildLayoutArea(area);
-
-    if (const auto &nodeCounter = _traverseContext.counter(); !nodeCounter.empty()) [[likely]] {
-        { // Process clip
-            const auto &clipTable = getTable<Clip>();
-            const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
-            if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
-                clip = true;
-                lastClip = _traverseContext.currentClip();
-                _traverseContext.setClip(
-                    Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding),
-                    _maxDepth
-                );
-            }
-        }
-
-        // Traverse each child
-        std::uint32_t childIndex { 0u };
-        for (const auto childEntityIndex : nodeCounter) {
-            _traverseContext.setupEntity(node.children.at(childIndex++), childEntityIndex);
-            traverseAreas();
-        }
-    }
-
-    // Set max child depth
-    _traverseContext.depth().maxChildDepth = _maxDepth - 1;
-
-    // Restore previous clip
-    if (clip) [[unlikely]]
-        _traverseContext.setClip(lastClip, _maxDepth);
-}
-
-void UI::UISystem::buildLayoutArea(const Area &contextArea) noexcept
-{
-    using namespace Internal;
-
-    auto &layout = get<Layout>(_traverseContext.entity());
-    const auto transformedArea = Area::ApplyPadding(contextArea, layout.padding);
-
-    switch (layout.flowType) {
-    case FlowType::Stack:
-        computeChildrenArea(transformedArea, layout.anchor);
-        break;
-    case FlowType::Column:
-        computeDistributedChildrenArea<Axis::Vertical>(transformedArea, layout);
-        break;
-    case FlowType::Row:
-        computeDistributedChildrenArea<Axis::Horizontal>(transformedArea, layout);
-        break;
-    }
-}
-
-void UI::UISystem::computeChildrenArea(const Area &contextArea, const Anchor anchor) noexcept
-{
-    using namespace Internal;
-
-    for (const auto childEntityIndex : _traverseContext.counter()) {
-        const auto &constraints = _traverseContext.constraintsAt(childEntityIndex);
-        auto &area = _traverseContext.areaAt(childEntityIndex);
-
-        // Compute size
-        area.size.width = ComputeSize<BoundType::Unknown>(
-            contextArea.size.width,
-            constraints.minSize.width,
-            constraints.maxSize.width
-        );
-        area.size.height = ComputeSize<BoundType::Unknown>(
-            contextArea.size.height,
-            constraints.minSize.height,
-            constraints.maxSize.height
-        );
-
-        // Compute pos
-        area = Area::ApplyAnchor(contextArea, area.size, anchor);
-
-        // Apply children transform
-        applyTransform(childEntityIndex, area);
-    }
-}
-
-template<kF::UI::Internal::Axis DistributionAxis>
-void kF::UI::UISystem::computeDistributedChildrenArea(const Area &contextArea, const Layout &layout) noexcept
-{
-    using namespace Internal;
-
-    const auto &counter = _traverseContext.counter();
-    const auto childCount = static_cast<Pixel>(counter.size());
-    const auto totalSpacing = layout.spacing * (childCount - 1.0f);
-    Point flexCount {};
-    Size freeSpace {};
-
-    if constexpr (DistributionAxis == Axis::Horizontal)
-        freeSpace.width = contextArea.size.width - totalSpacing;
-    else
-        freeSpace.height = contextArea.size.height - totalSpacing;
-
-    for (const auto childEntityIndex : counter) {
-        const auto &constraints = _traverseContext.constraintsAt(childEntityIndex);
-        auto &area = _traverseContext.areaAt(childEntityIndex);
-
-        // Compute width
-        area.size.width = ComputeDistributedSize<DistributionAxis == Axis::Horizontal>(
-            flexCount.x,
-            freeSpace.width,
-            contextArea.size.width,
-            constraints.minSize.width,
-            constraints.maxSize.width
-        );
-
-        // Compute height
-        area.size.height = ComputeDistributedSize<DistributionAxis == Axis::Vertical>(
-            flexCount.y,
-            freeSpace.height,
-            contextArea.size.height,
-            constraints.minSize.height,
-            constraints.maxSize.height
-        );
-    }
-
-    Point offset = contextArea.pos;
-    const auto flexSize = Size {
-        flexCount.x > 0.0f ? freeSpace.width / flexCount.x : 0.0f,
-        flexCount.y > 0.0f ? freeSpace.height / flexCount.y : 0.0f
-    };
-
-    auto spacing = layout.spacing;
-    if (childCount >= 2.0 && flexSize.width == 0.0f && flexSize.height == 0.0f && layout.spacingType == SpacingType::SpaceBetween) [[unlikely]] {
-        if constexpr (DistributionAxis == Axis::Horizontal)
-            spacing += freeSpace.width / (childCount - 1u);
-        else
-            spacing += freeSpace.height / (childCount - 1u);
-    }
-
-    for (const auto childEntityIndex : counter) {
-        const auto &constraints = _traverseContext.constraintsAt(childEntityIndex);
-        auto &area = _traverseContext.areaAt(childEntityIndex);
-
-        // Compute size of flex items
-        if constexpr (DistributionAxis == Axis::Horizontal) {
-            if (constraints.maxSize.width == PixelInfinity) [[likely]]
-                area.size.width = flexSize.width;
-        } else {
-            if (constraints.maxSize.height == PixelInfinity) [[likely]]
-                area.size.height = flexSize.height;
-        }
-
-        // Compute position
-        ComputeDistributedPosition<DistributionAxis>(offset, area, contextArea, spacing, layout.anchor);
-
-        // Apply children transform
-        applyTransform(childEntityIndex, area);
-    }
-}
-
-template<bool Distribute>
-kF::UI::Pixel kF::UI::UISystem::ComputeDistributedSize([[maybe_unused]] Pixel &flexCount, [[maybe_unused]] Pixel &freeSpace,
-        const Pixel parent, const Pixel min, const Pixel max) noexcept
-{
-    using namespace Internal;
-
-    Pixel out {};
-
-    if constexpr (Distribute) {
-        if (max == PixelInfinity) [[likely]] {
-            ++flexCount;
-        } else [[unlikely]] {
-            out = ComputeSize<BoundType::Fixed>(parent, min, max);
-            freeSpace -= out;
-        }
-    } else {
-        out = ComputeSize<BoundType::Unknown>(parent, min, max);
-    }
-    return out;
-}
-
-template<kF::UI::Internal::BoundType Bound>
-kF::UI::Pixel kF::UI::UISystem::ComputeSize([[maybe_unused]] const Pixel parent, [[maybe_unused]] const Pixel min, const Pixel max) noexcept
-{
-    using namespace Internal;
-
-    constexpr auto ComputeInfinite = [](const auto parent, const auto min) {
-        return std::max(parent, min);
-    };
-
-    constexpr auto ComputeFinite = [](const auto parent, const auto min, const auto max) {
-        return std::max(std::min(parent, max), min);
-    };
-
-    if constexpr (Bound == BoundType::Unknown) {
-        if (max == PixelInfinity) [[likely]]
-            return ComputeInfinite(parent, min);
-        else [[unlikely]]
-            return ComputeFinite(parent, min, max);
-    } else {
-        if constexpr (Bound == BoundType::Infinite)
-            return ComputeInfinite(parent, min);
-        else
-            return ComputeFinite(parent, min, max);
-    }
-}
-
-template<kF::UI::Internal::Axis DistributionAxis>
-void kF::UI::UISystem::ComputeDistributedPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept
-{
-    using namespace Internal;
-
-    Area transformedArea { contextArea };
-
-    if constexpr (DistributionAxis == Axis::Horizontal) {
-        transformedArea.size.width = area.size.width;
-        transformedArea.pos.x = offset.x;
-        transformedArea.pos.y = offset.y;
-        offset.x += area.size.width + spacing;
-    } else {
-        transformedArea.size.height = area.size.height;
-        transformedArea.pos.x = offset.x;
-        transformedArea.pos.y = offset.y;
-        offset.y += area.size.height + spacing;
-    }
-
-    area = Area::ApplyAnchor(transformedArea, area.size, anchor);
-}
-
-void kF::UI::UISystem::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept
-{
-    // Ensure entity has a transform component
-    if (!Core::HasFlags(_traverseContext.nodeAt(entityIndex).componentFlags, ComponentFlags::Transform)) [[likely]]
-        return;
-
-    // Apply child scale transformation
-    const auto entity = getTable<TreeNode>().entities().at(entityIndex);
-    auto &transform = get<Transform>(entity);
-
-    // Update transform
-    if (transform.event) [[unlikely]]
-        transform.event(transform, area);
-
-    const auto scaledSize = Size {
-        transform.minSize.width + (area.size.width - transform.minSize.width) * transform.scale.width,
-        transform.minSize.height + (area.size.height - transform.minSize.height) * transform.scale.height
-    };
-    area.pos = Point {
-        area.pos.x + transform.offset.x + area.size.width * transform.origin.x - scaledSize.width * transform.origin.x,
-        area.pos.y + transform.offset.y + area.size.height * transform.origin.y - scaledSize.height * transform.origin.y
-    };
-    area.size = scaledSize;
 }

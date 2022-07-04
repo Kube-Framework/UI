@@ -19,18 +19,6 @@
 namespace kF::UI
 {
     class UISystem;
-
-    namespace Internal
-    {
-        /** @brief Accumulate template option */
-        enum class Accumulate { No, Yes };
-
-        /** @brief Axis template option */
-        enum class Axis { Horizontal, Vertical };
-
-        /** @brief Bound template option */
-        enum class BoundType { Unknown, Fixed, Infinite };
-    }
 }
 
 /** @brief UI renderer system */
@@ -76,6 +64,11 @@ public:
 
     /** @brief Get scene max depth */
     [[nodiscard]] DepthUnit maxDepth(void) const noexcept { return _maxDepth; }
+
+
+    /** @brief Get root item */
+    [[nodiscard]] Item &root(void) noexcept { return *_root; }
+    [[nodiscard]] const Item &root(void) const noexcept { return *_root; }
 
 
     /** @brief Set clear color of UI renderer */
@@ -131,6 +124,10 @@ private:
     [[nodiscard]] Area getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept;
 
 
+    /** @brief Sort every component tables that requires strong ordering */
+    void sortTables(void) noexcept;
+
+
     /** @brief Process each event handler by consuming its queue */
     void processEventHandlers(void) noexcept;
 
@@ -159,61 +156,6 @@ private:
 
     /** @brief Process all PainterArea instances */
     void processPainterAreas(void) noexcept;
-
-
-    /** @brief Process all Area instances */
-    void processAreas(void) noexcept;
-
-    /** @brief Process item constraints in recursive bottom to top order */
-    void traverseConstraints(void) noexcept;
-
-    /** @brief Process constraints of a layout item */
-    void buildLayoutConstraints(Constraints &constraints) noexcept;
-
-    /** @brief Process item areas in recursive top to bottom order */
-    void traverseAreas(void) noexcept;
-
-    /** @brief Process area of a layout item children */
-    void buildLayoutArea(const Area &contextArea) noexcept;
-
-
-    /** @brief Sort every component tables that requires strong ordering */
-    void sortTables(void) noexcept;
-
-
-    /** @brief Compute children constraints to given constraints */
-    template<Internal::Accumulate AccumulateX, Internal::Accumulate AccumulateY>
-    void computeChildrenConstraints(Constraints &constraints, const bool hugWidth, const bool hugHeight) noexcept;
-
-    /** @brief Compute axis constraint (rhs) to another (lhs) */
-    template<Internal::Accumulate AccumulateValue>
-    static void ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noexcept;
-
-
-    /** @brief Compute every children area within the given context area */
-    void computeChildrenArea(const Area &contextArea, const Anchor anchor) noexcept;
-
-    /** @brief Compute every children area within the given context area, distributing over axis */
-    template<Internal::Axis DistributionAxis>
-    void computeDistributedChildrenArea(const Area &contextArea, const Layout &layout) noexcept;
-
-    /** @brief Compute distributed child size inside parent space according to min/max range and spacing */
-    template<bool Distribute>
-    [[nodiscard]] static Pixel ComputeDistributedSize(Pixel &flexCount, Pixel &freeSpace,
-            const Pixel parent, const Pixel min, const Pixel max) noexcept;
-
-
-    /** @brief Compute child size inside parent space according to min/max range */
-    template<Internal::BoundType Bound>
-    [[nodiscard]] static Pixel ComputeSize(const Pixel parent, const Pixel min, const Pixel max) noexcept;
-
-
-    /** @brief Compute position of a distributed item using its context area and an anchor */
-    template<Internal::Axis DistributionAxis>
-    static void ComputeDistributedPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept;
-
-    /** @brief Apply transform to item area */
-    void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;
 
 
     /** @brief Query current window Size */

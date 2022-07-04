@@ -23,6 +23,8 @@ kube_add_library(UI
         ItemList.cpp
         ItemList.hpp
         ItemList.ipp
+        LayoutBuilder.cpp
+        LayoutBuilder.hpp
         ListModel.hpp
         ListModel.ipp
         Font.cpp
