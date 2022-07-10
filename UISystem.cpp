@@ -116,6 +116,7 @@ void UI::UISystem::sortTables(void) noexcept
     getTable<PainterArea>().sort(ascentCompareFunc);
     getTable<MouseEventArea>().sort(descentCompareFunc);
     getTable<MotionEventArea>().sort(descentCompareFunc);
+    getTable<WheelEventArea>().sort(descentCompareFunc);
     getTable<KeyEventReceiver>().sort(descentCompareFunc);
 }
 
@@ -173,14 +174,19 @@ void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
     auto &areaTable = getTable<Area>();
     auto &mouseTable = getTable<MouseEventArea>();
 
+    if (_mouseLock != ECS::NullEntity) [[unlikely]] {
+        auto &handler = mouseTable.get(_mouseLock);
+        const auto flags = handler.event(event, areaTable.get(_mouseLock));
+        if (processEventFlags(mouseTable, handler, _mouseLock, flags))
+            return;
+    }
+
     for (std::uint32_t index {}; const auto &handler : mouseTable) {
         const auto entity = mouseTable.entities().at(index++);
         auto &area = areaTable.get(entity);
         if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
-            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
-                invalidate();
-            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+            if (processEventFlags(mouseTable, handler, _mouseLock, flags))
                 break;
         }
     }
@@ -196,9 +202,7 @@ void kF::UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcep
         auto &area = areaTable.get(entity);
         if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
-            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
-                invalidate();
-            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+            if (processEventFlags(motionTable, handler, _motionLock, flags))
                 break;
         }
     }
@@ -214,9 +218,7 @@ void kF::UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
         auto &area = areaTable.get(entity);
         if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
             const auto flags = handler.event(event, area);
-            if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
-                invalidate();
-            if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+            if (processEventFlags(wheelTable, handler, _wheelLock, flags))
                 break;
         }
     }
@@ -228,11 +230,27 @@ void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 
     for (const auto &handler : keyTable) {
         const auto flags = handler.event(event);
-        if (Core::HasFlags(flags, EventFlags::Invalidate)) [[likely]]
-            invalidate();
-        if (!Core::HasFlags(flags, EventFlags::Propagate)) [[likely]]
+        if (processEventFlags(keyTable, handler, _keyLock, flags))
             break;
     }
+}
+
+template<typename Table>
+inline bool kF::UI::UISystem::processEventFlags(
+        const Table &table, const Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept
+{
+    // Invalidate frame flag
+    if (Core::HasFlags(flags, EventFlags::Invalidate))
+        invalidate();
+
+    // Lock flag
+    if (Core::HasFlags(flags, EventFlags::Lock))
+        lock = table.entities().at(static_cast<ECS::EntityIndex>(std::distance(table.begin(), &value)));
+    else
+        lock = ECS::NullEntity;
+
+    // Return true on stop
+    return !Core::HasFlags(flags, EventFlags::Propagate);
 }
 
 void UI::UISystem::processElapsedTime(void) noexcept

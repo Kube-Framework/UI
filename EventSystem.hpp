@@ -53,15 +53,16 @@ private:
     // Cacheline N
     UI::Point _lastWheelPosition {};
     GPU::Extent2D _resizeExtent {};
+    Modifier _modifiers {};
     Core::Vector<MouseEvent, EventAllocator> _mouseEvents {};
     Core::Vector<MotionEvent, EventAllocator> _motionEvents {};
-    Core::Vector<WheelEvent, EventAllocator> _wheelEvents {};
     // Cacheline N + 1
+    Core::Vector<WheelEvent, EventAllocator> _wheelEvents {};
     Core::Vector<KeyEvent, EventAllocator> _keyEvents {};
     Core::Vector<EventQueuePtr<MouseEvent>, EventAllocator> _mouseQueues {};
     Core::Vector<EventQueuePtr<MotionEvent>, EventAllocator> _motionQueues {};
-    Core::Vector<EventQueuePtr<WheelEvent>, EventAllocator> _wheelQueues {};
     // Cacheline N + 2
+    Core::Vector<EventQueuePtr<WheelEvent>, EventAllocator> _wheelQueues {};
     Core::Vector<EventQueuePtr<KeyEvent>, EventAllocator> _keyQueues {};
 };
 

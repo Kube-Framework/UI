@@ -84,7 +84,7 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .pos = _lastWheelPosition,
             .motion = Point(static_cast<Pixel>(event.motion.xrel), static_cast<Pixel>(event.motion.yrel)),
             .buttons = static_cast<Button>(event.motion.state),
-            .modifiers = Modifier::None,
+            .modifiers = _modifiers,
             .timestamp = event.motion.timestamp
         });
         break;
@@ -94,15 +94,16 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .pos = Point(static_cast<Pixel>(event.button.x), static_cast<Pixel>(event.button.y)),
             .button = static_cast<Button>(1u << (event.button.button - 1)),
             .state = static_cast<bool>(event.button.state),
-            .modifiers = Modifier::None,
+            .modifiers = _modifiers,
             .timestamp = event.button.timestamp
         });
         break;
     case SDL_KEYDOWN:
     case SDL_KEYUP:
+        _modifiers = static_cast<Modifier>(SDL_GetModState());
         _keyEvents.push(KeyEvent {
             .key = static_cast<Key>(event.key.keysym.sym),
-            .modifiers = Modifier::None,
+            .modifiers = _modifiers,
             .state = static_cast<bool>(event.key.state),
             .repeat = static_cast<bool>(event.key.repeat),
             .timestamp = event.key.timestamp
@@ -112,6 +113,7 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
         _wheelEvents.push(WheelEvent {
             .pos = _lastWheelPosition,
             .offset = Point(event.wheel.preciseX, event.wheel.preciseY),
+            .modifiers = _modifiers,
             .timestamp = event.wheel.timestamp
         });
         break;

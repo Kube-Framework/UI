@@ -34,6 +34,10 @@ namespace kF::UI
 class kF::UI::Internal::LayoutBuilder
 {
 public:
+    /** @brief Alias to entity index range */
+    using EntityIndexRange = Core::IteratorRange<const ECS::EntityIndex *>;
+
+
     /** @brief Destructor */
     inline ~LayoutBuilder(void) noexcept = default;
 
@@ -59,8 +63,8 @@ private:
     void computeChildrenHugConstraints(Constraints &constraints, const Pixel spacing, const bool hugWidth, const bool hugHeight) noexcept;
 
     /** @brief Compute flex 'constraints' using children constraints */
-    template<Axis FlexAxis, auto GetX, auto GetY>
-    void computeFlexChildrenHugConstraints(Constraints &constraints, const Pixel spacing, const bool hugWidth, const bool hugHeight) noexcept;
+    template<Axis DistributionAxis, auto GetX, auto GetY>
+    void computeFlexChildrenHugConstraints(Constraints &constraints, const Layout &layout, const bool hugWidth, const bool hugHeight) noexcept;
 
 
     /** @brief Process item areas in recursive top to bottom order */
@@ -73,12 +77,18 @@ private:
     void computeChildrenArea(const Area &contextArea, const Anchor anchor) noexcept;
 
     /** @brief Compute every children area within the given context area, distributing over axis */
-    template<Axis DistributionAxis>
-    void computeLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept;
+    template<Axis DistributionAxis, auto GetX, auto GetY>
+    void computeLayoutChildrenArea(const Area &contextArea, const Layout &layout, const EntityIndexRange &childEntityRange) noexcept;
 
     /** @brief Compute every children area within the given context area, distributing over axis */
-    template<Axis DistributionAxis>
+    template<Axis DistributionAxis, auto GetX, auto GetY>
     void computeFlexLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept;
+
+    /** @brief Compute a flex layout line */
+    template<auto GetX, auto GetY>
+    void computeFlexLayoutChildrenLineMetrics(
+            EntityIndexRange &childIndexRange, const Pixel spacing, const Pixel lineWidth, Pixel &lineHeight, Pixel &lineRemain) noexcept;
+
 
     /** @brief Apply transform to item area */
     void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;

@@ -31,15 +31,15 @@ namespace kF::UI
     /** @brief Image fill mode */
     enum class FillMode : std::uint32_t
     {
-        Crop = 0,
+        Crop,
         Fit,
         Stretch
     };
 
     /** @brief Layout anchor */
-    enum class Anchor : std::uint32_t
+    enum class Anchor : std::uint8_t
     {
-        Center = 0,
+        Center,
         Left,
         Right,
         Top,
@@ -50,21 +50,21 @@ namespace kF::UI
         BottomRight
     };
 
+    /** @brief Layout Spacing Type */
+    enum class SpacingType : std::uint8_t
+    {
+        Packed,
+        SpaceBetween
+    };
+
     /** @brief Layout Flow Type */
     enum class FlowType : std::uint32_t
     {
-        Stack = 0x0,
+        Stack,
         Column,
         Row,
         FlexColumn,
         FlexRow
-    };
-
-    /** @brief Layout Spacing Type */
-    enum class SpacingType : std::uint32_t
-    {
-        Packed = 0x0,
-        SpaceBetween
     };
 
     /** @brief Text alignment */
@@ -111,6 +111,10 @@ namespace kF::UI
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Color &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Color &other) const noexcept = default;
+
+        /** @brief Apply alpha to a color (override color's alpha) */
+        [[nodiscard]] static constexpr Color ApplyAlpha(const Color color, const std::uint8_t alpha) noexcept
+            { return Color { color.r, color.g, color.b, alpha }; }
     };
 
 
@@ -217,7 +221,7 @@ namespace kF::UI
         /** @brief Apply clip to an area */
         [[nodiscard]] static constexpr Area ApplyClip(const Area &area, const Area &clipArea) noexcept;
 
-        /** @brief Apply anchor to a oosition a parent's child area from its size */
+        /** @brief Apply anchor to a position a parent's child area from its size */
         [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
     };
 

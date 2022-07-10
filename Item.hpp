@@ -59,13 +59,13 @@ public:
 
     /** @brief Add a child to item children list */
     template<typename Derived, typename ...Args>
-        requires std::derived_from<Derived, kF::UI::Item>
+        requires std::derived_from<Derived, kF::UI::Item> && std::is_constructible_v<Derived, Args...>
     inline Derived &addChild(Args &&...args) noexcept
         { return reinterpret_cast<Derived &>(addChild(DerivedItemPtr<Derived>::Make(std::forward<Args>(args)...))); }
 
     /** @brief Insert a child at position of item children list */
     template<typename Derived, typename ...Args>
-        requires std::derived_from<Derived, kF::UI::Item>
+        requires std::derived_from<Derived, kF::UI::Item> && std::is_constructible_v<Derived, Args...>
     inline Derived &insertChild(const std::uint32_t index, Args &&...args) noexcept
         { return reinterpret_cast<Derived &>(insertChild(index, DerivedItemPtr<Derived>::Make(std::forward<Args>(args)...))); }
 

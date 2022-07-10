@@ -16,18 +16,9 @@ namespace kF::UI::Internal
     template<Accumulate AccumulateValue>
     void ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noexcept;
 
-    /** @brief Compute distributed child size inside parent space according to min/max range and spacing */
-    template<bool Distribute>
-    [[nodiscard]] Pixel ComputeLayoutChildSize([[maybe_unused]] Pixel &flexCount, [[maybe_unused]] Pixel &freeSpace,
-            const Pixel parent, const Pixel min, const Pixel max) noexcept;
-
     /** @brief Compute child size inside parent space according to min/max range */
     template<BoundType Bound>
     [[nodiscard]] Pixel ComputeSize([[maybe_unused]] const Pixel parent, [[maybe_unused]] const Pixel min, const Pixel max) noexcept;
-
-    /** @brief Compute position of a distributed item using its context area and an anchor */
-    template<Axis DistributionAxis>
-    void ComputeLayoutChildPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept;
 }
 
 UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
@@ -114,6 +105,12 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
             }
         }
 
+        // Ensure constraints is in range
+        if (constraints.minSize.width > constraints.maxSize.width)
+            constraints.maxSize.width = constraints.minSize.width;
+        if (constraints.minSize.height > constraints.maxSize.height)
+            constraints.maxSize.height = constraints.minSize.height;
+
         // Ensure node has parent, else stop traversal
         if (!node.parent) [[unlikely]]
             return;
@@ -158,32 +155,26 @@ void UI::Internal::LayoutBuilder::buildLayoutConstraints(Constraints &constraint
         computeChildrenHugConstraints<Accumulate::Yes, Accumulate::No>(constraints, layout.spacing, hugWidth, hugHeight);
         break;
     case FlowType::FlexColumn:
-        computeFlexChildrenHugConstraints<Axis::Vertical, GetXAxis, GetYAxis>(constraints, layout.spacing, hugWidth, hugHeight);
+        computeFlexChildrenHugConstraints<Axis::Vertical, GetXAxis, GetYAxis>(constraints, layout, hugWidth, hugHeight);
         break;
     case FlowType::FlexRow:
-        computeFlexChildrenHugConstraints<Axis::Horizontal, GetYAxis, GetXAxis>(constraints, layout.spacing, hugWidth, hugHeight);
+        computeFlexChildrenHugConstraints<Axis::Horizontal, GetYAxis, GetXAxis>(constraints, layout, hugWidth, hugHeight);
         break;
     }
 
-    const auto &padding = layout.padding;
     if (hugWidth) {
-        constraints.maxSize.width += padding.left + padding.right;
+        constraints.maxSize.width += layout.padding.left + layout.padding.right;
         constraints.minSize.width = std::max(constraints.minSize.width, constraints.maxSize.width);
     }
+
     if (hugHeight) {
-        constraints.maxSize.height += padding.top + padding.bottom;
+        constraints.maxSize.height += layout.padding.top + layout.padding.bottom;
         constraints.minSize.height = std::max(constraints.minSize.height, constraints.maxSize.height);
     }
-
-    // Ensure we are equal or larger than min constraints
-    if (constraints.minSize.width > constraints.maxSize.width) [[unlikely]]
-        constraints.maxSize.width = constraints.minSize.width;
-    if (constraints.minSize.height > constraints.maxSize.height) [[unlikely]]
-        constraints.maxSize.height = constraints.minSize.height;
 }
 
 template<kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate AccumulateY>
-void kF::UI::Internal::LayoutBuilder::computeChildrenHugConstraints(Constraints &constraints, [[maybe_unused]] const Pixel spacing,
+void UI::Internal::LayoutBuilder::computeChildrenHugConstraints(Constraints &constraints, [[maybe_unused]] const Pixel spacing,
         const bool hugWidth, const bool hugHeight) noexcept
 {
     for (const auto childEntityIndex : _traverseContext->counter()) {
@@ -194,10 +185,13 @@ void kF::UI::Internal::LayoutBuilder::computeChildrenHugConstraints(Constraints 
             ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height);
     }
 
-    if constexpr (AccumulateX == Accumulate::Yes)
-        constraints.maxSize.width += spacing * static_cast<Pixel>(_traverseContext->counter().size() - 1);
-    else if constexpr (AccumulateY == Accumulate::Yes)
-        constraints.maxSize.height += spacing * static_cast<Pixel>(_traverseContext->counter().size() - 1);
+    if constexpr (AccumulateX == Accumulate::Yes) {
+        if (hugWidth)
+            constraints.maxSize.width += spacing * static_cast<Pixel>(_traverseContext->counter().size() - 1);
+    } else if constexpr (AccumulateY == Accumulate::Yes) {
+        if (hugHeight)
+            constraints.maxSize.height += spacing * static_cast<Pixel>(_traverseContext->counter().size() - 1);
+    }
 }
 
 template<kF::UI::Internal::Accumulate AccumulateValue>
@@ -214,11 +208,11 @@ void kF::UI::Internal::ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noe
     }
 }
 
-template<kF::UI::Internal::Axis FlexAxis, auto GetX, auto GetY>
-void kF::UI::Internal::LayoutBuilder::computeFlexChildrenHugConstraints(Constraints &constraints, const Pixel spacing,
-        const bool hugWidth, const bool hugHeight) noexcept
+template<kF::UI::Internal::Axis DistributionAxis, auto GetX, auto GetY>
+void UI::Internal::LayoutBuilder::computeFlexChildrenHugConstraints(Constraints &constraints, const Layout &layout,
+        [[maybe_unused]] const bool hugWidth, [[maybe_unused]] const bool hugHeight) noexcept
 {
-    if constexpr (FlexAxis == Axis::Vertical) {
+    if constexpr (DistributionAxis == Axis::Vertical) {
         kFAssert(!hugWidth,
             "UI::LayoutBuilder::computeFlexChildrenConstraints: FlowType::FlexColumn cannot take Hug as width constraint");
         kFAssert(constraints.maxSize.width != PixelInfinity,
@@ -230,34 +224,22 @@ void kF::UI::Internal::LayoutBuilder::computeFlexChildrenHugConstraints(Constrai
             "UI::LayoutBuilder::computeFlexChildrenConstraints: FlowType::FlexRow cannot take Fill height constraint when width is Hug constraint");
     }
 
-    const auto lineSize = GetX(constraints.maxSize);
-    auto lineRemain = lineSize;
+    auto childIndexRange = std::as_const(_traverseContext->counter()).toRange();
+    const auto lineWidth = GetX(constraints.maxSize);
 
-    for (const auto childEntityIndex : _traverseContext->counter()) {
-        const auto &rhs = _traverseContext->constraintsAt(childEntityIndex);
+    // Loop over each child to compute self constraints
+    while (childIndexRange.from != childIndexRange.to) {
+        Pixel lineHeight {};
+        Pixel lineRemain { lineWidth };
 
-        // Compute hug axis
-        ComputeAxisHugConstraint<Accumulate::Yes>(GetY(constraints.maxSize), GetY(rhs.maxSize));
+        // Compute current line metrics
+        computeFlexLayoutChildrenLineMetrics<GetX, GetY>(childIndexRange, layout.flexSpacing, lineWidth, lineHeight, lineRemain);
 
-        // Compute flex axis
-        const auto maxInsertSize = GetX(rhs.maxSize) != PixelInfinity ? GetX(rhs.maxSize) : lineSize;
-        auto insertSize = maxInsertSize;
-        // Check line edge
-        if (maxInsertSize > lineRemain) [[unlikely]] {
-            insertSize = std::max(GetX(rhs.minSize), lineRemain);
-            // We cannot fit in line
-            if (insertSize > lineRemain) {
-                // If the line is not empty we go to the next line (else we draw minimum)
-                if (lineRemain != lineSize) [[likely]] {
-                    // If the max insert size fits lineSize use it else use minimum (we know insertSize is rhs.minSize)
-                    if (maxInsertSize <= lineSize)
-                        insertSize = maxInsertSize;
-                }
-            }
-        }
-        lineRemain -= insertSize + spacing;
-        if (lineRemain <= 0.0) [[unlikely]]
-            lineRemain = lineSize;
+        // Increment constraints hug axis by lineHeight
+        if (auto &hugConstraint = GetY(constraints.maxSize); hugConstraint != PixelInfinity && lineHeight != PixelInfinity)
+            hugConstraint += lineHeight + layout.spacing * static_cast<Pixel>(childIndexRange.from != childIndexRange.to);
+        else
+            hugConstraint = PixelInfinity;
     }
 }
 
@@ -311,22 +293,23 @@ void UI::Internal::LayoutBuilder::buildLayoutArea(const Area &contextArea) noexc
 {
     auto &layout = _uiSystem->get<Layout>(_traverseContext->entity());
     const auto transformedArea = Area::ApplyPadding(contextArea, layout.padding);
+    const auto childIndexRange = std::as_const(_traverseContext->counter()).toRange();
 
     switch (layout.flowType) {
     case FlowType::Stack:
         computeChildrenArea(transformedArea, layout.anchor);
         break;
     case FlowType::Column:
-        computeLayoutChildrenArea<Axis::Vertical>(transformedArea, layout);
+        computeLayoutChildrenArea<Axis::Vertical, GetYAxis, GetXAxis>(transformedArea, layout, childIndexRange);
         break;
     case FlowType::Row:
-        computeLayoutChildrenArea<Axis::Horizontal>(transformedArea, layout);
+        computeLayoutChildrenArea<Axis::Horizontal, GetXAxis, GetYAxis>(transformedArea, layout, childIndexRange);
         break;
     case FlowType::FlexColumn:
-        computeFlexLayoutChildrenArea<Axis::Vertical>(transformedArea, layout);
+        computeFlexLayoutChildrenArea<Axis::Vertical, GetXAxis, GetYAxis>(transformedArea, layout);
         break;
     case FlowType::FlexRow:
-        computeFlexLayoutChildrenArea<Axis::Horizontal>(transformedArea, layout);
+        computeFlexLayoutChildrenArea<Axis::Horizontal, GetYAxis, GetXAxis>(transformedArea, layout);
         break;
     }
 }
@@ -357,95 +340,57 @@ void UI::Internal::LayoutBuilder::computeChildrenArea(const Area &contextArea, c
     }
 }
 
-template<kF::UI::Internal::Axis DistributionAxis>
-void kF::UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept
+template<kF::UI::Internal::Axis DistributionAxis, auto GetX, auto GetY>
+void UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextArea, const Layout &layout, const EntityIndexRange &childIndexRange) noexcept
 {
-    const auto &counter = _traverseContext->counter();
-    const auto childCount = static_cast<Pixel>(counter.size());
+    const auto childCount = static_cast<Pixel>(childIndexRange.size());
     const auto totalSpacing = layout.spacing * (childCount - 1.0f);
-    Point flexCount {};
-    Size freeSpace {};
+    Pixel flexCount {};
+    Pixel freeSpace = GetX(contextArea.size) - totalSpacing;
 
-    if constexpr (DistributionAxis == Axis::Horizontal)
-        freeSpace.width = contextArea.size.width - totalSpacing;
-    else
-        freeSpace.height = contextArea.size.height - totalSpacing;
-
-    for (const auto childEntityIndex : counter) {
+    for (const auto childEntityIndex : childIndexRange) {
         const auto &constraints = _traverseContext->constraintsAt(childEntityIndex);
         auto &area = _traverseContext->areaAt(childEntityIndex);
 
-        // Compute width
-        area.size.width = Internal::ComputeLayoutChildSize<DistributionAxis == Axis::Horizontal>(
-            flexCount.x,
-            freeSpace.width,
-            contextArea.size.width,
-            constraints.minSize.width,
-            constraints.maxSize.width
-        );
+        // Non-distributed axis
+        GetY(area.size) = Internal::ComputeSize<BoundType::Unknown>(GetY(contextArea.size), GetY(constraints.minSize), GetY(constraints.maxSize));
 
-        // Compute height
-        area.size.height = Internal::ComputeLayoutChildSize<DistributionAxis == Axis::Vertical>(
-            flexCount.y,
-            freeSpace.height,
-            contextArea.size.height,
-            constraints.minSize.height,
-            constraints.maxSize.height
-        );
+        // Distributed axis
+        if (GetX(constraints.maxSize) == PixelInfinity) [[likely]] {
+            ++flexCount;
+        } else [[unlikely]] {
+            GetX(area.size) = Internal::ComputeSize<BoundType::Fixed>(GetX(contextArea.size), GetX(constraints.minSize), GetX(constraints.maxSize));
+            freeSpace -= GetX(area.size);
+        }
     }
 
     Point offset = contextArea.pos;
-    const auto flexSize = Size {
-        flexCount.x > 0.0f ? freeSpace.width / flexCount.x : 0.0f,
-        flexCount.y > 0.0f ? freeSpace.height / flexCount.y : 0.0f
-    };
+    const auto flexSize = flexCount ? freeSpace / flexCount : 0.0f;
 
     auto spacing = layout.spacing;
-    if (childCount >= 2.0 && flexSize.width == 0.0f && flexSize.height == 0.0f && layout.spacingType == SpacingType::SpaceBetween) [[unlikely]] {
-        if constexpr (DistributionAxis == Axis::Horizontal)
-            spacing += freeSpace.width / (childCount - 1u);
-        else
-            spacing += freeSpace.height / (childCount - 1u);
-    }
+    if (childCount >= 2.0 && flexSize == 0.0f && layout.spacingType == SpacingType::SpaceBetween) [[unlikely]]
+        spacing += freeSpace / (childCount - 1u);
 
-    for (const auto childEntityIndex : counter) {
+    for (const auto childEntityIndex : childIndexRange) {
         const auto &constraints = _traverseContext->constraintsAt(childEntityIndex);
         auto &area = _traverseContext->areaAt(childEntityIndex);
 
         // Compute size of flex items
-        if constexpr (DistributionAxis == Axis::Horizontal) {
-            if (constraints.maxSize.width == PixelInfinity) [[likely]]
-                area.size.width = flexSize.width;
-        } else {
-            if (constraints.maxSize.height == PixelInfinity) [[likely]]
-                area.size.height = flexSize.height;
-        }
+        if (GetX(constraints.maxSize) == PixelInfinity) [[likely]]
+            GetX(area.size) = flexSize;
 
-        // Compute position
-        Internal::ComputeLayoutChildPosition<DistributionAxis>(offset, area, contextArea, spacing, layout.anchor);
+        { // Compute child position
+            Area transformedArea { contextArea };
+            GetX(transformedArea.size) = GetX(area.size);
+            GetX(transformedArea.pos) = GetX(offset);
+            GetY(transformedArea.pos) = GetY(offset);
+            GetX(offset) += GetX(area.size) + spacing;
+            area = Area::ApplyAnchor(transformedArea, area.size, layout.anchor);
+        }
 
         // Apply children transform
         applyTransform(childEntityIndex, area);
     }
-}
-
-template<bool Distribute>
-UI::Pixel kF::UI::Internal::ComputeLayoutChildSize([[maybe_unused]] Pixel &flexCount, [[maybe_unused]] Pixel &freeSpace,
-        const Pixel parent, const Pixel min, const Pixel max) noexcept
-{
-    Pixel out {};
-
-    if constexpr (Distribute) {
-        if (max == PixelInfinity) [[likely]] {
-            ++flexCount;
-        } else [[unlikely]] {
-            out = Internal::ComputeSize<BoundType::Fixed>(parent, min, max);
-            freeSpace -= out;
-        }
-    } else {
-        out = Internal::ComputeSize<BoundType::Unknown>(parent, min, max);
-    }
-    return out;
 }
 
 template<kF::UI::Internal::BoundType Bound>
@@ -472,33 +417,91 @@ UI::Pixel kF::UI::Internal::ComputeSize([[maybe_unused]] const Pixel parent, [[m
     }
 }
 
-template<kF::UI::Internal::Axis DistributionAxis>
-void kF::UI::Internal::ComputeLayoutChildPosition(Point &offset, Area &area, const Area &contextArea, const Pixel spacing, const Anchor anchor) noexcept
+template<kF::UI::Internal::Axis DistributionAxis, auto GetX, auto GetY>
+void UI::Internal::LayoutBuilder::computeFlexLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept
 {
-    Area transformedArea { contextArea };
+    auto childIndexRange = std::as_const(_traverseContext->counter()).toRange();
+    const auto lineWidth = GetX(contextArea.size);
+    Pixel totalHeight {};
 
-    if constexpr (DistributionAxis == Axis::Horizontal) {
-        transformedArea.size.width = area.size.width;
-        transformedArea.pos.x = offset.x;
-        transformedArea.pos.y = offset.y;
-        offset.x += area.size.width + spacing;
-    } else {
-        transformedArea.size.height = area.size.height;
-        transformedArea.pos.x = offset.x;
-        transformedArea.pos.y = offset.y;
-        offset.y += area.size.height + spacing;
+    // Loop over each child to compute self constraints
+    while (childIndexRange.from != childIndexRange.to) { // We know that we have at least 1 child
+        const auto lineBeginChildIndex = childIndexRange.from;
+        Pixel lineHeight {};
+        Pixel lineRemain { lineWidth };
+
+        // Compute current line metrics
+        computeFlexLayoutChildrenLineMetrics<GetX, GetY>(childIndexRange, layout.flexSpacing, lineWidth, lineHeight, lineRemain);
+
+        UI::Area lineArea;
+        GetX(lineArea.pos) = GetX(contextArea.pos);
+        GetY(lineArea.pos) = GetY(contextArea.pos) + totalHeight;
+        GetX(lineArea.size) = lineWidth;
+        GetY(lineArea.size) = lineHeight;
+        const UI::Layout lineLayout {
+            .flowType = DistributionAxis == Axis::Vertical ? FlowType::Row : FlowType::Column,
+            .anchor = layout.flexAnchor,
+            .spacingType = layout.flexSpacingType,
+            .spacing = layout.flexSpacing
+        };
+        computeLayoutChildrenArea<DistributionAxis == Axis::Vertical ? Axis::Horizontal : Axis::Vertical, GetX, GetY>(
+            lineArea, lineLayout, EntityIndexRange { lineBeginChildIndex, childIndexRange.from }
+        );
+
+        // Increment distributed axis offset
+        totalHeight += lineHeight + layout.spacing * static_cast<Pixel>(childIndexRange.from != childIndexRange.to);
     }
 
-    area = Area::ApplyAnchor(transformedArea, area.size, anchor);
+    // If totalHeight is equal to contextArea height we don't need to anchor children
+    if (totalHeight == GetY(contextArea.pos) + GetY(contextArea.size))
+        return;
+
+    // Compute anchor offset
+    const auto anchorArea = Area::ApplyAnchor(contextArea, Size(lineWidth, totalHeight), layout.anchor);
+    const auto anchorOffset = anchorArea.pos - contextArea.pos;
+
+    // If anchor offset is null we don't need to anchor children
+    if (anchorOffset == Point())
+        return;
+
+    // Anchor all children
+    for (auto childIndex : _traverseContext->counter())
+        _traverseContext->areaAt(childIndex).pos += anchorOffset;
 }
 
-template<kF::UI::Internal::Axis DistributionAxis>
-void kF::UI::Internal::LayoutBuilder::computeFlexLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept
+template<auto GetX, auto GetY>
+void UI::Internal::LayoutBuilder::computeFlexLayoutChildrenLineMetrics(
+        EntityIndexRange &childIndexRange, const Pixel spacing, const Pixel lineWidth, Pixel &lineHeight, Pixel &lineRemain) noexcept
 {
+    // Loop over the current line
+    while (true) {
+        const auto &childConstraints = _traverseContext->constraintsAt(*childIndexRange.from);
+        const auto childMin = GetX(childConstraints.minSize);
 
+        // If we cannot fit this child anyway go to the next line (if no child are in this line we must position the item anyway)
+        if (childMin && childMin > lineRemain && lineRemain != lineWidth)
+            break;
+
+        // Find child maximum size
+        const auto childMax = GetX(childConstraints.maxSize) == PixelInfinity ? lineWidth : GetX(childConstraints.maxSize);
+
+        // Try to insert maximum children size and spacing
+        if (const auto totalInsert = childMax + spacing; lineRemain > totalInsert)
+            lineRemain -= totalInsert;
+        // If the size doesn't fit we break the line
+        else
+            lineRemain = 0;
+
+        // Get maximum height of all line's children
+        lineHeight = std::max(lineHeight, GetY(childConstraints.maxSize));
+
+        // Increment and break line when reaching end of range or if lineRemain is zero
+        if (++childIndexRange.from == childIndexRange.to || !lineRemain)
+            break;
+    }
 }
 
-void kF::UI::Internal::LayoutBuilder::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept
+void UI::Internal::LayoutBuilder::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept
 {
     // Ensure entity has a transform component
     if (!Core::HasFlags(_traverseContext->nodeAt(entityIndex).componentFlags, ComponentFlags::Transform)) [[likely]]

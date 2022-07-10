@@ -11,7 +11,7 @@
 
 using namespace kF;
 
-constexpr UI::Size DesiredWindowSizes[] {
+static constexpr UI::Size DesiredWindowSizes[] {
     UI::Size { 200.0f, 200.0f },
     UI::Size { 200.0f, 400.0f },
     UI::Size { 400.0f, 200.0f }
@@ -285,4 +285,73 @@ TEST(Item, StackChildrenAdvanced)
             ASSERT_EQ(child3.get<UI::Area>(), expectedChildArea3);
         }
     }
+}
+
+TEST(Item, FlexError)
+{
+    constexpr auto SetupTest = [](auto &&test, const auto &msg) {
+        UI::App app("Item::Flex", UI::Point(), DesiredWindowSizes[0]);
+        for (const auto desiredWindowSize : DesiredWindowSizes) {
+            app.setWindowSize(desiredWindowSize);
+            auto &uiSystem = app.uiSystem();
+            auto &root = uiSystem.template emplaceRoot<UI::Item>();
+            test(root);
+            EXPECT_DEBUG_DEATH(uiSystem.tick(), msg);
+        }
+    };
+
+    SetupTest([](auto &root) {
+        root.template addChild<UI::Item>().attach(
+            UI::Constraints::Make(UI::Hug(), UI::Fill()),
+            UI::Layout { .flowType = UI::FlowType::FlexColumn }
+        ).template addChild<UI::Item>().attach(UI::Constraints::Make(UI::Strict(100), UI::Strict(100)));
+    }, ".*FlexColumn.*Hug.*width.*");
+
+    SetupTest([](auto &root) {
+        root.template addChild<UI::Item>().attach(
+            UI::Constraints::Make(UI::Fill(), UI::Hug()),
+            UI::Layout { .flowType = UI::FlowType::FlexColumn }
+        ).template addChild<UI::Item>().attach(UI::Constraints::Make(UI::Strict(100), UI::Strict(100)));
+    }, ".*FlexColumn.*Fill.*width.*height.*Hug.*");
+
+    SetupTest([](auto &root) {
+        root.template addChild<UI::Item>().attach(
+            UI::Constraints::Make(UI::Fill(), UI::Hug()),
+            UI::Layout { .flowType = UI::FlowType::FlexRow }
+        ).template addChild<UI::Item>().attach(UI::Constraints::Make(UI::Strict(100), UI::Strict(100)));
+    }, ".*FlexRow.*Hug.*height.*");
+
+    SetupTest([](auto &root) {
+        root.template addChild<UI::Item>().attach(
+            UI::Constraints::Make(UI::Hug(), UI::Fill()),
+            UI::Layout { .flowType = UI::FlowType::FlexRow }
+        ).template addChild<UI::Item>().attach(UI::Constraints::Make(UI::Strict(100), UI::Strict(100)));
+    }, ".*FlexRow.*Fill.*height.*width.*Hug.*");
+}
+
+TEST(Item, FlexHugBasics)
+{
+    constexpr auto WindowSize = 100.0f;
+
+    UI::App app("Item::FlexBasics", UI::Point(), UI::Size(WindowSize, WindowSize));
+
+    auto &uiSystem = app.uiSystem();
+    auto &root = uiSystem.template emplaceRoot<UI::Item>();
+    auto &flex = root.addChild<UI::Item>().attach(
+        UI::Constraints::Make(UI::Fixed(WindowSize), UI::Hug()),
+        UI::Layout { .flowType = UI::FlowType::FlexColumn }
+    );
+    flex.addChild<UI::Item>().attach(UI::Constraints::Make(UI::Fixed(WindowSize), UI::Fixed(WindowSize / 2)));
+    flex.addChild<UI::Item>().attach(UI::Constraints::Make(UI::Fixed(WindowSize / 2), UI::Fixed(WindowSize / 2)));
+    flex.addChild<UI::Item>().attach(UI::Constraints::Make(UI::Fixed(WindowSize / 2), UI::Fixed(WindowSize / 2)));
+
+    uiSystem.tick();
+
+    auto &area = flex.get<UI::Area>();
+    ASSERT_EQ(area.pos, UI::Point(0.0f, 0.0f));
+    ASSERT_EQ(area.size, UI::Size(WindowSize, WindowSize));
+
+    ASSERT_EQ(flex.children().at(0)->get<UI::Area>(), UI::Area(UI::Point(), UI::Size(WindowSize, WindowSize / 2)));
+    ASSERT_EQ(flex.children().at(1)->get<UI::Area>(), UI::Area(UI::Point(0, WindowSize / 2), UI::Size(WindowSize / 2, WindowSize / 2)));
+    ASSERT_EQ(flex.children().at(2)->get<UI::Area>(), UI::Area(UI::Point(WindowSize / 2, WindowSize / 2), UI::Size(WindowSize / 2, WindowSize / 2)));
 }

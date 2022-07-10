@@ -143,6 +143,12 @@ private:
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
+    /** @brief Process EventFlags returned by event components
+     *  @return True if the event flags requires to stop event processing */
+    template<typename Table>
+    [[nodiscard]] bool processEventFlags(
+            const Table &table, const Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept;
+
 
     /** @brief Process system time elapsed */
     void processElapsedTime(void) noexcept;
@@ -183,6 +189,10 @@ private:
     EventQueuePtr<MotionEvent> _motionQueue {};
     EventQueuePtr<WheelEvent> _wheelQueue {};
     EventQueuePtr<KeyEvent> _keyQueue {};
+    ECS::Entity _mouseLock { ECS::NullEntity };
+    ECS::Entity _motionLock { ECS::NullEntity };
+    ECS::Entity _wheelLock { ECS::NullEntity };
+    ECS::Entity _keyLock { ECS::NullEntity };
     // Cacheline N + 7 -> N + 10
     Renderer _renderer;
 };

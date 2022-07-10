@@ -13,7 +13,7 @@ using namespace kF;
 
 TEST(Components, PainterAreaMakeStatic)
 {
-    constexpr int Value = 42;
+    static constexpr int Value = 42;
 
     static std::atomic_size_t Counter {};
 
@@ -24,7 +24,6 @@ TEST(Components, PainterAreaMakeStatic)
 
     UI::PainterArea painterArea;
     auto value = std::make_unique<int>(Value);
-    const auto &ref = *value.get();
 
     // Setup painter area
     ASSERT_EQ(Counter, 0);
@@ -44,7 +43,7 @@ TEST(Components, PainterAreaMakeStatic)
 
 TEST(Components, PainterAreaMakeRuntime)
 {
-    constexpr int Value = 42;
+    static constexpr int Value = 42;
 
     static std::atomic_size_t Counter {};
 
@@ -56,7 +55,6 @@ TEST(Components, PainterAreaMakeRuntime)
 
     UI::PainterArea painterArea;
     auto value = std::make_unique<int>(Value);
-    const auto &ref = *value.get();
 
     // Setup painter area
     ASSERT_EQ(Counter, 0);
