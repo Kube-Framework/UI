@@ -63,7 +63,6 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
         _maxDepth = DepthUnit {};
     }
 
-
     // Traverse from top to bottom
     traverseAreas();
 
@@ -72,13 +71,22 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
 
 void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
 {
-    constexpr auto GetCounterInsertIndex = [](const ECS::Entity entity, const TreeNode &parentNode, const Internal::TraverseContext::Counter &counter) -> std::uint32_t {
-        if (counter.empty()) [[likely]]
+    constexpr auto GetCounterInsertIndex = [](UISystem &uiSystem, const ECS::Entity entity, const TreeNode &parentNode, const Internal::TraverseContext::Counter &counter) -> std::uint32_t {
+        if (counter.empty())
             return 0u;
-        return std::min(
-            static_cast<std::uint32_t>(std::distance(parentNode.children.begin(), parentNode.children.find(entity))),
-            counter.size()
-        );
+
+        const auto entityParentIndex = static_cast<std::uint32_t>(std::distance(parentNode.children.begin(), parentNode.children.find(entity)));
+        auto insertIndex = 0u;
+
+        // @todo Optimize insertion to reduce indirections
+        for (const auto childEntityIndex : counter) {
+            const auto childEntity = uiSystem.getTable<TreeNode>().entities().at(childEntityIndex);
+            const auto childParentIndex = static_cast<std::uint32_t>(std::distance(parentNode.children.begin(), parentNode.children.find(childEntity)));
+            if (childParentIndex > entityParentIndex)
+                break;
+            ++insertIndex;
+        }
+        return insertIndex;
     };
 
     { // For each traversed node, we build constraints from children to parents
@@ -123,7 +131,7 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
 
         // Insert entity index into counter list
         auto &counter = _traverseContext->counter();
-        const auto insertIndex = GetCounterInsertIndex(entity, parentNode, counter);
+        const auto insertIndex = GetCounterInsertIndex(*_uiSystem, entity, parentNode, counter);
         counter.insert(counter.begin() + insertIndex, entityIndex);
 
         // Check if parent still has unvisited child => stop traversal

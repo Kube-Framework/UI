@@ -12,7 +12,7 @@ template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
 inline kF::UI::Item &kF::UI::Item::attach(Components &&...components) noexcept
 {
-    static_assert(((!std::is_same_v<Components, TreeNode> && !std::is_same_v<Components, Area>) && ...),
+    static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::attach: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor");
 
     uiSystem().attach(_entity, std::forward<Components>(components)...);
@@ -24,7 +24,7 @@ template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
 inline kF::UI::Item &kF::UI::Item::attachUpdate(Components &&...components) noexcept
 {
-    static_assert(((!std::is_same_v<Components, TreeNode> && !std::is_same_v<Components, Area>) && ...),
+    static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::attachUpdate: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor");
 
     uiSystem().attachUpdate(_entity, std::forward<Components>(components)...);
@@ -38,9 +38,9 @@ inline kF::UI::Item &kF::UI::Item::attachUpdate(Functors &&...functors) noexcept
     static_assert(
         ([]<typename Functor>(Functor *) -> bool {
             using Component = std::remove_cvref_t<std::tuple_element_t<0, typename Core::FunctionDecomposerHelper<Functors>::ArgsTuple>>;
-            return !std::is_same_v<Component, TreeNode> && !std::is_same_v<Component, Area>;
+            return !IsBaseItemComponent<Component>;
         }(std::declval<Functors *>()) && ...),
-        "UI::Item::attachUpdate: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor"
+        "UI::Item::attachUpdate: 'TreeNode', 'Area' and 'Depth' must not be attached, they are implicitly attached by Item's constructor"
     );
 
     uiSystem().attachUpdate(_entity, std::forward<Functors>(functors)...);
@@ -54,7 +54,7 @@ template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
 inline void kF::UI::Item::dettach(void) noexcept
 {
-    static_assert(((!std::is_same_v<Components, TreeNode> && !std::is_same_v<Components, Area>) && ...),
+    static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::dettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettacged by Item's destructor");
 
     uiSystem().dettach<Components...>(_entity);
@@ -65,7 +65,7 @@ template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
 inline void kF::UI::Item::tryDettach(void) noexcept
 {
-    static_assert(((!std::is_same_v<Components, TreeNode> && !std::is_same_v<Components, Area>) && ...),
+    static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::tryDettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettacged by Item's destructor");
 
     uiSystem().tryDettach<Area>(_entity);

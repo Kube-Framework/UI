@@ -13,6 +13,10 @@ namespace kF::UI
     [[nodiscard]] constexpr Point Size::toPoint(void) const noexcept
         { return Point(width, height); }
 
+    /** @brief Point unary operators */
+    [[nodiscard]] constexpr Point operator-(const Point &value) noexcept
+        { return Point(-value.x, -value.y); }
+
     /** @brief Point binary operators */
     [[nodiscard]] constexpr Point operator+(const Point &lhs, const Point &rhs) noexcept
         { return Point(lhs.x + rhs.x, lhs.y + rhs.y); }
@@ -76,6 +80,10 @@ namespace kF::UI
         { lhs.x /= rhs.width; lhs.y /= rhs.height; return lhs; }
 
 
+    /** @brief Size unary operators */
+    [[nodiscard]] constexpr Size operator-(const Size &value) noexcept
+        { return Size(-value.width, -value.height); }
+
     /** @brief Size binary operators */
     [[nodiscard]] constexpr Size operator+(const Size &lhs, const Size &rhs) noexcept
         { return Size(lhs.width + rhs.width, lhs.height + rhs.height); }
@@ -138,6 +146,10 @@ namespace kF::UI
     constexpr Size &operator/=(Size &lhs, const Point &rhs) noexcept
         { lhs.width /= rhs.x; lhs.height /= rhs.y; return lhs; }
 
+
+    /** @brief Area unary operators */
+    [[nodiscard]] constexpr Area operator-(const Area &value) noexcept
+        { return Area(-value.pos, -value.size); }
 
     /** @brief Area binary operators */
     [[nodiscard]] constexpr Area operator+(const Area &lhs, const Area &rhs) noexcept
@@ -234,6 +246,10 @@ namespace kF::UI
     constexpr Area &operator-=(Area &lhs, const Padding &rhs) noexcept
         { lhs.pos += Point(rhs.left, rhs.top); lhs.size -= Size(rhs.left + rhs.right, rhs.top + rhs.bottom); return lhs; }
 
+
+    /** @brief Padding unary operators */
+    [[nodiscard]] constexpr Padding operator-(const Padding &value) noexcept
+        { return Padding { .left = -value.left, .right = -value.right, .top = -value.top, .bottom = -value.bottom }; }
 
     /** @brief Padding binary operators */
     [[nodiscard]] constexpr Padding operator+(const Padding &lhs, const Padding &rhs) noexcept

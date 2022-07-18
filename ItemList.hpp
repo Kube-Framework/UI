@@ -20,33 +20,23 @@ namespace kF::UI
     using ItemListDelegateType = std::remove_cvref_t<std::tuple_element_t<0, typename Core::FunctionDecomposerHelper<Delegate>::ArgsTuple>>;
 
     template<typename Type, typename ...Args>
-    concept ItemListConstructible = requires(Type *data, Args ...args) { new (data) Type(args...); };
+    concept ItemListConstructible = requires(Type *data, Args ...args) { new (data) Type(Internal::ForwardArg(args)...); };
 
     /** @brief Requirements of item list delegate */
     template<typename ListModelType, typename Delegate, typename ...Args>
     concept ItemListDelegateRequirements = (!std::is_same_v<typename Core::FunctionDecomposerHelper<Delegate>::ArgsTuple, std::tuple<>>) &&
             [] {
-                if constexpr (std::is_constructible_v<ItemListDelegateType<Delegate>, Args...>
-                        || std::is_constructible_v<ItemListDelegateType<Delegate>, typename ListModelType::Type &, Args...>
-                        || std::is_constructible_v<ItemListDelegateType<Delegate>, Args..., typename ListModelType::Type &>) {
+                if constexpr (ItemListConstructible<ItemListDelegateType<Delegate>, Args...>
+                        || ItemListConstructible<ItemListDelegateType<Delegate>, typename ListModelType::Type &, Args...>
+                        || ItemListConstructible<ItemListDelegateType<Delegate>, Args..., typename ListModelType::Type &>) {
                     return true;
                 } else if (Core::IsDereferencable<typename ListModelType::Type>) {
-                    if constexpr (std::is_constructible_v<ItemListDelegateType<Delegate>, decltype(*std::declval<typename ListModelType::Type &>()), Args...>
-                            || std::is_constructible_v<ItemListDelegateType<Delegate>, Args..., decltype(*std::declval<typename ListModelType::Type &>())>)
+                    if constexpr (ItemListConstructible<ItemListDelegateType<Delegate>, decltype(*std::declval<typename ListModelType::Type &>()), Args...>
+                            || ItemListConstructible<ItemListDelegateType<Delegate>, Args..., decltype(*std::declval<typename ListModelType::Type &>())>)
                         return true;
                 }
                 return false;
             }();
-    // /** @brief Requirements of item list delegate */
-    // template<typename ListModelType, typename Delegate, typename ...Args>
-    // concept ItemListDelegateRequirements = std::is_base_of_v<Item, ItemListDelegateType<Delegate>>
-    //     && (std::is_constructible_v<ItemListDelegateType<Delegate>, Args...>
-    //     || std::is_constructible_v<ItemListDelegateType<Delegate>, typename ListModelType::Type &, Args...>
-    //     || std::is_constructible_v<ItemListDelegateType<Delegate>, Args..., typename ListModelType::Type &>
-    //     || (Core::IsDereferencable<typename ListModelType::Type> && (
-    //         std::is_constructible_v<ItemListDelegateType<Delegate>, decltype(*std::declval<typename ListModelType::Type &>), Args...>
-    //         || std::is_constructible_v<ItemListDelegateType<Delegate>, Args..., decltype(*std::declval<typename ListModelType::Type &>)>
-    //     )));
 }
 
 /** @brief Create a list of item synchronized with a ListModel */
@@ -61,6 +51,7 @@ public:
 
     /** @brief Model and delegate constructor
      *  @note The delegate Item type must be the first argument of the delegate functor
+     *        If an argument doesn't match, it must be a functor that returns the matching argument
      *        The Item type must have one of the following constructors:
      *          - ItemType(Args...)
      *          - ItemType(Model, Args...)
@@ -73,7 +64,8 @@ public:
         { setup(listModel, std::forward<Delegate>(delegate), std::forward<Args>(args)...); }
 
     /** @brief Model and a generic delegate for ItemType constructor
-     *  @note The Item type must have one of the following constructors:
+     *  @note If an argument doesn't match, it must be a functor that returns the matching argument
+     *        The Item type must have one of the following constructors:
      *          - ItemType(Args...)
      *          - ItemType(Model, Args...)
      *          - ItemType(Args..., Model)
@@ -90,6 +82,7 @@ public:
 
     /** @brief Reset instance with a new model and delegate
      *  @note The delegate Item type must be the first argument of the delegate functor
+     *        If an argument doesn't match, it must be a functor that returns the matching argument
      *        The Item type must have one of the following constructors:
      *          - ItemType(Args...)
      *          - ItemType(Model, Args...)
@@ -102,7 +95,8 @@ public:
         { reset(); setup(listModel, std::forward<Delegate>(delegate), std::forward<Args>(args)...); }
 
     /** @brief Reset instance with a new model and a generic delegate for ItemType
-     *  @note The Item type must have one of the following constructors:
+     *  @note If an argument doesn't match, it must be a functor that returns the matching argument
+     *        The Item type must have one of the following constructors:
      *          - ItemType(Args...)
      *          - ItemType(Model, Args...)
      *          - ItemType(Args..., Model)

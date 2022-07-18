@@ -71,7 +71,7 @@ void main(void)
     const vec2 inversedPoint = applyRotation(getInversedRotationMatrix(fragRotationCosSin), fragCenter, gl_FragCoord.xy);
     const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize - fragEdgeSoftness, fragRadius);
     // Smooth the result by antialiasing
-    const float smoothedAlpha =  1.0 - smoothstep(0.0, fragEdgeSoftness * 2.0, dist);
+    const float smoothedAlpha =  1.0 - smoothstep(0.0, fragEdgeSoftness, dist);
     // Apply final alpha
     outColor.a *= smoothedAlpha;
 }

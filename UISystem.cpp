@@ -106,10 +106,11 @@ bool UI::UISystem::tick(void) noexcept
 
 void UI::UISystem::sortTables(void) noexcept
 {
-    const auto ascentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
+    const auto &depthTable = getTable<Depth>();
+    const auto ascentCompareFunc = [&depthTable](const ECS::Entity lhs, const ECS::Entity rhs) {
         return depthTable.get(lhs).depth < depthTable.get(rhs).depth;
     };
-    const auto descentCompareFunc = [&depthTable = getTable<Depth>()](const ECS::Entity lhs, const ECS::Entity rhs) {
+    const auto descentCompareFunc = [&depthTable](const ECS::Entity lhs, const ECS::Entity rhs) {
         return depthTable.get(lhs).depth > depthTable.get(rhs).depth;
     };
 
@@ -151,6 +152,7 @@ kF::UI::Area kF::UI::UISystem::getClippedArea(const ECS::Entity entity, const UI
 
 void kF::UI::UISystem::processEventHandlers(void) noexcept
 {
+    // @todo Events can crash if they remove Items from the tree
     _mouseQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processMouseEventAreas(event);

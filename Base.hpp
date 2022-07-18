@@ -112,9 +112,14 @@ namespace kF::UI
         [[nodiscard]] constexpr bool operator==(const Color &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Color &other) const noexcept = default;
 
+
         /** @brief Apply alpha to a color (override color's alpha) */
         [[nodiscard]] static constexpr Color ApplyAlpha(const Color color, const std::uint8_t alpha) noexcept
             { return Color { color.r, color.g, color.b, alpha }; }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Color &rhs) noexcept;
     };
 
 
@@ -136,6 +141,11 @@ namespace kF::UI
         /** @brief Convert point to size */
         [[nodiscard]] constexpr Size toSize(void) const noexcept;
 
+
+        /** @brief Get absolute point */
+        [[nodiscard]] static inline Point Abs(const Point value) noexcept
+            { return Point { std::abs(value.x), std::abs(value.y) }; }
+
         /** @brief Get min x and y from two points */
         [[nodiscard]] static inline Point Min(const Point lhs, const Point rhs) noexcept
             { return Point { std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y) }; }
@@ -143,6 +153,10 @@ namespace kF::UI
         /** @brief Get max x and y from two points */
         [[nodiscard]] static inline Point Max(const Point lhs, const Point rhs) noexcept
             { return Point { std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y) }; }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Point &rhs) noexcept;
     };
 
 
@@ -161,6 +175,11 @@ namespace kF::UI
         /** @brief Convert size to point */
         [[nodiscard]] constexpr Point toPoint(void) const noexcept;
 
+
+        /** @brief Get absolute size */
+        [[nodiscard]] static inline Size Abs(const Size value) noexcept
+            { return Size { std::abs(value.width), std::abs(value.height) }; }
+
         /** @brief Get min width and height from two sizes */
         [[nodiscard]] static inline Size Min(const Size lhs, const Size rhs) noexcept
             { return Size { std::min(lhs.width, rhs.width), std::min(lhs.height, rhs.height) }; }
@@ -168,6 +187,10 @@ namespace kF::UI
         /** @brief Get max width and height from two sizes */
         [[nodiscard]] static inline Size Max(const Size lhs, const Size rhs) noexcept
             { return Size { std::max(lhs.width, rhs.width), std::max(lhs.height, rhs.height) }; }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Size &rhs) noexcept;
     };
 
 
@@ -223,6 +246,10 @@ namespace kF::UI
 
         /** @brief Apply anchor to a position a parent's child area from its size */
         [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Area &rhs) noexcept;
     };
 
 
@@ -284,6 +311,10 @@ namespace kF::UI
         /** @brief Create single size constraints */
         template<kF::UI::ConstraintSpecifierRequirements SizeSpecifier>
         [[nodiscard]] static constexpr Constraints Make(const SizeSpecifier sizeSpecifier) noexcept { return Make(sizeSpecifier, sizeSpecifier); }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Constraints &rhs) noexcept;
     };
 
 
@@ -309,6 +340,10 @@ namespace kF::UI
 
         /** @brief Fill a padding structure with a single value for vertical pads */
         [[nodiscard]] static constexpr Padding MakeVertical(const Pixel value) noexcept { return Padding(0, 0, value, value); }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Padding &rhs) noexcept;
     };
 
 
@@ -340,7 +375,12 @@ namespace kF::UI
 
         /** @brief Fill right radius with a single value */
         [[nodiscard]] static constexpr Radius MakeRight(const Pixel value) noexcept { return Radius(0.0f, value, 0.0f, value); }
+
+
+        /** @brief Stream overload insert operator */
+        friend std::ostream &operator<<(std::ostream &lhs, const Radius &rhs) noexcept;
     };
+
 
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
     constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
@@ -359,15 +399,20 @@ namespace kF::UI
         else
             return data.height;
     };
-}
 
-/** @brief Stream utilities */
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Color &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Point &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Size &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Area &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Constraints &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Padding &rhs) noexcept;
-std::ostream &operator<<(std::ostream &lhs, const kF::UI::Radius &rhs) noexcept;
+
+    namespace Internal
+    {
+        /** @brief Forward an argument either by forwarding or by invoking a functor */
+        template<typename Arg>
+        [[nodiscard]] constexpr decltype(auto) ForwardArg(Arg &&arg) noexcept
+        {
+            if constexpr (std::is_invocable_v<Arg>)
+                return arg();
+            else
+                return std::forward<Arg>(arg);
+        };
+    }
+}
 
 #include "Base.ipp"

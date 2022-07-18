@@ -55,6 +55,9 @@ private:
     /** @brief Process item constraints in recursive bottom to top order */
     void traverseConstraints(void) noexcept;
 
+    /** @brief Get the counter insert index of a current entity according to its parent children and the already inserted children in counter */
+    [[nodiscard]] std::uint32_t getCounterInsertIndex(const TreeNode &parentNode) noexcept;
+
     /** @brief Process constraints of a layout item */
     void buildLayoutConstraints(Constraints &constraints) noexcept;
 

@@ -22,6 +22,10 @@ namespace kF::UI
     template<typename Derived>
         requires std::derived_from<Derived, Item>
     using DerivedItemPtr = Core::UniquePtr<Derived, UIAllocator>;
+
+    /** @brief Check if a component is a base component */
+    template<typename Component>
+    constexpr bool IsBaseItemComponent = std::is_same_v<Component, TreeNode> || std::is_same_v<Component, Area> || std::is_same_v<Component, Depth>;
 }
 
 /** @brief An item represents the base of any UI components

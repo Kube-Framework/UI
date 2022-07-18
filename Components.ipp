@@ -5,19 +5,6 @@
 
 #include "Components.hpp"
 
-namespace kF::UI::Internal
-{
-    template<typename Arg>
-    [[nodiscard]] constexpr decltype(auto) ForwardArg(Arg &&arg) noexcept
-    {
-        if constexpr (std::is_invocable_v<Arg>)
-            return arg();
-        else
-            return std::forward<Arg>(arg);
-    };
-}
-
-
 template<auto Functor, typename ...Args>
 inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
 {
@@ -76,7 +63,7 @@ inline kF::UI::MouseEventArea kF::UI::MouseEventArea::Make(Args &&...args) noexc
 {
     return MouseEventArea {
         [... args = std::forward<Args>(args)](const MouseEvent &event, const Area &area) {
-            Functor(event, area, Internal::ForwardArg(args)...);
+            return Functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -87,7 +74,7 @@ inline kF::UI::MouseEventArea kF::UI::MouseEventArea::Make(ClassType * const ins
 {
     return MouseEventArea {
         [instance, ... args = std::forward<Args>(args)](const MouseEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -98,7 +85,7 @@ inline kF::UI::MouseEventArea kF::UI::MouseEventArea::Make(const ClassType * con
 {
     return MouseEventArea {
         [instance, ... args = std::forward<Args>(args)](const MouseEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -108,7 +95,7 @@ inline kF::UI::MouseEventArea kF::UI::MouseEventArea::Make(Functor &&functor, Ar
 {
     return MouseEventArea {
         [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](const MouseEvent &event, const Area &area) {
-            functor(event, area, Internal::ForwardArg(args)...);
+            return functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -118,7 +105,7 @@ inline kF::UI::MouseEventArea kF::UI::MouseEventArea::Make(Args &&...args) noexc
 {
     return MouseEventArea {
         [... args = std::forward<Args>(args)](const MouseEvent &event, const Area &area) {
-            Functor{}(event, area, Internal::ForwardArg(args)...);
+            return Functor{}(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -129,7 +116,7 @@ inline kF::UI::MotionEventArea kF::UI::MotionEventArea::Make(Args &&...args) noe
 {
     return MotionEventArea {
         [... args = std::forward<Args>(args)](const MotionEvent &event, const Area &area) {
-            Functor(event, area, Internal::ForwardArg(args)...);
+            return Functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -140,7 +127,7 @@ inline kF::UI::MotionEventArea kF::UI::MotionEventArea::Make(ClassType * const i
 {
     return MotionEventArea {
         [instance, ... args = std::forward<Args>(args)](const MotionEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -151,7 +138,7 @@ inline kF::UI::MotionEventArea kF::UI::MotionEventArea::Make(const ClassType * c
 {
     return MotionEventArea {
         [instance, ... args = std::forward<Args>(args)](const MotionEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -161,7 +148,7 @@ inline kF::UI::MotionEventArea kF::UI::MotionEventArea::Make(Functor &&functor, 
 {
     return MotionEventArea {
         [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](const MotionEvent &event, const Area &area) {
-            functor(event, area, Internal::ForwardArg(args)...);
+            return functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -171,7 +158,7 @@ inline kF::UI::MotionEventArea kF::UI::MotionEventArea::Make(Args &&...args) noe
 {
     return MotionEventArea {
         [... args = std::forward<Args>(args)](const MotionEvent &event, const Area &area) {
-            Functor{}(event, area, Internal::ForwardArg(args)...);
+            return Functor{}(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -182,7 +169,7 @@ inline kF::UI::WheelEventArea kF::UI::WheelEventArea::Make(Args &&...args) noexc
 {
     return WheelEventArea {
         [... args = std::forward<Args>(args)](const WheelEvent &event, const Area &area) {
-            Functor(event, area, Internal::ForwardArg(args)...);
+            return Functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -193,7 +180,7 @@ inline kF::UI::WheelEventArea kF::UI::WheelEventArea::Make(ClassType * const ins
 {
     return WheelEventArea {
         [instance, ... args = std::forward<Args>(args)](const WheelEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -204,7 +191,7 @@ inline kF::UI::WheelEventArea kF::UI::WheelEventArea::Make(const ClassType * con
 {
     return WheelEventArea {
         [instance, ... args = std::forward<Args>(args)](const WheelEvent &event, const Area &area) {
-            (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -214,7 +201,7 @@ inline kF::UI::WheelEventArea kF::UI::WheelEventArea::Make(Functor &&functor, Ar
 {
     return WheelEventArea {
         [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](const WheelEvent &event, const Area &area) {
-            functor(event, area, Internal::ForwardArg(args)...);
+            return functor(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -224,7 +211,7 @@ inline kF::UI::WheelEventArea kF::UI::WheelEventArea::Make(Args &&...args) noexc
 {
     return WheelEventArea {
         [... args = std::forward<Args>(args)](const WheelEvent &event, const Area &area) {
-            Functor{}(event, area, Internal::ForwardArg(args)...);
+            return Functor{}(event, area, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -235,7 +222,7 @@ inline kF::UI::KeyEventReceiver kF::UI::KeyEventReceiver::Make(Args &&...args) n
 {
     return KeyEventReceiver {
         [... args = std::forward<Args>(args)](const KeyEvent &event) {
-            Functor(event, Internal::ForwardArg(args)...);
+            return Functor(event, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -246,7 +233,7 @@ inline kF::UI::KeyEventReceiver kF::UI::KeyEventReceiver::Make(ClassType * const
 {
     return KeyEventReceiver {
         [instance, ... args = std::forward<Args>(args)](const KeyEvent &event) {
-            (instance->*MemberFunction)(event, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -257,7 +244,7 @@ inline kF::UI::KeyEventReceiver kF::UI::KeyEventReceiver::Make(const ClassType *
 {
     return KeyEventReceiver {
         [instance, ... args = std::forward<Args>(args)](const KeyEvent &event) {
-            (instance->*MemberFunction)(event, Internal::ForwardArg(args)...);
+            return (instance->*MemberFunction)(event, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -267,7 +254,7 @@ inline kF::UI::KeyEventReceiver kF::UI::KeyEventReceiver::Make(Functor &&functor
 {
     return KeyEventReceiver {
         [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](const KeyEvent &event) {
-            functor(event, Internal::ForwardArg(args)...);
+            return functor(event, Internal::ForwardArg(args)...);
         }
     };
 }
@@ -277,7 +264,7 @@ inline kF::UI::KeyEventReceiver kF::UI::KeyEventReceiver::Make(Args &&...args) n
 {
     return KeyEventReceiver {
         [... args = std::forward<Args>(args)](const KeyEvent &event) {
-            Functor{}(event, Internal::ForwardArg(args)...);
+            return Functor{}(event, Internal::ForwardArg(args)...);
         }
     };
 }

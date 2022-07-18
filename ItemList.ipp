@@ -20,23 +20,23 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
         auto &modelData = (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)];
 
         // #1 model, args...
-        if constexpr (std::is_constructible_v<ItemType, typename ListModelType::Type &, Args...>) {
-            child = &parent.insertChild<ItemType>(index, modelData, args...);
+        if constexpr (ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>) {
+            child = &parent.insertChild<ItemType>(index, modelData, Internal::ForwardArg(args)...);
         // #2 args..., model
-        } else if constexpr (std::is_constructible_v<ItemType, Args..., typename ListModelType::Type &>) {
-            child = &parent.insertChild<ItemType>(index, args..., modelData);
+        } else if constexpr (ItemListConstructible<ItemType, Args..., typename ListModelType::Type &>) {
+            child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)..., modelData);
         // #3 Model is dereferencable (ex: raw / unique / shared pointers)
         } else if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
             // #3A *model, args...
-            if constexpr (std::is_constructible_v<ItemType, decltype(*modelData), Args...>) {
-                child = &parent.insertChild<ItemType>(index, *modelData, args...);
+            if constexpr (ItemListConstructible<ItemType, decltype(*modelData), Args...>) {
+                child = &parent.insertChild<ItemType>(index, *modelData, Internal::ForwardArg(args)...);
             // #3B args..., *model
-            } else if constexpr (std::is_constructible_v<ItemType, Args..., decltype(*modelData)>) {
-                child = &parent.insertChild<ItemType>(index, args..., *modelData);
+            } else if constexpr (ItemListConstructible<ItemType, Args..., decltype(*modelData)>) {
+                child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)..., *modelData);
             }
         // #4 args...
-        } else if constexpr (std::is_constructible_v<ItemType, Args...>) {
-            child = &parent.insertChild<ItemType>(index, args...);
+        } else if constexpr (ItemListConstructible<ItemType, Args...>) {
+            child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)...);
         }
         delegate(*child, modelData);
     };
