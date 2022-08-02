@@ -95,7 +95,7 @@ public:
 
 
     /** @brief Get current Painter clip area */
-    [[nodiscard]] inline Area currentClip(void) noexcept { return _clips.empty() ? Area {} : _clips.back().area; }
+    [[nodiscard]] inline Area currentClip(void) noexcept { return _clips.empty() ? DefaultClip : _clips.back().area; }
 
     /** @brief Set current clip area of painter
      *  @note This clip will be used for each draw until 'setClip' is called again */

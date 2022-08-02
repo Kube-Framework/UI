@@ -207,31 +207,57 @@ namespace kF::UI
 
 
         /** @brief Get left coordinate */
-        [[nodiscard]] constexpr Pixel left(void) const noexcept { return pos.x; }
+        [[nodiscard]] constexpr Pixel left(void) const noexcept
+            { return pos.x; }
 
         /** @brief Get right coordinate */
-        [[nodiscard]] constexpr Pixel right(void) const noexcept { return pos.x + size.width; }
+        [[nodiscard]] constexpr Pixel right(void) const noexcept
+            { return pos.x + size.width; }
 
         /** @brief Get top coordinate */
-        [[nodiscard]] constexpr Pixel top(void) const noexcept { return pos.y; }
+        [[nodiscard]] constexpr Pixel top(void) const noexcept
+            { return pos.y; }
 
         /** @brief Get bottom coordinate */
-        [[nodiscard]] constexpr Pixel bottom(void) const noexcept { return pos.y + size.height; }
+        [[nodiscard]] constexpr Pixel bottom(void) const noexcept
+            { return pos.y + size.height; }
+
+
+        /** @brief Get top left coordinate */
+        [[nodiscard]] constexpr Point topLeft(void) const noexcept
+            { return pos; }
+
+        /** @brief Get top right coordinate */
+        [[nodiscard]] constexpr Point topRight(void) const noexcept
+            { return Point(pos.x + size.width, pos.y); }
+
+        /** @brief Get bottom left coordinate */
+        [[nodiscard]] constexpr Point bottomLeft(void) const noexcept
+            { return Point(pos.x, pos.y + size.height); }
+
+        /** @brief Get bottom right coordinate */
+        [[nodiscard]] constexpr Point bottomRight(void) const noexcept
+            { return Point(pos.x + size.width, pos.y + size.height); }
 
 
         /** @brief Get center X coordinate */
-        [[nodiscard]] constexpr Pixel centerX(void) const noexcept { return pos.x + size.width / 2.0f; }
+        [[nodiscard]] constexpr Pixel centerX(void) const noexcept
+            { return pos.x + size.width / 2.0f; }
 
         /** @brief Get center Y coordinate */
-        [[nodiscard]] constexpr Pixel centerY(void) const noexcept { return pos.y + size.height / 2.0f; }
+        [[nodiscard]] constexpr Pixel centerY(void) const noexcept
+            { return pos.y + size.height / 2.0f; }
 
         /** @brief Get center position */
-        [[nodiscard]] constexpr Point center(void) const noexcept { return Point(centerX(), centerY()); }
+        [[nodiscard]] constexpr Point center(void) const noexcept
+            { return Point(centerX(), centerY()); }
 
 
-        /** @brief Check if a point intersect with area */
-        [[nodiscard]] constexpr bool contains(const Point &point) const noexcept
-            { return pos.x <= point.x && pos.y <= point.y && pos.x + size.width >= point.x && pos.y + size.height >= point.y; }
+        /** @brief Check if a point overlap with area */
+        [[nodiscard]] constexpr bool contains(const Point &point) const noexcept;
+
+        /** @brief Check if an area overlap with area */
+        [[nodiscard]] constexpr bool contains(const Area &area) const noexcept;
 
 
         /** @brief Create an Area of given 'size' centered to a given 'center' point */
@@ -380,6 +406,10 @@ namespace kF::UI
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Radius &rhs) noexcept;
     };
+
+
+    /** @brief Default clip area is infinity (means window size) */
+    static constexpr Area DefaultClip { Point {}, Size { PixelInfinity, PixelInfinity }};
 
 
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */

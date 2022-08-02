@@ -256,7 +256,7 @@ void UI::Internal::LayoutBuilder::traverseAreas(void) noexcept
     // Set self depth
     _traverseContext->depth().depth = _maxDepth++;
 
-    Area lastClip {};
+    Area lastClip { DefaultClip };
     bool clip { false };
     const auto &node = _traverseContext->node();
     auto &area = _traverseContext->area();
@@ -272,12 +272,13 @@ void UI::Internal::LayoutBuilder::traverseAreas(void) noexcept
             const auto &clipTable = _uiSystem->getTable<Clip>();
             const auto clipIndex = clipTable.getUnstableIndex(_traverseContext->entity());
             if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
-                clip = true;
-                lastClip = _traverseContext->currentClip();
-                _traverseContext->setClip(
-                    Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding),
-                    _maxDepth
-                );
+                const auto currentClip = _traverseContext->currentClip();
+                if (lastClip.contains(currentClip)) [[likely]] {
+                    lastClip = currentClip;
+                    clip = true;
+                    const auto clipArea = Area::ApplyPadding(area, clipTable.atIndex(clipIndex).padding);
+                    _traverseContext->setClip(clipArea, _maxDepth);
+                }
             }
         }
 

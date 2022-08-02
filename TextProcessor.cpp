@@ -101,12 +101,13 @@ std::uint32_t UI::PrimitiveProcessor::GetInstanceCount<UI::Text>(
 }
 
 template<>
-void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
+std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         const Text * const primitiveBegin, const Text * const primitiveEnd,
         std::uint8_t * const instanceBegin) noexcept
 {
     const auto &fontManager = App::Get().uiSystem().fontManager();
-    auto *out = reinterpret_cast<Glyph *>(instanceBegin);
+    auto * const begin = reinterpret_cast<Glyph *>(instanceBegin);
+    auto *out = begin;
     ComputeParameters params;
 
     for (const auto &text : Core::IteratorRange { primitiveBegin, primitiveEnd }) {
@@ -123,6 +124,7 @@ void UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         // Dispatch
         ComputeGlyph(text, out, params);
     }
+    return static_cast<std::uint32_t>(std::distance(begin, out));
 }
 
 static void UI::ComputeGlyph(const Text &text, Glyph *&out, ComputeParameters &params) noexcept
@@ -180,12 +182,9 @@ static void UI::ComputeGlyphPacked(Glyph *&out, ComputeParameters &params) noexc
     }
     UpdateMetrics(params, pos, metrics);
 
-    // No character to draw
-    if (begin == out) [[unlikely]]
-        return;
-
-    // Compute anchor
-    ComputeGlyphPositions<GetX, GetY>(begin, out, params, metrics);
+    // Position characters if any to draw
+    if (begin != out) [[likely]]
+        ComputeGlyphPositions<GetX, GetY>(begin, out, params, metrics);
 }
 
 template<auto GetX, auto GetY>

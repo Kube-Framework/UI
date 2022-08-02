@@ -293,6 +293,24 @@ namespace kF::UI
         { lhs.left /= rhs; lhs.right /= rhs; lhs.top /= rhs; lhs.bottom /= rhs; return lhs; }
 }
 
+constexpr bool kF::UI::Area::contains(const Point &point) const noexcept
+{
+    return (pos.x <= point.x)
+        & (pos.y <= point.y)
+        & (pos.x + size.width >= point.x)
+        & (pos.y + size.height >= point.y);
+}
+
+constexpr bool kF::UI::Area::contains(const Area &area) const noexcept
+{
+    const auto l1 = topLeft();
+    const auto r1 = bottomRight();
+    const auto l2 = area.topLeft();
+    const auto r2 = area.bottomRight();
+
+    return (l1.x > r2.x) | (l2.x > r1.x) | (r1.y > l2.y) | (r2.y > l1.y);
+}
+
 constexpr kF::UI::Area kF::UI::Area::MakeCenter(const Point center, const Size size) noexcept
 {
     return Area { center - size / 2.0f, size };

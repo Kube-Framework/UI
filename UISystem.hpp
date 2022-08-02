@@ -143,6 +143,11 @@ private:
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
+    /** @brief Traverse a table requiring clipped area */
+    template<typename Component, typename Event>
+    void traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
+
+
     /** @brief Process EventFlags returned by event components
      *  @return True if the event flags requires to stop event processing */
     template<typename Table>

@@ -31,23 +31,28 @@ inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const 
         growQueue(queue, std::max(queue.size + instanceCount, InitialAllocationCount));
 
     // Insert instances
-    PrimitiveProcessor::InsertInstances(
+    const auto insertedInstanceCount = PrimitiveProcessor::InsertInstances(
         primitiveBegin,
         primitiveEnd,
         queue.data + queue.size * queue.instanceSize
     );
 
+    // Ensure inserted count is less or equal to reserved instance count
+    kFAssert(instanceCount >= insertedInstanceCount,
+        "UI::Painter::draw: 'PrimitiveProcessor::GetInstanceCount' returned ", instanceCount,
+        " but 'PrimitiveProcessor::InsertInstances' returned ", insertedInstanceCount);
+
     // Insert offsets
     const auto offsets = queue.offsets() + queue.size;
-    for (auto index = 0u; index != instanceCount; ++index) {
+    for (auto index = 0u; index != insertedInstanceCount; ++index) {
         offsets[index] = InstanceOffset {
             .vertexOffset = _offset.vertexOffset + index * queue.verticesPerInstance,
             .indexOffset = _offset.indexOffset + index * queue.indicesPerInstance
         };
     }
-    _offset.vertexOffset += instanceCount * queue.verticesPerInstance;
-    _offset.indexOffset += instanceCount * queue.indicesPerInstance;
+    _offset.vertexOffset += insertedInstanceCount * queue.verticesPerInstance;
+    _offset.indexOffset += insertedInstanceCount * queue.indicesPerInstance;
 
     // Assign new queue size
-    queue.size += instanceCount;
+    queue.size += insertedInstanceCount;
 }

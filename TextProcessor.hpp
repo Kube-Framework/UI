@@ -22,6 +22,7 @@ namespace kF::UI
         TextAlignment textAlignment {}; // Text alignment
         bool justify {}; // Text justification
         bool vertical {}; // Vertical text layout
+        bool elide {}; // Text eliding
         float rotationAngle {}; // Rotation in radians
     };
     static_assert_fit_cacheline(Text);
@@ -38,7 +39,7 @@ namespace kF::UI
 
         /** @brief Text processor insert model */
         template<>
-        void InsertInstances<Text>(const Text * const primitiveBegin, const Text * const primitiveEnd,
+        [[nodiscard]] std::uint32_t InsertInstances<Text>(const Text * const primitiveBegin, const Text * const primitiveEnd,
                 std::uint8_t * const instanceBegin) noexcept;
     }
 }

@@ -43,11 +43,16 @@ namespace kF::UI
             { return static_cast<std::uint32_t>(std::distance(primitiveBegin, primitiveEnd)); }
 
         /** @brief Insert instances from a list of primitives
-         *  @note If you don't specialize, the default behavior is to copy primitive as instances (1:1 mapping) */
+         *  @note If you don't specialize, the default behavior is to copy primitive as instances (1:1 mapping)
+         *  @return Returns the number of inserted instances
+         *          This number can't exceed count queried from 'GetInstanceCount', if lesser then the difference is discarded */
         template<kF::UI::PrimitiveKind Primitive>
-        inline void InsertInstances(
+        inline std::uint32_t InsertInstances(
                 const Primitive * const primitiveBegin, const Primitive * const primitiveEnd,
                 std::uint8_t * const instanceBegin) noexcept
-            { std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive * const>(instanceBegin)); }
+        {
+            std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive * const>(instanceBegin));
+            return static_cast<std::uint32_t>(std::distance(primitiveBegin, primitiveEnd));
+        }
     }
 }

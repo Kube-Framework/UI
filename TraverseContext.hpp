@@ -77,7 +77,7 @@ public:
 
     /** @brief Push a clip into the clip list */
     [[nodiscard]] Area currentClip(void) const noexcept
-        { return _clipAreas.empty() ? Area() : _clipAreas.back(); }
+        { return _clipAreas.empty() ? DefaultClip : _clipAreas.back(); }
 
 private:
     // Cacheline 0

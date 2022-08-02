@@ -121,36 +121,51 @@ void UI::UISystem::sortTables(void) noexcept
     getTable<KeyEventReceiver>().sort(descentCompareFunc);
 }
 
-kF::UI::Area kF::UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept
+UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &area) noexcept
 {
-    const auto &clipDepths = _traverseContext.clipDepths();
+    const auto clipDepths = _traverseContext.clipDepths();
     if (clipDepths.empty())
         return area;
 
     // Find depth index
-    const auto depth = get<UI::Depth>(entity).depth;
-    std::uint32_t index {};
     const auto count = clipDepths.size<std::uint32_t>();
-    while (index != count && clipDepths[index] < depth) [[likely]]
-        ++index;
+    const auto depth = get<UI::Depth>(entity).depth;
+    auto index = count - 1u;
+    while (true) {
+        if (clipDepths.at(index) <= depth)
+            break;
+        if (index)
+            --index;
+        else {
+            index = count;
+            break;
+        }
+    }
 
-    // Query clip area
+    // If no clip is in range or target clip is default one, return the area
     const auto &clipAreas = _traverseContext.clipAreas();
-    const Area *clip {};
-    if (index == count) // Last
-        clip = &clipAreas.back();
-    else if (index) // index - 1
-        clip = &clipAreas.at(index - 1);
-
-    // If a clip has been found, apply it to entity's Area
-    if (clip && *clip != Area {}) [[likely]]
-        return UI::Area::ApplyClip(area, *clip);
-    // Else return entity's Area
-    else
+    if (index == count || clipAreas.at(index) == DefaultClip)
         return area;
+
+    // Find highest parent of current clip
+    auto idx = index;
+    while (idx) {
+        if (clipAreas.at(idx - 1) == DefaultClip)
+            break;
+        --idx;
+    }
+
+    // Compute clip recursively
+    Area recursiveClip = clipAreas.at(idx);
+    while (idx != index) {
+        recursiveClip = Area::ApplyClip(clipAreas.at(++idx), recursiveClip);
+    }
+
+    // Apply recursive clip to area
+    return Area::ApplyClip(area, recursiveClip);
 }
 
-void kF::UI::UISystem::processEventHandlers(void) noexcept
+void UI::UISystem::processEventHandlers(void) noexcept
 {
     // @todo Events can crash if they remove Items from the tree
     _mouseQueue->consume([this](const auto &range) {
@@ -171,62 +186,22 @@ void kF::UI::UISystem::processEventHandlers(void) noexcept
     });
 }
 
-void kF::UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
+void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
-    auto &areaTable = getTable<Area>();
-    auto &mouseTable = getTable<MouseEventArea>();
-
-    if (_mouseLock != ECS::NullEntity) [[unlikely]] {
-        auto &handler = mouseTable.get(_mouseLock);
-        const auto flags = handler.event(event, areaTable.get(_mouseLock));
-        if (processEventFlags(mouseTable, handler, _mouseLock, flags))
-            return;
-    }
-
-    for (std::uint32_t index {}; const auto &handler : mouseTable) {
-        const auto entity = mouseTable.entities().at(index++);
-        auto &area = areaTable.get(entity);
-        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
-            const auto flags = handler.event(event, area);
-            if (processEventFlags(mouseTable, handler, _mouseLock, flags))
-                break;
-        }
-    }
+    traverseClippedEventTable<MouseEventArea>(event, _mouseLock);
 }
 
-void kF::UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
+void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    auto &areaTable = getTable<Area>();
-    auto &motionTable = getTable<MotionEventArea>();
-
-    for (std::uint32_t index {}; const auto &handler : motionTable) {
-        const auto entity = motionTable.entities().at(index++);
-        auto &area = areaTable.get(entity);
-        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
-            const auto flags = handler.event(event, area);
-            if (processEventFlags(motionTable, handler, _motionLock, flags))
-                break;
-        }
-    }
+    traverseClippedEventTable<MotionEventArea>(event, _motionLock);
 }
 
-void kF::UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
+void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
 {
-    auto &areaTable = getTable<Area>();
-    auto &wheelTable = getTable<WheelEventArea>();
-
-    for (std::uint32_t index {}; const auto &handler : wheelTable) {
-        const auto entity = wheelTable.entities().at(index++);
-        auto &area = areaTable.get(entity);
-        if (area.contains(event.pos) && getClippedArea(entity, area).contains(event.pos)) [[unlikely]] {
-            const auto flags = handler.event(event, area);
-            if (processEventFlags(wheelTable, handler, _wheelLock, flags))
-                break;
-        }
-    }
+    traverseClippedEventTable<WheelEventArea>(event, _wheelLock);
 }
 
-void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
+void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 {
     auto &keyTable = getTable<KeyEventReceiver>();
 
@@ -237,8 +212,34 @@ void kF::UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     }
 }
 
+template<typename Component, typename Event>
+inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept
+{
+    auto &table = getTable<Component>();
+    auto &areaTable = getTable<Area>();
+    std::uint32_t index {};
+
+    for (const auto &component : table) {
+        const auto entity = table.entities().at(index++);
+        const auto area = areaTable.get(entity);
+
+        // Test non-clipped area
+        if (!area.contains(event.pos)) [[likely]]
+            continue;
+
+        // Test clipped area
+        if (!getClippedArea(entity, area).contains(event.pos)) [[likely]]
+            continue;
+
+        // Event hit
+        const auto flags = component.event(event, area);
+        if (processEventFlags(table, component, entityLock, flags))
+            break;
+    }
+}
+
 template<typename Table>
-inline bool kF::UI::UISystem::processEventFlags(
+inline bool UI::UISystem::processEventFlags(
         const Table &table, const Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept
 {
     // Invalidate frame flag

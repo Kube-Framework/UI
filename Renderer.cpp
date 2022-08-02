@@ -511,7 +511,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
 
     // Utility to conve<rt from clip Area to scissor Rect2D
     const auto toScissor = [extent](const auto &area) {
-        if (area == Area())
+        if (area == DefaultClip)
             return Rect2D { Offset2D(), extent };
         else
             return Rect2D(
@@ -521,7 +521,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
     };
 
     // Reset scissor
-    recorder.setScissor(toScissor(Area()));
+    recorder.setScissor(toScissor(DefaultClip));
 
     // Loop over each clip and draw all vertices between them
     const auto indexCount = _painter.indexCount();
