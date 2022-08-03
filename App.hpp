@@ -106,11 +106,34 @@ public:
     /** @brief Get reference over the UI system of the application */
     [[nodiscard]] inline UISystem &uiSystem(void) const noexcept { return *_uiSystem; }
 
+
     /** @brief Get current window size */
     [[nodiscard]] Size windowSize(void) const noexcept;
 
     /** @brief Set current window size */
     void setWindowSize(const Size size) noexcept;
+
+
+    /** @brief Get relative mouse mode state */
+    [[nodiscard]] bool relativeMouseMode(void) const noexcept;
+
+    /** @brief Set relative mouse mode state */
+    void setRelativeMouseMode(const bool state) noexcept;
+
+
+    /** @brief Get mouse grab state */
+    [[nodiscard]] bool mouseGrab(void) const noexcept;
+
+    /** @brief Set current mouse grab state */
+    void setMouseGrab(const bool state) noexcept;
+
+
+    /** @brief Get keyboard grab state */
+    [[nodiscard]] bool keyboardGrab(void) const noexcept;
+
+    /** @brief Set current keyboard grab state */
+    void setKeyboardGrab(const bool state) noexcept;
+
 
     /** @brief Run app in blocking mode */
     void run(void) noexcept;

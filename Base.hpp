@@ -72,7 +72,8 @@ namespace kF::UI
     {
         Left,
         Center,
-        Right
+        Right,
+        Justify
     };
 
 

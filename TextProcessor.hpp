@@ -11,6 +11,9 @@
 
 namespace kF::UI
 {
+    /** @brief Number of elide dots */
+    constexpr std::uint32_t ElideDotCount = 2;
+
     /** @brief Text primitive */
     struct alignas_cacheline Text : public PrimitiveTag<"Text">
     {
@@ -20,10 +23,11 @@ namespace kF::UI
         Color color {}; // Text color
         Anchor anchor {}; // Text anchor inside its area
         TextAlignment textAlignment {}; // Text alignment
-        bool justify {}; // Text justification
         bool vertical {}; // Vertical text layout
+        bool fit {}; // Text fit area
         bool elide {}; // Text eliding
         float rotationAngle {}; // Rotation in radians
+        Pixel tabSpaceCount { 4 }; // Spaces per tabulation
     };
     static_assert_fit_cacheline(Text);
 

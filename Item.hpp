@@ -108,12 +108,12 @@ public:
      *  @note Any component is already attached will be overwrited */
     template<typename ...Components>
         requires kF::UI::ComponentRequirements<Components...>
-    Item &attachUpdate(Components &&...components) noexcept;
+    Item &tryAttach(Components &&...components) noexcept;
 
     /** @brief Try to update components of Item
      *  @note If a component doesn't exists, it is created */
     template<typename ...Functors>
-    Item &attachUpdate(Functors &&...functors) noexcept;
+    Item &tryAttach(Functors &&...functors) noexcept;
 
 
     /** @brief Detach components from Item */

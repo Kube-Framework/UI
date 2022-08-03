@@ -22,28 +22,28 @@ inline kF::UI::Item &kF::UI::Item::attach(Components &&...components) noexcept
 
 template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
-inline kF::UI::Item &kF::UI::Item::attachUpdate(Components &&...components) noexcept
+inline kF::UI::Item &kF::UI::Item::tryAttach(Components &&...components) noexcept
 {
     static_assert(((!IsBaseItemComponent<Components>) && ...),
-        "UI::Item::attachUpdate: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor");
+        "UI::Item::tryAttach: 'TreeNode' and 'Area' must not be attached, they are implicitly attached by Item's constructor");
 
-    uiSystem().attachUpdate(_entity, std::forward<Components>(components)...);
+    uiSystem().tryAttach(_entity, std::forward<Components>(components)...);
     markComponents<Components...>();
     return *this;
 }
 
 template<typename ...Functors>
-inline kF::UI::Item &kF::UI::Item::attachUpdate(Functors &&...functors) noexcept
+inline kF::UI::Item &kF::UI::Item::tryAttach(Functors &&...functors) noexcept
 {
     static_assert(
         ([]<typename Functor>(Functor *) -> bool {
             using Component = std::remove_cvref_t<std::tuple_element_t<0, typename Core::FunctionDecomposerHelper<Functors>::ArgsTuple>>;
             return !IsBaseItemComponent<Component>;
         }(std::declval<Functors *>()) && ...),
-        "UI::Item::attachUpdate: 'TreeNode', 'Area' and 'Depth' must not be attached, they are implicitly attached by Item's constructor"
+        "UI::Item::tryAttach: 'TreeNode', 'Area' and 'Depth' must not be attached, they are implicitly attached by Item's constructor"
     );
 
-    uiSystem().attachUpdate(_entity, std::forward<Functors>(functors)...);
+    uiSystem().tryAttach(_entity, std::forward<Functors>(functors)...);
     markComponents<
         std::remove_cvref_t<std::tuple_element_t<0, typename Core::FunctionDecomposerHelper<Functors>::ArgsTuple>>...
     >();
@@ -68,7 +68,7 @@ inline void kF::UI::Item::tryDettach(void) noexcept
     static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::tryDettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettacged by Item's destructor");
 
-    uiSystem().tryDettach<Area>(_entity);
+    uiSystem().tryDettach<Components...>(_entity);
     unmarkComponents<Components...>();
 }
 

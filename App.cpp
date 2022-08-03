@@ -216,6 +216,36 @@ void UI::App::setWindowSize(const Size size) noexcept
     _gpu->dispatchViewSizeChanged();
 }
 
+bool UI::App::relativeMouseMode(void) const noexcept
+{
+    return SDL_GetRelativeMouseMode();
+}
+
+void UI::App::setRelativeMouseMode(const bool state) noexcept
+{
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state));
+}
+
+bool UI::App::mouseGrab(void) const noexcept
+{
+    return SDL_GetWindowMouseGrab(_backendInstance.window);
+}
+
+void UI::App::setMouseGrab(const bool state) noexcept
+{
+    SDL_SetWindowMouseGrab(_backendInstance.window, static_cast<SDL_bool>(state));
+}
+
+bool UI::App::keyboardGrab(void) const noexcept
+{
+    return SDL_GetWindowKeyboardGrab(_backendInstance.window);
+}
+
+void UI::App::setKeyboardGrab(const bool state) noexcept
+{
+    SDL_SetWindowKeyboardGrab(_backendInstance.window, static_cast<SDL_bool>(state));
+}
+
 void UI::App::run(void) noexcept
 {
     _executor.run();
