@@ -6,6 +6,7 @@
 #pragma once
 
 #include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_mouse.h>
 
 #include "Base.hpp"
 
@@ -16,6 +17,26 @@ namespace kF::UI
     struct WheelEvent;
     struct KeyEvent;
 
+
+    /** @brief Mouse cursor */
+    enum class Cursor : std::uint32_t
+    {
+        Arrow = SDL_SYSTEM_CURSOR_ARROW,
+        Ibeam = SDL_SYSTEM_CURSOR_IBEAM,
+        Wait = SDL_SYSTEM_CURSOR_WAIT,
+        Crosshair = SDL_SYSTEM_CURSOR_CROSSHAIR,
+        WaitArrow = SDL_SYSTEM_CURSOR_WAITARROW,
+        SizeNWSE = SDL_SYSTEM_CURSOR_SIZENWSE,
+        SizeNESW = SDL_SYSTEM_CURSOR_SIZENESW,
+        SizeWE = SDL_SYSTEM_CURSOR_SIZEWE,
+        SizeNS = SDL_SYSTEM_CURSOR_SIZENS,
+        SizeAll = SDL_SYSTEM_CURSOR_SIZEALL,
+        No = SDL_SYSTEM_CURSOR_NO,
+        Hand = SDL_SYSTEM_CURSOR_HAND
+    };
+
+    /** @brief Number of cursors */
+    constexpr auto CursorCount = SDL_NUM_SYSTEM_CURSORS;
 
     /** @brief Mouse button */
     enum class Button : std::uint8_t

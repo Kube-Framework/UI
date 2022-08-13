@@ -48,6 +48,37 @@ class alignas_double_cacheline kF::UI::UISystem
 public:
     static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
 
+    /** @brief Cache */
+    struct alignas_cacheline Cache
+    {
+        ItemPtr root {};
+        Size windowSize {};
+        DPI windowDPI {};
+        DepthUnit maxDepth {};
+        GPU::FrameIndex invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
+        bool invalidateTree { true };
+    };
+    static_assert_fit_cacheline(Cache);
+
+    /** @brief Event cache */
+    struct alignas_double_cacheline EventCache
+    {
+        // Event queues
+        EventQueuePtr<MouseEvent> mouseQueue {};
+        EventQueuePtr<MotionEvent> motionQueue {};
+        EventQueuePtr<WheelEvent> wheelQueue {};
+        EventQueuePtr<KeyEvent> keyQueue {};
+        // Locks
+        ECS::Entity mouseLock { ECS::NullEntity };
+        ECS::Entity motionLock { ECS::NullEntity };
+        ECS::Entity wheelLock { ECS::NullEntity };
+        ECS::Entity keyLock { ECS::NullEntity };
+        // Time
+        std::int64_t lastTick {};
+    };
+    static_assert_fit_double_cacheline(EventCache);
+
+
     /** @brief Virtual destructor */
     ~UISystem(void) noexcept override;
 
@@ -56,23 +87,23 @@ public:
 
 
     /** @brief Get window size */
-    [[nodiscard]] Size windowSize(void) const noexcept { return _windowSize; }
+    [[nodiscard]] Size windowSize(void) const noexcept { return _cache.windowSize; }
 
     /** @brief Get window DPI */
-    [[nodiscard]] DPI windowDPI(void) const noexcept { return _windowDPI; }
+    [[nodiscard]] DPI windowDPI(void) const noexcept { return _cache.windowDPI; }
 
 
     /** @brief Get scene max depth */
-    [[nodiscard]] DepthUnit maxDepth(void) const noexcept { return _maxDepth; }
-
-
-    /** @brief Get root item */
-    [[nodiscard]] Item &root(void) noexcept { return *_root; }
-    [[nodiscard]] const Item &root(void) const noexcept { return *_root; }
+    [[nodiscard]] DepthUnit maxDepth(void) const noexcept { return _cache.maxDepth; }
 
 
     /** @brief Set clear color of UI renderer */
     inline void setClearColor(const Color &color) noexcept { _renderer.setClearColor(color); }
+
+
+    /** @brief Get root item */
+    [[nodiscard]] Item &root(void) noexcept { return *_cache.root; }
+    [[nodiscard]] const Item &root(void) const noexcept { return *_cache.root; }
 
 
     /** @brief Register renderer primitive */
@@ -83,7 +114,7 @@ public:
     template<typename Derived, typename ...Args>
         requires std::derived_from<Derived, Item>
     inline Derived &emplaceRoot(Args &&...args) noexcept
-        { _root = Core::UniquePtr<Derived, UIAllocator>::Make(std::forward<Args>(args)...); return reinterpret_cast<Derived &>(*_root); }
+        { _cache.root = Core::UniquePtr<Derived, UIAllocator>::Make(std::forward<Args>(args)...); return reinterpret_cast<Derived &>(*_cache.root); }
 
 
     /** @brief Invalidate UI scene */
@@ -93,18 +124,8 @@ public:
     /** @brief Get the sprite manager */
     [[nodiscard]] SpriteManager &spriteManager(void) noexcept { return _spriteManager; }
 
-    /** @brief Add a sprite to the SpriteManager using its path if it doesn't exists
-     *  @note If the sprite already loaded this function does not duplicate its memory */
-    [[nodiscard]] inline Sprite addSprite(const std::string_view &path) noexcept { return _spriteManager.add(path); }
-
-
     /** @brief Get the font manager */
     [[nodiscard]] FontManager &fontManager(void) noexcept { return _fontManager; }
-
-    /** @brief Add a font to the FontManager using its path if it doesn't exists
-     *  @note If the font already loaded this function does not duplicate its memory */
-    [[nodiscard]] inline Font addFont(const std::string_view &path, const FontModel &model) noexcept
-        { return _fontManager.add(path, model); }
 
 
     /** @brief Virtual tick callback */
@@ -114,7 +135,7 @@ public:
 private:
     /** @brief Check if a frame is invalid */
     inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept
-        { return _invalidateFlags & (static_cast<GPU::FrameIndex>(1) << frame); }
+        { return _cache.invalidateFlags & (static_cast<GPU::FrameIndex>(1) << frame); }
 
     /** @brief Validate a single frame */
     void validateFrame(const GPU::FrameIndex frame) noexcept;
@@ -182,22 +203,10 @@ private:
     SpriteManager _spriteManager {};
     // Cacheline N + 4
     FontManager _fontManager {};
-    // Cacheline N + 5 -> N + 6
-    ItemPtr _root {};
-    Size _windowSize {};
-    DPI _windowDPI {};
-    DepthUnit _maxDepth {};
-    GPU::FrameIndex _invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
-    bool _invalidateTree { true };
-    std::int64_t _lastTick {};
-    EventQueuePtr<MouseEvent> _mouseQueue {};
-    EventQueuePtr<MotionEvent> _motionQueue {};
-    EventQueuePtr<WheelEvent> _wheelQueue {};
-    EventQueuePtr<KeyEvent> _keyQueue {};
-    ECS::Entity _mouseLock { ECS::NullEntity };
-    ECS::Entity _motionLock { ECS::NullEntity };
-    ECS::Entity _wheelLock { ECS::NullEntity };
-    ECS::Entity _keyLock { ECS::NullEntity };
+    // Cacheline N + 5
+    Cache _cache {};
+    // Cacheline N + 6 -> N + 7
+    EventCache _eventCache {};
     // Cacheline N + 7 -> N + 10
     Renderer _renderer;
 };

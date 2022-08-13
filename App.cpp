@@ -164,7 +164,14 @@ UI::App::~App(void) noexcept
         "UI::App: App already destroyed");
     _Instance = nullptr;
 
+    // Remove signal handler
     ::signal(SIGINT, nullptr);
+
+    // Release system cursors
+    for (const auto backendCursor : _backendCursors)
+        ::SDL_FreeCursor(backendCursor);
+
+    // Wait GPU to stop
     gpu().logicalDevice().waitIdle();
 }
 
@@ -183,6 +190,11 @@ UI::App::App(const std::string_view windowTitle, const Point windowPos, const Si
         kFInfo("UI::App: Application interrupted");
         App::Get().stop();
     });
+
+    // Instantiate system cursors
+    _backendCursors.resize(CursorCount);
+    for (auto i = 0u; i != CursorCount; ++i)
+        _backendCursors.at(i) = ::SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
 
     // Event pipeline
     _executor.addPipelineInline<EventPipeline>(
@@ -214,6 +226,14 @@ void UI::App::setWindowSize(const Size size) noexcept
 {
     SDL_SetWindowSize(_backendInstance.window, static_cast<int>(size.width), static_cast<int>(size.height));
     _gpu->dispatchViewSizeChanged();
+}
+
+void UI::App::setCursor(const Cursor cursor) noexcept
+{
+    if (_cursor != cursor) {
+        _cursor = cursor;
+        SDL_SetCursor(reinterpret_cast<SDL_Cursor *>(_backendCursors.at(Core::ToUnderlying(cursor))));
+    }
 }
 
 bool UI::App::relativeMouseMode(void) const noexcept

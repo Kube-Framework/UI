@@ -11,10 +11,13 @@
 
 #include "Base.hpp"
 
+struct SDL_Cursor;
+
 namespace kF::UI
 {
     class App;
     class UISystem;
+    enum class Cursor : std::uint32_t;
 }
 
 class kF::UI::App
@@ -114,6 +117,13 @@ public:
     void setWindowSize(const Size size) noexcept;
 
 
+    /** @brief Get current cursor */
+    [[nodiscard]] Cursor cursor(void) const noexcept { return _cursor; }
+
+    /** @brief Set current mouse cursor */
+    void setCursor(const Cursor cursor) noexcept;
+
+
     /** @brief Get relative mouse mode state */
     [[nodiscard]] bool relativeMouseMode(void) const noexcept;
 
@@ -171,6 +181,9 @@ private:
     std::int64_t _frameTickRate { DefaultFrameTickRate };
     UISystem *_uiSystem { nullptr };
     IO::ResourceManager _resourceManager {};
+    Core::Vector<SDL_Cursor *> _backendCursors {};
+    Cursor _cursor {};
+
     // Cacheline 2 -> ...
     ECS::Executor _executor;
 };

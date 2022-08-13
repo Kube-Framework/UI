@@ -13,8 +13,6 @@
 
 #include "Animator.hpp"
 
-#include "Base.hpp"
-
 namespace kF::UI
 {
     class Painter;
@@ -23,6 +21,7 @@ namespace kF::UI
     class WheelEvent;
     class KeyEvent;
     enum class ComponentFlags : std::uint32_t;
+
 
     /** @brief Flags used as return type to indicate propagation and frame invalidation of an event */
     enum class EventFlags : std::uint32_t
@@ -46,6 +45,7 @@ namespace kF::UI
         DepthUnit maxChildDepth {};
     };
 
+
     /** @brief Tree Node Type */
     struct alignas_half_cacheline TreeNode
     {
@@ -61,6 +61,7 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(TreeNode);
 
+
     /** @brief Transform describes a 2D space transformation */
     struct alignas_cacheline Transform
     {
@@ -74,6 +75,7 @@ namespace kF::UI
         Event event {}; // Runtime transform event
     };
     static_assert_fit_cacheline(Transform);
+
 
     /** @brief Layout describes the children distribution of an item */
     struct alignas_half_cacheline Layout
@@ -89,15 +91,17 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(Layout);
 
-    /** @brief Timer event functor */
-    using TimerEvent = Core::Functor<bool(std::uint64_t), UIAllocator>;
 
     /** @brief Timer handler */
     struct alignas_cacheline Timer
     {
-        TimerEvent event {};
+        /** @brief Timer event functor */
+        using Event = Core::Functor<bool(std::uint64_t), UIAllocator>;
+
+        Event event {};
         std::int64_t interval {};
-        std::int64_t elapsed {};
+        // Runtime state
+        std::int64_t elapsedTimeState {};
     };
     static_assert_fit_cacheline(Timer);
 
@@ -149,12 +153,14 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(PainterArea);
 
+
     /** @brief Clip, only applies to children */
     struct alignas_quarter_cacheline Clip
     {
         Padding padding {};
     };
     static_assert_fit_quarter_cacheline(Clip);
+
 
     /** @brief Mouse handler */
     struct alignas_half_cacheline MouseEventArea
@@ -203,6 +209,7 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(MouseEventArea);
 
+
     /** @brief Motion handler */
     struct alignas_half_cacheline MotionEventArea
     {
@@ -249,6 +256,7 @@ namespace kF::UI
         [[nodiscard]] static MotionEventArea Make(Args &&...args) noexcept;
     };
     static_assert_fit_half_cacheline(MotionEventArea);
+
 
     /** @brief Wheel handler */
     struct alignas_half_cacheline WheelEventArea
@@ -297,6 +305,7 @@ namespace kF::UI
     };
     static_assert_fit_half_cacheline(WheelEventArea);
 
+
     /** @brief Key handler */
     struct alignas_half_cacheline KeyEventReceiver
     {
@@ -343,6 +352,7 @@ namespace kF::UI
         [[nodiscard]] static KeyEventReceiver Make(Args &&...args) noexcept;
     };
     static_assert_fit_half_cacheline(KeyEventReceiver);
+
 
     /** @brief Component flags */
     enum class ComponentFlags : std::uint32_t

@@ -32,25 +32,31 @@ UI::DPI UI::UISystem::GetWindowDPI(void) noexcept
 
 UI::UISystem::~UISystem(void) noexcept
 {
-    _root.release();
+    // Release tree before managers
+    _cache.root.release();
 }
 
 UI::UISystem::UISystem(void) noexcept
-    :   _windowSize(GetWindowSize()),
-        _windowDPI(GetWindowDPI()),
-        _mouseQueue(parent().getSystem<EventSystem>().addEventQueue<MouseEvent>()),
-        _motionQueue(parent().getSystem<EventSystem>().addEventQueue<MotionEvent>()),
-        _wheelQueue(parent().getSystem<EventSystem>().addEventQueue<WheelEvent>()),
-        _keyQueue(parent().getSystem<EventSystem>().addEventQueue<KeyEvent>()),
+    :   _cache(Cache {
+            .windowSize = GetWindowSize(),
+            .windowDPI = GetWindowDPI()
+        }),
+        _eventCache(EventCache {
+            .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
+            .motionQueue = parent().getSystem<EventSystem>().addEventQueue<MotionEvent>(),
+            .wheelQueue = parent().getSystem<EventSystem>().addEventQueue<WheelEvent>(),
+            .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>()
+        }),
         _renderer(*this)
 {
+    // Observe view size
     GPU::GPUObject::Parent().viewSizeDispatcher().add([this] {
-        _windowSize = GetWindowSize();
-        _windowDPI = GetWindowDPI();
+        _cache.windowSize = GetWindowSize();
+        _cache.windowDPI = GetWindowDPI();
         invalidate();
     });
 
-    // Rebuild graph
+    // Build task graph
     auto &graph = taskGraph();
     auto &computeTask = graph.add([this] {
         _spriteManager.prepareFrameCache();
@@ -67,7 +73,7 @@ bool UI::UISystem::tick(void) noexcept
     const auto currentFrame = _renderer.currentFrame();
 
     // Return if there are no items in the tree
-    if (!_root) [[unlikely]]
+    if (!_cache.root) [[unlikely]]
         return false;
 
     // Process elapsed time
@@ -83,9 +89,9 @@ bool UI::UISystem::tick(void) noexcept
     }
 
     // If the tree is invalid, compute areas then paint
-    if (_invalidateTree) {
+    if (_cache.invalidateTree) {
         // Build layouts using LayoutBuilder
-        _maxDepth = Internal::LayoutBuilder(*this, _traverseContext).build();
+        _cache.maxDepth = Internal::LayoutBuilder(*this, _traverseContext).build();
 
         // Sort component tables by depth
         sortTables();
@@ -168,19 +174,19 @@ UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &
 void UI::UISystem::processEventHandlers(void) noexcept
 {
     // @todo Events can crash if they remove Items from the tree
-    _mouseQueue->consume([this](const auto &range) {
+    _eventCache.mouseQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processMouseEventAreas(event);
     });
-    _motionQueue->consume([this](const auto &range) {
+    _eventCache.motionQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processMotionEventAreas(event);
     });
-    _wheelQueue->consume([this](const auto &range) {
+    _eventCache.wheelQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processWheelEventAreas(event);
     });
-    _keyQueue->consume([this](const auto &range) {
+    _eventCache.keyQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processKeyEventReceivers(event);
     });
@@ -188,17 +194,17 @@ void UI::UISystem::processEventHandlers(void) noexcept
 
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
-    traverseClippedEventTable<MouseEventArea>(event, _mouseLock);
+    traverseClippedEventTable<MouseEventArea>(event, _eventCache.mouseLock);
 }
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    traverseClippedEventTable<MotionEventArea>(event, _motionLock);
+    traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
 }
 
 void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
 {
-    traverseClippedEventTable<WheelEventArea>(event, _wheelLock);
+    traverseClippedEventTable<WheelEventArea>(event, _eventCache.wheelLock);
 }
 
 void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
@@ -207,7 +213,7 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 
     for (const auto &handler : keyTable) {
         const auto flags = handler.event(event);
-        if (processEventFlags(keyTable, handler, _keyLock, flags))
+        if (processEventFlags(keyTable, handler, _eventCache.keyLock, flags))
             break;
     }
 }
@@ -217,6 +223,21 @@ inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Ent
 {
     auto &table = getTable<Component>();
     auto &areaTable = getTable<Area>();
+
+    // Send event to locked entity if any
+    if (entityLock != ECS::NullEntity && table.exists(entityLock)) {
+        // Compute clipped
+        const auto clippedArea = getClippedArea(entityLock, areaTable.get(entityLock));
+
+        // Process locked event without checking for mouse collision
+        const auto &component = table.get(entityLock);
+        const auto flags = component.event(event, clippedArea);
+
+        // If locked event flags tells to stop, return now
+        if (processEventFlags(table, component, entityLock, flags))
+            return;
+    }
+
     std::uint32_t index {};
 
     for (const auto &component : table) {
@@ -228,11 +249,14 @@ inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Ent
             continue;
 
         // Test clipped area
-        if (!getClippedArea(entity, area).contains(event.pos)) [[likely]]
+        const auto clippedArea = getClippedArea(entity, area);
+        if (!clippedArea.contains(event.pos)) [[likely]]
             continue;
 
-        // Event hit
-        const auto flags = component.event(event, area);
+        // Process event
+        const auto flags = component.event(event, clippedArea);
+
+        // Process event flags
         if (processEventFlags(table, component, entityLock, flags))
             break;
     }
@@ -259,11 +283,11 @@ inline bool UI::UISystem::processEventFlags(
 void UI::UISystem::processElapsedTime(void) noexcept
 {
     // Query time
-    const auto oldTick = _lastTick;
-    _lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    const auto oldTick = _eventCache.lastTick;
+    _eventCache.lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
     // Compute elapsed time
-    const auto elapsed = _lastTick - oldTick;
+    const auto elapsed = _eventCache.lastTick - oldTick;
     bool invalidateState = false;
 
     // Process timers & animations
@@ -280,10 +304,10 @@ bool UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
 {
     bool invalidateState = false;
     for (Timer &handler : getTable<Timer>()) {
-        handler.elapsed += elapsed;
-        if (handler.elapsed >= handler.interval) [[unlikely]] {
+        handler.elapsedTimeState += elapsed;
+        if (handler.elapsedTimeState >= handler.interval) [[unlikely]] {
             invalidateState |= handler.event(elapsed);
-            handler.elapsed = 0;
+            handler.elapsedTimeState = 0;
         }
     }
     return invalidateState;
@@ -291,6 +315,7 @@ bool UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
 
 bool UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
 {
+    // @todo Fix bug when removing an animator at tick time
     bool invalidateState { false };
 
     for (Animator &handler : getTable<Animator>())
