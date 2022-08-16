@@ -54,10 +54,15 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
                 )
             },
             {
-                Core::MakeFlags(GPU::DescriptorBindingFlags::UpdateAfterBind, GPU::DescriptorBindingFlags::UpdateUnusedWhilePending, GPU::DescriptorBindingFlags::PartiallyBound)
+                Core::MakeFlags(
+                    GPU::DescriptorBindingFlags::UpdateAfterBind,
+                    GPU::DescriptorBindingFlags::UpdateUnusedWhilePending,
+                    GPU::DescriptorBindingFlags::PartiallyBound
+                )
             }
         )),
-        _commandPool(GPU::QueueType::Transfer, GPU::CommandPoolCreateFlags::Transient),
+                _commandPool(GPU::QueueType::Transfer,
+        GPU::CommandPoolCreateFlags::Transient),
         _command(_commandPool.add(GPU::CommandLevel::Primary)),
         _perFrameCache(parent().frameCount(), [this] {
             FrameCache frameCache {
@@ -73,7 +78,9 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
             return frameCache;
         })
 {
-    parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) { _perFrameCache.setCurrentFrame(frameIndex); });
+    parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) noexcept {
+        _perFrameCache.setCurrentFrame(frameIndex);
+    });
 
     // Add default sprite
     const Color defaultBufferData { 255, 80, 255, 255 };

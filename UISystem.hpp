@@ -73,6 +73,8 @@ public:
         ECS::Entity motionLock { ECS::NullEntity };
         ECS::Entity wheelLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
+        // Hover
+        ECS::Entity lastHovered { ECS::NullEntity };
         // Time
         std::int64_t lastTick {};
     };
@@ -166,7 +168,7 @@ private:
 
     /** @brief Traverse a table requiring clipped area */
     template<typename Component, typename Event>
-    void traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
+    ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
 
 
     /** @brief Process EventFlags returned by event components

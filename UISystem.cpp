@@ -199,7 +199,30 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
+    const auto hitEntity = traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
+
+    if (hitEntity == _eventCache.lastHovered) [[likely]]
+        return;
+
+    const auto onHoverChanged = [this](auto &component, const bool value) noexcept {
+        component.hovered = value;
+        if (component.hoverEvent)
+            component.hoverEvent(value);
+        // We may invalidate on hover transitions
+        if (component.invalidateOnHoverChanged) [[likely]]
+            invalidate();
+    };
+    auto &table = getTable<MotionEventArea>();
+
+    // Reset last hovered state
+    if (table.exists(_eventCache.lastHovered)) [[likely]]
+        onHoverChanged(table.get(_eventCache.lastHovered), false);
+
+    // Set new hovered state
+    if (hitEntity != ECS::NullEntity)
+        onHoverChanged(table.get(hitEntity), true);
+
+    _eventCache.lastHovered = hitEntity;
 }
 
 void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
@@ -219,7 +242,7 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 }
 
 template<typename Component, typename Event>
-inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept
+inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept
 {
     auto &table = getTable<Component>();
     auto &areaTable = getTable<Area>();
@@ -235,14 +258,15 @@ inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Ent
 
         // If locked event flags tells to stop, return now
         if (processEventFlags(table, component, entityLock, flags))
-            return;
+            return entityLock;
     }
 
-    std::uint32_t index {};
+    std::uint32_t index { ~0u };
+    ECS::Entity hitEntity { ECS::NullEntity };
 
-    for (const auto &component : table) {
-        const auto entity = table.entities().at(index++);
+    for (const auto entity : table.entities()) {
         const auto area = areaTable.get(entity);
+        ++index;
 
         // Test non-clipped area
         if (!area.contains(event.pos)) [[likely]]
@@ -254,12 +278,16 @@ inline void UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Ent
             continue;
 
         // Process event
-        const auto flags = component.event(event, clippedArea);
+        const auto &component = table.atIndex(index);
+        const auto flags = component.event ? component.event(event, clippedArea) : EventFlags::Stop;
 
         // Process event flags
-        if (processEventFlags(table, component, entityLock, flags))
+        if (processEventFlags(table, component, entityLock, flags)) {
+            hitEntity = entity;
             break;
+        }
     }
+    return hitEntity;
 }
 
 template<typename Table>

@@ -114,14 +114,14 @@ namespace kF::UI
 
         Event event {};
 
-        /** @brief Wrap any static paint functor within a painter area
+        /** @brief Bind a static paint functor withion a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto Functor, typename ...Args>
         [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
 
-        /** @brief Wrap any non-const member paint functor within a painter area
+        /** @brief Bind a non-const member paint functor withion a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -129,7 +129,7 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static PainterArea Make(ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any const member paint functor within a painter area
+        /** @brief Bind a const member paint functor withion a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -137,14 +137,14 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static PainterArea Make(const ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any static paint functor within a painter area
+        /** @brief Bind a static paint functor withion a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static PainterArea Make(Functor &&functor, Args &&...args) noexcept;
 
-        /** @brief Wrap any paint functor class within a painter area
+        /** @brief Bind a paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -170,14 +170,14 @@ namespace kF::UI
 
         Event event {};
 
-        /** @brief Wrap any static mouse event functor within a mouse event area
+        /** @brief Bind a static mouse event function within a mouse event area
          *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto Functor, typename ...Args>
         [[nodiscard]] static MouseEventArea Make(Args &&...args) noexcept;
 
-        /** @brief Wrap any non-const member mouse event functor within a mouse event area
+        /** @brief Bind a non-const member mouse event function within a mouse event area
          *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -185,7 +185,7 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static MouseEventArea Make(ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any const member mouse event functor within a mouse event area
+        /** @brief Bind a const member mouse event function within a mouse event area
          *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -193,14 +193,14 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static MouseEventArea Make(const ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any static mouse event functor within a mouse event area
+        /** @brief Bind a static mouse event function within a mouse event area
          *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static MouseEventArea Make(Functor &&functor, Args &&...args) noexcept;
 
-        /** @brief Wrap any mouse event functor class within a mouse event area
+        /** @brief Bind a mouse event functor within a mouse event area
          *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -211,21 +211,28 @@ namespace kF::UI
 
 
     /** @brief Motion handler */
-    struct alignas_half_cacheline MotionEventArea
+    struct alignas_cacheline MotionEventArea
     {
         /** @brief MotionEventArea event functor */
         using Event = Core::Functor<EventFlags(const MotionEvent &, const Area &), UIAllocator>;
 
-        Event event {};
+        /** @brief MotionEventArea hover event functor */
+        using HoverEvent = Core::Functor<void(const bool), UIAllocator, Core::CacheLineEighthSize * 3>;
 
-        /** @brief Wrap any static motion event functor within a motion event area
+        Event event {};
+        HoverEvent hoverEvent {};
+        bool invalidateOnHoverChanged { true };
+        // Runtime state
+        bool hovered {};
+
+        /** @brief Bind a static motion event function within a motion event area
          *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto Functor, typename ...Args>
         [[nodiscard]] static MotionEventArea Make(Args &&...args) noexcept;
 
-        /** @brief Wrap any non-const member motion event functor within a motion event area
+        /** @brief Bind a non-const member motion event function within a motion event area
          *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -233,7 +240,7 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static MotionEventArea Make(ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any const member motion event functor within a motion event area
+        /** @brief Bind a const member motion event function within a motion event area
          *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -241,21 +248,21 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static MotionEventArea Make(const ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any static motion event functor within a motion event area
+        /** @brief Bind a static motion event function within a motion event area
          *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static MotionEventArea Make(Functor &&functor, Args &&...args) noexcept;
 
-        /** @brief Wrap any motion event functor class within a motion event area
+        /** @brief Bind a motion event functor within a motion event area
          *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static MotionEventArea Make(Args &&...args) noexcept;
     };
-    static_assert_fit_half_cacheline(MotionEventArea);
+    static_assert_fit_cacheline(MotionEventArea);
 
 
     /** @brief Wheel handler */
@@ -266,14 +273,14 @@ namespace kF::UI
 
         Event event {};
 
-        /** @brief Wrap any static wheel event functor within a wheel event area
+        /** @brief Bind a static wheel event function within a wheel event area
          *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto Functor, typename ...Args>
         [[nodiscard]] static WheelEventArea Make(Args &&...args) noexcept;
 
-        /** @brief Wrap any non-const member wheel event functor within a wheel event area
+        /** @brief Bind a non-const member wheel event function within a wheel event area
          *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -281,7 +288,7 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static WheelEventArea Make(ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any const member wheel event functor within a wheel event area
+        /** @brief Bind a const member wheel event function within a wheel event area
          *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -289,14 +296,14 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static WheelEventArea Make(const ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any static wheel event functor within a wheel event area
+        /** @brief Bind a static wheel event function within a wheel event area
          *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static WheelEventArea Make(Functor &&functor, Args &&...args) noexcept;
 
-        /** @brief Wrap any wheel event functor class within a wheel event area
+        /** @brief Bind a wheel event functor within a wheel event area
          *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -314,14 +321,14 @@ namespace kF::UI
 
         Event event {};
 
-        /** @brief Wrap any static key event functor within a key event receiver
+        /** @brief Bind a static key event function within a key event receiver
          *  @note The functor must take 'const KeyEvent &' as its first argument
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto Functor, typename ...Args>
         [[nodiscard]] static KeyEventReceiver Make(Args &&...args) noexcept;
 
-        /** @brief Wrap any non-const member key event functor within a key event receiver
+        /** @brief Bind a non-const member key event function within a key event receiver
          *  @note The functor must take 'const KeyEvent &' as its first argument
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -329,7 +336,7 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static KeyEventReceiver Make(ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any const member key event functor within a key event receiver
+        /** @brief Bind a const member key event function within a key event receiver
          *  @note The functor must take 'const KeyEvent &' as its first argument
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
@@ -337,14 +344,14 @@ namespace kF::UI
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
         [[nodiscard]] static KeyEventReceiver Make(const ClassType * const instance, Args &&...args) noexcept;
 
-        /** @brief Wrap any static key event functor within a key event receiver
+        /** @brief Bind a static key event function within a key event receiver
          *  @note The functor must take 'const KeyEvent &' as its first argument
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
         [[nodiscard]] static KeyEventReceiver Make(Functor &&functor, Args &&...args) noexcept;
 
-        /** @brief Wrap any key event functor class within a key event receiver
+        /** @brief Bind a key event functor within a key event receiver
          *  @note The functor must take 'const KeyEvent &' as its first argument
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
