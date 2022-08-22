@@ -103,14 +103,16 @@ public:
     inline void setClearColor(const Color &color) noexcept { _renderer.setClearColor(color); }
 
 
+    /** @brief Get the sprite manager */
+    [[nodiscard]] inline SpriteManager &spriteManager(void) noexcept { return _spriteManager; }
+
+    /** @brief Get the font manager */
+    [[nodiscard]] inline FontManager &fontManager(void) noexcept { return _fontManager; }
+
+
     /** @brief Get root item */
     [[nodiscard]] Item &root(void) noexcept { return *_cache.root; }
     [[nodiscard]] const Item &root(void) const noexcept { return *_cache.root; }
-
-
-    /** @brief Register renderer primitive */
-    template<kF::UI::PrimitiveKind Primitive>
-    inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
 
     /** @brief Construct root Item instance */
     template<typename Derived, typename ...Args>
@@ -123,20 +125,17 @@ public:
     void invalidate(void) noexcept;
 
 
-    /** @brief Get the sprite manager */
-    [[nodiscard]] SpriteManager &spriteManager(void) noexcept { return _spriteManager; }
-
-    /** @brief Get the font manager */
-    [[nodiscard]] FontManager &fontManager(void) noexcept { return _fontManager; }
-
-
     /** @brief Virtual tick callback */
     [[nodiscard]] bool tick(void) noexcept override;
 
 
+    /** @brief Register renderer primitive */
+    template<kF::UI::PrimitiveKind Primitive>
+    inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
+
 private:
     /** @brief Check if a frame is invalid */
-    inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept
+    [[nodiscard]] inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept
         { return _cache.invalidateFlags & (static_cast<GPU::FrameIndex>(1) << frame); }
 
     /** @brief Validate a single frame */

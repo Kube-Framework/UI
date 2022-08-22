@@ -6,7 +6,8 @@
 #include <SDL2/SDL.h>
 
 #include <Kube/GPU/GPU.hpp>
-#include <Kube/UI/App.hpp>
+
+#include <Kube/ECS/Executor.hpp>
 
 #include "EventSystem.hpp"
 #include "UISystem.hpp"
