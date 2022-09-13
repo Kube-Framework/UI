@@ -68,7 +68,7 @@ namespace kF::UI
 
     /** @brief Compute a line of glyphs from a text */
     template<auto GetX, auto GetY>
-    [[nodiscard]] static Pixel ComputeLine(ComputeParameters &params,
+    static Pixel ComputeLine(Glyph *&out, ComputeParameters &params,
             const std::string_view::iterator from, const std::string_view::iterator to,
             const LineMetrics &metrics, const Pixel yOffset) noexcept;
 

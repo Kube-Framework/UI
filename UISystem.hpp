@@ -175,7 +175,7 @@ private:
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
     /** @brief Traverse a table requiring clipped area */
-    template<typename Component, typename Event>
+    template<typename Component, typename Event, typename FixMSVCPLZ = Area> // @todo fix this ****
     ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
 
 
@@ -183,7 +183,7 @@ private:
      *  @return True if the event flags requires to stop event processing */
     template<typename Table>
     [[nodiscard]] bool processEventFlags(
-            const Table &table, const Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept;
+            const Table &table, const typename Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept;
 
 
     /** @brief Process system time elapsed */

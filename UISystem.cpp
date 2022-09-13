@@ -243,11 +243,11 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     }
 }
 
-template<typename Component, typename Event>
+template<typename Component, typename Event, typename OtherComp>
 inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept
 {
     auto &table = getTable<Component>();
-    auto &areaTable = getTable<Area>();
+    auto &areaTable = getTable<OtherComp>();
 
     // Send event to locked entity if any
     if (entityLock != ECS::NullEntity && table.exists(entityLock)) {
@@ -294,7 +294,7 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
 
 template<typename Table>
 inline bool UI::UISystem::processEventFlags(
-        const Table &table, const Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept
+        const Table &table, const typename Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept
 {
     // Invalidate frame flag
     if (Core::HasFlags(flags, EventFlags::Invalidate))

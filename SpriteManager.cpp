@@ -3,13 +3,19 @@
  * @ Description: Sprite manager
  */
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wconversion"
+#if KUBE_COMPILER_GCC
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+# pragma GCC diagnostic ignored "-Wcast-qual"
+# pragma GCC diagnostic ignored "-Wconversion"
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#pragma GCC diagnostic pop
+
+#if KUBE_COMPILER_GCC
+# pragma GCC diagnostic pop
+#endif
 
 #include <Kube/Core/Assert.hpp>
 #include <Kube/GPU/GPU.hpp>
