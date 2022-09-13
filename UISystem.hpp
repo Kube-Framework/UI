@@ -39,6 +39,7 @@ class alignas_double_cacheline kF::UI::UISystem
         MouseEventArea,
         MotionEventArea,
         WheelEventArea,
+        DropEventArea,
         KeyEventReceiver,
         // Time
         Timer,
@@ -60,6 +61,12 @@ public:
     };
     static_assert_fit_cacheline(Cache);
 
+    struct DragCache
+    {
+        ECS::Entity currentDrag { ECS::NullEntity };
+        DragType currentDragType {};
+    };
+
     /** @brief Event cache */
     struct alignas_double_cacheline EventCache
     {
@@ -75,6 +82,8 @@ public:
         ECS::Entity keyLock { ECS::NullEntity };
         // Hover
         ECS::Entity lastHovered { ECS::NullEntity };
+        // Drag
+        DragCache drag {};
         // Time
         std::int64_t lastTick {};
     };

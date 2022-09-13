@@ -55,8 +55,6 @@ kube_add_library(UI
         TextProcessor.cpp
         TraverseContext.cpp
         TraverseContext.hpp
-        UIObject.cpp
-        UIObject.hpp
         UISystem.cpp
         UISystem.hpp
         UISystem.ipp

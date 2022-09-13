@@ -413,6 +413,22 @@ namespace kF::UI
     static constexpr Area DefaultClip { Point {}, Size { PixelInfinity, PixelInfinity }};
 
 
+    /** @brief Store a type hash code for comparison purposes */
+    struct alignas_eighth_cacheline DragType
+    {
+        /** @brief Get an opaque type handle from a templated type */
+        template<typename Type>
+        [[nodiscard]] static inline DragType Get(void) noexcept { return DragType { typeid(Type).hash_code() }; }
+
+        std::size_t hash {};
+
+        /** @brief Comparison operators */
+        [[nodiscard]] bool operator==(const DragType &other) const noexcept = default;
+        [[nodiscard]] bool operator!=(const DragType &other) const noexcept = default;
+    };
+    static_assert_fit_eighth_cacheline(DragType);
+
+
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
     constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
     {

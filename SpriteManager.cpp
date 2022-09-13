@@ -34,7 +34,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
             GPU::SamplerCreateFlags::None,
             GPU::Filter::Linear,
             GPU::Filter::Linear,
-            GPU::SamplerMipmapMode::Nearest,
+            GPU::SamplerMipmapMode::Linear,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
@@ -189,7 +189,7 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
     spriteCache.size = Size(static_cast<Pixel>(spriteBuffer.extent.width), static_cast<Pixel>(spriteBuffer.extent.height));
     spriteCache.image = Image::MakeSingleLayer2D(
         spriteBuffer.extent,
-        Format::R8G8B8A8_SRGB,
+        Format::R8G8B8A8_UNORM,
         Core::MakeFlags(ImageUsageFlags::TransferDst, ImageUsageFlags::Sampled),
         ImageTiling::TilingOptimal
     );
@@ -198,7 +198,7 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
         ImageViewCreateFlags::None,
         spriteCache.image,
         ImageViewType::Image2D,
-        Format::R8G8B8A8_SRGB,
+        Format::R8G8B8A8_UNORM,
         ComponentMapping(),
         ImageSubresourceRange(ImageAspectFlags::Color)
     ));

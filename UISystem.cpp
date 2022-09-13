@@ -125,6 +125,7 @@ void UI::UISystem::sortTables(void) noexcept
     getTable<MouseEventArea>().sort(descentCompareFunc);
     getTable<MotionEventArea>().sort(descentCompareFunc);
     getTable<WheelEventArea>().sort(descentCompareFunc);
+    getTable<DropEventArea>().sort(descentCompareFunc);
     getTable<KeyEventReceiver>().sort(descentCompareFunc);
 }
 

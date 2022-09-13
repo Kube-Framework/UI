@@ -15,8 +15,8 @@ namespace kF::UI
     struct MouseEvent;
     struct MotionEvent;
     struct WheelEvent;
+    struct DropEvent;
     struct KeyEvent;
-
 
     /** @brief Mouse cursor */
     enum class Cursor : std::uint32_t
@@ -345,6 +345,31 @@ struct alignas_half_cacheline kF::UI::WheelEvent
     std::uint32_t timestamp {};
 };
 static_assert_fit_half_cacheline(kF::UI::WheelEvent);
+
+/** @brief Describe a drop event */
+struct alignas_half_cacheline kF::UI::DropEvent
+{
+    /** @brief Type of drop event */
+    enum class Type
+    {
+        Begin,
+        Enter,
+        Leave,
+        Drop,
+        End
+    };
+
+    Type type {};
+    std::uint32_t timestamp {};
+    DragType dragType {};
+    void *dragSource {};
+
+    /** @brief Cast drag source as given type */
+    template<typename DragSource, typename UnderlyingType = std::remove_cvref_t<DragSource>>
+    [[nodiscard]] const auto &dragSourceAs(void) const noexcept
+        { return *reinterpret_cast<UnderlyingType *>(dragSource); }
+};
+static_assert_fit_half_cacheline(kF::UI::DropEvent);
 
 /** @brief Describe a key event (single key action) */
 struct alignas_quarter_cacheline kF::UI::KeyEvent
