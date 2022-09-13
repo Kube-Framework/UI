@@ -79,12 +79,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a transform  */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static Transform Make(ClassType &&instance) noexcept
+        [[nodiscard]] static inline Transform Make(ClassType &&instance) noexcept
             { return Transform { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
 
         /** @brief Bind a static functor within a transform  */
         template<auto Function>
-        [[nodiscard]] inline static Transform Make(void) noexcept
+        [[nodiscard]] static inline Transform Make(void) noexcept
             { return Transform { Event::Make<Function>() }; }
     };
     static_assert_fit_cacheline(Transform);
@@ -119,12 +119,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a timer  */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static Timer Make(ClassType &&instance, const std::int64_t interval) noexcept
+        [[nodiscard]] static inline Timer Make(ClassType &&instance, const std::int64_t interval) noexcept
             { return Timer { Event::Make<MemberFunction>(std::forward<ClassType>(instance)), interval }; }
 
         /** @brief Bind a static functor within a timer  */
         template<auto Function>
-        [[nodiscard]] inline static Timer Make(const std::int64_t interval) noexcept
+        [[nodiscard]] static inline Timer Make(const std::int64_t interval) noexcept
             { return Timer { Event::Make<Function>(), interval }; }
     };
     static_assert_fit_cacheline(Timer);
@@ -198,12 +198,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a mouse event area */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static MouseEventArea Make(ClassType &&instance) noexcept
+        [[nodiscard]] static inline MouseEventArea Make(ClassType &&instance) noexcept
             { return MouseEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
 
         /** @brief Bind a static functor within a mouse event area */
         template<auto Function>
-        [[nodiscard]] inline static MouseEventArea Make(void) noexcept
+        [[nodiscard]] static inline MouseEventArea Make(void) noexcept
             { return MouseEventArea { Event::Make<Function>() }; }
     };
     static_assert_fit_half_cacheline(MouseEventArea);
@@ -227,12 +227,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a motion event area */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static MotionEventArea Make(ClassType &&instance) noexcept
+        [[nodiscard]] static inline MotionEventArea Make(ClassType &&instance) noexcept
             { return MotionEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
 
         /** @brief Bind a static functor within a motion event area */
         template<auto Function>
-        [[nodiscard]] inline static MotionEventArea Make(void) noexcept
+        [[nodiscard]] static inline MotionEventArea Make(void) noexcept
             { return MotionEventArea { Event::Make<Function>() }; }
     };
     static_assert_fit_cacheline(MotionEventArea);
@@ -249,12 +249,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a wheel event area */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static WheelEventArea Make(ClassType &&instance) noexcept
+        [[nodiscard]] static inline WheelEventArea Make(ClassType &&instance) noexcept
             { return WheelEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
 
         /** @brief Bind a static functor within a wheel event area */
         template<auto Function>
-        [[nodiscard]] inline static WheelEventArea Make(void) noexcept
+        [[nodiscard]] static inline WheelEventArea Make(void) noexcept
             { return WheelEventArea { Event::Make<Function>() }; }
     };
     static_assert_fit_half_cacheline(WheelEventArea);
@@ -277,12 +277,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a drop event area */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static DropEventArea Make(ClassType &&instance, DragTypes &&dragTypes) noexcept
+        [[nodiscard]] static inline DropEventArea Make(ClassType &&instance, DragTypes &&dragTypes) noexcept
             { return DropEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)), std::forward<DragTypes>(dragTypes) }; }
 
         /** @brief Bind a static functor within a drop event area */
         template<auto Function>
-        [[nodiscard]] inline static DropEventArea Make(DragTypes &&dragTypes) noexcept
+        [[nodiscard]] static inline DropEventArea Make(DragTypes &&dragTypes) noexcept
             { return DropEventArea { Event::Make<Function>(), std::forward<DragTypes>(dragTypes) }; }
     };
     static_assert_fit_cacheline(DropEventArea);
@@ -299,12 +299,12 @@ namespace kF::UI
 
         /** @brief Bind a member functor within a key event receiver */
         template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] inline static KeyEventReceiver Make(ClassType &&instance) noexcept
+        [[nodiscard]] static inline KeyEventReceiver Make(ClassType &&instance) noexcept
             { return KeyEventReceiver { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
 
         /** @brief Bind a static functor within a key event receiver */
         template<auto Function>
-        [[nodiscard]] inline static KeyEventReceiver Make(void) noexcept
+        [[nodiscard]] static inline KeyEventReceiver Make(void) noexcept
             { return KeyEventReceiver { Event::Make<Function>() }; }
     };
     static_assert_fit_half_cacheline(KeyEventReceiver);

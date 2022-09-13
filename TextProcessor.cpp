@@ -138,7 +138,7 @@ std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         else
             ComputeGlyph<GetYAxis, GetXAxis>(out, params);
     }
-    return static_cast<std::uint32_t>(std::distance(begin, out));
+    return Core::Distance<std::uint32_t>(begin, out));
 }
 
 template<auto GetX, auto GetY>
@@ -251,7 +251,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
     }
 
     // Compute character count
-    metrics.charCount = static_cast<std::uint32_t>(std::distance(from, it));
+    metrics.charCount = Core::Distance<std::uint32_t>(from, it));
     return metrics;
 }
 
