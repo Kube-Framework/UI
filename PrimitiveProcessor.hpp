@@ -40,7 +40,7 @@ namespace kF::UI
         template<kF::UI::PrimitiveKind Primitive>
         [[nodiscard]] inline std::uint32_t GetInstanceCount(
                 const Primitive * const primitiveBegin, const Primitive * const primitiveEnd) noexcept
-            { return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd)); }
+            { return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd); }
 
         /** @brief Insert instances from a list of primitives
          *  @note If you don't specialize, the default behavior is to copy primitive as instances (1:1 mapping)
@@ -52,7 +52,7 @@ namespace kF::UI
                 std::uint8_t * const instanceBegin) noexcept
         {
             std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive * const>(instanceBegin));
-            return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd));
+            return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd);
         }
     }
 }

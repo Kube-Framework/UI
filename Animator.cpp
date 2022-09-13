@@ -45,7 +45,7 @@ Core::Expected<std::uint32_t> UI::Animator::findIndex(const Animation &animation
     auto it = _states.find([&animation](const auto &state) { return &animation == state.animation; });
 
     if (it != _states.end()) [[likely]]
-        return Core::Expected<std::uint32_t>(Core::Distance<std::uint32_t>(_states.begin(), it)));
+        return Core::Expected<std::uint32_t>(Core::Distance<std::uint32_t>(_states.begin(), it));
     else [[unlikely]]
         return Core::Expected<std::uint32_t>();
 }

@@ -75,13 +75,13 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
         if (counter.empty())
             return 0u;
 
-        const auto entityParentIndex = Core::Distance<std::uint32_t>(parentNode.children.begin(), parentNode.children.find(entity)));
+        const auto entityParentIndex = Core::Distance<std::uint32_t>(parentNode.children.begin(), parentNode.children.find(entity));
         auto insertIndex = 0u;
 
         // @todo Optimize insertion to reduce indirections
         for (const auto childEntityIndex : counter) {
             const auto childEntity = uiSystem.getTable<TreeNode>().entities().at(childEntityIndex);
-            const auto childParentIndex = Core::Distance<std::uint32_t>(parentNode.children.begin(), parentNode.children.find(childEntity)));
+            const auto childParentIndex = Core::Distance<std::uint32_t>(parentNode.children.begin(), parentNode.children.find(childEntity));
             if (childParentIndex > entityParentIndex)
                 break;
             ++insertIndex;
