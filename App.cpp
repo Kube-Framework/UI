@@ -117,7 +117,8 @@ UI::App::BackendInstance::~BackendInstance(void) noexcept
 UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
         const Point windowPos, const Size windowSize, const WindowFlags windowFlags) noexcept
 {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    kFEnsure(!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS),
+        "UI::App: Couldn't initialize SDL2 video & events subsystems");
 
     // Check window position special values
     Point pos = windowPos;
