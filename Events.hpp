@@ -360,14 +360,8 @@ struct alignas_half_cacheline kF::UI::DropEvent
     };
 
     Type type {};
+    Point pos {};
     std::uint32_t timestamp {};
-    DragType dragType {};
-    void *dragSource {};
-
-    /** @brief Cast drag source as given type */
-    template<typename DragSource, typename UnderlyingType = std::remove_cvref_t<DragSource>>
-    [[nodiscard]] const auto &dragSourceAs(void) const noexcept
-        { return *reinterpret_cast<UnderlyingType *>(dragSource); }
 };
 static_assert_fit_half_cacheline(kF::UI::DropEvent);
 

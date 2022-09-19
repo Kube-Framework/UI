@@ -7,6 +7,7 @@
 
 #include <Kube/ECS/Base.hpp>
 #include <Kube/Core/SmallVector.hpp>
+#include <Kube/Core/UniquePtr.hpp>
 
 #include "Components.hpp"
 

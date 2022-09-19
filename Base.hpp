@@ -414,19 +414,19 @@ namespace kF::UI
 
 
     /** @brief Store a type hash code for comparison purposes */
-    struct alignas_eighth_cacheline DragType
+    struct alignas_eighth_cacheline TypeHash
     {
         /** @brief Get an opaque type handle from a templated type */
         template<typename Type>
-        [[nodiscard]] static inline DragType Get(void) noexcept { return DragType { typeid(Type).hash_code() }; }
+        [[nodiscard]] static inline TypeHash Get(void) noexcept { return TypeHash { typeid(Type).hash_code() }; }
 
         std::size_t hash {};
 
         /** @brief Comparison operators */
-        [[nodiscard]] bool operator==(const DragType &other) const noexcept = default;
-        [[nodiscard]] bool operator!=(const DragType &other) const noexcept = default;
+        [[nodiscard]] bool operator==(const TypeHash &other) const noexcept = default;
+        [[nodiscard]] bool operator!=(const TypeHash &other) const noexcept = default;
     };
-    static_assert_fit_eighth_cacheline(DragType);
+    static_assert_fit_eighth_cacheline(TypeHash);
 
 
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */

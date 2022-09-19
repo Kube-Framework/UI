@@ -261,31 +261,53 @@ namespace kF::UI
 
 
     /** @brief Drop handler */
-    struct alignas_cacheline DropEventArea
+    struct alignas_double_cacheline DropEventArea
     {
-        /** @brief DropEventArea event functor */
-        using Event = Core::Functor<EventFlags(const DropEvent &, const Area &), UIAllocator>;
-
         /** @brief List of opaque types managed by the drop area */
-        using DragTypes = Core::SmallVector<DragType, 1, UIAllocator>;
+        using DropTypes = Core::SmallVector<TypeHash, 2, UIAllocator>;
 
-        Event event {};
-        DragTypes types {};
-        // Runtime state
-        bool hovered {};
+        /** @brief Drag functor */
+        using DropFunctor = Core::Functor<void(const void *, const DropEvent &, const Area &), UIAllocator>;
+
+        /** @brief List of drop functors managed by the drop area */
+        using DropFunctors = Core::SmallVector<DropFunctor, 2, UIAllocator>;
 
 
-        /** @brief Bind a member functor within a drop event area */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline DropEventArea Make(ClassType &&instance, DragTypes &&dragTypes) noexcept
-            { return DropEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)), std::forward<DragTypes>(dragTypes) }; }
+        /** @brief Destructor */
+        ~DropEventArea(void) noexcept = default;
 
-        /** @brief Bind a static functor within a drop event area */
-        template<auto Function>
-        [[nodiscard]] static inline DropEventArea Make(DragTypes &&dragTypes) noexcept
-            { return DropEventArea { Event::Make<Function>(), std::forward<DragTypes>(dragTypes) }; }
+        /** @brief Construct a drop event area with a list of drop functors that determines handled drop types
+         *  @note Each drop functor must have the following arguments:
+         *  template<DropType>(const DropType &, const DropEvent &, const Area &) */
+        template<typename ...Functors>
+        DropEventArea(Functors &&...functors) noexcept;
+
+        /** @brief Copy constructor */
+        inline DropEventArea(const DropEventArea &other) noexcept = default;
+
+        /** @brief Move constructor */
+        inline DropEventArea(DropEventArea &&other) noexcept = default;
+
+        /** @brief Copy assignment */
+        inline DropEventArea &operator=(const DropEventArea &other) noexcept = default;
+
+        /** @brief Move assignment */
+        inline DropEventArea &operator=(DropEventArea &&other) noexcept = default;
+
+
+        /** @brief Get hovered state */
+        [[nodiscard]] inline bool hovered(void) const noexcept { return _hovered; }
+
+
+        /** @brief Process drop event */
+        void onEvent(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept;
+
+    private:
+        DropTypes _types {};
+        bool _hovered {};
+        DropFunctors _functors {};
     };
-    static_assert_fit_cacheline(DropEventArea);
+    static_assert_fit_double_cacheline(DropEventArea);
 
 
     /** @brief Key handler */

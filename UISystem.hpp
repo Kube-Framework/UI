@@ -63,8 +63,9 @@ public:
 
     struct DragCache
     {
-        ECS::Entity currentDrag { ECS::NullEntity };
-        DragType currentDragType {};
+        TypeHash type {};
+        const void *data {};
+        PainterArea painterArea {};
     };
 
     /** @brief Event cache */
@@ -82,10 +83,10 @@ public:
         ECS::Entity keyLock { ECS::NullEntity };
         // Hover
         ECS::Entity lastHovered { ECS::NullEntity };
-        // Drag
-        DragCache drag {};
         // Time
         std::int64_t lastTick {};
+        // Drag
+        DragCache drag {};
     };
     static_assert_fit_double_cacheline(EventCache);
 
@@ -128,6 +129,11 @@ public:
         requires std::derived_from<Derived, Item>
     inline Derived &emplaceRoot(Args &&...args) noexcept
         { _cache.root = Core::UniquePtr<Derived, UIAllocator>::Make(std::forward<Args>(args)...); return reinterpret_cast<Derived &>(*_cache.root); }
+
+
+    /** @brief Drag a type rendered with a given painter area */
+    template<typename Type>
+    void drag(const Type &type, const PainterArea &painterArea) noexcept;
 
 
     /** @brief Invalidate UI scene */

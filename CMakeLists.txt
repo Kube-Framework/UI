@@ -9,6 +9,7 @@ kube_add_library(UI
         Base.cpp
         Base.hpp
         Base.ipp
+        Components.cpp
         Components.hpp
         Components.ipp
         Events.hpp
