@@ -18,9 +18,7 @@ inline void kF::UI::UISystem::validateFrame(const GPU::FrameIndex frame) noexcep
 }
 
 template<typename Type>
-inline void kF::UI::UISystem::drag(const Type &type, const PainterArea &painterArea) noexcept
+inline void kF::UI::UISystem::drag(const Type &type, const Size &size, PainterArea &&painterArea) noexcept
 {
-    _eventCache.drag.type = TypeHash::Get<Type>();
-    _eventCache.drag.data = &type;
-    _eventCache.drag.painterArea = painterArea;
+    onDrag(TypeHash::Get<Type>(), &type, size, std::move(painterArea));
 }

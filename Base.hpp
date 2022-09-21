@@ -422,9 +422,12 @@ namespace kF::UI
 
         std::size_t hash {};
 
+        /** @brief Fast type checking */
+        [[nodiscard]] inline operator bool(void) const noexcept { return hash; }
+
         /** @brief Comparison operators */
-        [[nodiscard]] bool operator==(const TypeHash &other) const noexcept = default;
-        [[nodiscard]] bool operator!=(const TypeHash &other) const noexcept = default;
+        [[nodiscard]] inline bool operator==(const TypeHash &other) const noexcept = default;
+        [[nodiscard]] inline bool operator!=(const TypeHash &other) const noexcept = default;
     };
     static_assert_fit_eighth_cacheline(TypeHash);
 

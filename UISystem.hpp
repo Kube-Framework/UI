@@ -63,8 +63,9 @@ public:
 
     struct DragCache
     {
-        TypeHash type {};
+        TypeHash typeHash {};
         const void *data {};
+        Size size {};
         PainterArea painterArea {};
     };
 
@@ -83,6 +84,7 @@ public:
         ECS::Entity keyLock { ECS::NullEntity };
         // Hover
         ECS::Entity lastHovered { ECS::NullEntity };
+        ECS::Entity lastDragHovered { ECS::NullEntity };
         // Time
         std::int64_t lastTick {};
         // Drag
@@ -133,7 +135,7 @@ public:
 
     /** @brief Drag a type rendered with a given painter area */
     template<typename Type>
-    void drag(const Type &type, const PainterArea &painterArea) noexcept;
+    void drag(const Type &type, const Size &size, PainterArea &&painterArea) noexcept;
 
 
     /** @brief Invalidate UI scene */
@@ -180,10 +182,10 @@ private:
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
+
     /** @brief Traverse a table requiring clipped area */
     template<typename Component, typename Event, typename FixMSVCPLZ = Area> // @todo fix this ****
     ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
-
 
     /** @brief Process EventFlags returned by event components
      *  @return True if the event flags requires to stop event processing */
@@ -204,6 +206,20 @@ private:
 
     /** @brief Process all PainterArea instances */
     void processPainterAreas(void) noexcept;
+
+
+    /** @brief Callback on drag */
+    void onDrag(const TypeHash typeHash, const void * const data, const Size &size, PainterArea &&painterArea) noexcept;
+
+    /** @brief Callback on drop */
+    void onDrop(const Point pos, const std::uint32_t timestamp) noexcept;
+
+    /** @brief Apply a single DropEvent to every DropEventArea matching current drop type */
+    void applyDropEventAreas(const DropEvent &event) noexcept;
+
+    /** @brief Apply a single DropEvent to every DropEventArea matching current drop type */
+    void traverseDropEventAreas(const DropEvent &event) noexcept;
+
 
 
     /** @brief Query current window Size */

@@ -58,23 +58,37 @@ inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
 }
 
 template<typename ...Functors>
+    requires (sizeof...(Functors) > 0)
 inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
-    : _functors(
+    : _dropTypes(
+        [](Functors &&...functors)
+        {
+            constexpr auto Forward = []<typename Functor>(Functor &&)
+            {
+                using Decomposer = Core::FunctionDecomposerHelper<Functor>;
+                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
+                using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+                return TypeHash::Get<Type>();
+            };
+            return DropTypes { Forward(std::forward<Functors>(functors))... };
+        }(std::forward<Functors>(functors)...)
+    )
+    , _dropFunctors(
         [](Functors &&...functors)
         {
             constexpr auto Forward = []<typename Functor>(Functor &&functor)
             {
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::ArgsTuple.size() > 0, "Drop functor must have at least the catched type as first argument");
-                using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
+                using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
                 return DropFunctor(
                     [functor = std::forward<Functor>(functor)](const void * const data,
                             [[maybe_unused]] const DropEvent &dropEvent, [[maybe_unused]] const Area &area)
                     {
-                        const auto type = *reinterpret_cast<const Type * const>(data);
-                        if constexpr (Decomposer::ArgsTuple.size() == 1)
+                        const auto &type = *reinterpret_cast<const Type * const>(data);
+                        if constexpr (Decomposer::IndexSequence.size() == 1)
                             functor(type);
-                        else if constexpr (Decomposer::ArgsTuple.size() == 2)
+                        else if constexpr (Decomposer::IndexSequence.size() == 2)
                             functor(type, dropEvent);
                         else
                             functor(type, dropEvent, area);
@@ -82,19 +96,6 @@ inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
                 );
             };
             return DropFunctors { Forward(std::forward<Functors>(functors))... };
-        }(std::forward<Functors>(functors)...)
-    )
-    , _types(
-        [](Functors &&...functors)
-        {
-            constexpr auto Forward = []<typename Functor>(Functor &&functor)
-            {
-                using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::ArgsTuple.size() > 0, "Drop functor must have at least the catched type as first argument");
-                using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
-                return TypeHash::Get<Type>();
-            };
-            return DropTypes { Forward(std::forward<Functors>(functors))... };
         }(std::forward<Functors>(functors)...)
     )
 {

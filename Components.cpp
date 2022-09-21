@@ -8,14 +8,13 @@
 
 void kF::UI::DropEventArea::onEvent(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept
 {
-    auto index = 0u;
-    for (const auto type : _types) {
-        if (type != typeHash) [[likely]] {
-            ++index;
-        } else {
-            _hovered = event.type == DropEvent::Type::Enter;
-            _functors[index](data, event, area);
-            break;
-        }
-    }
+    if (const auto it = _dropTypes.find(typeHash); it != _dropTypes.end())
+        onEventUnsafe(data, event, area, Core::Distance<std::uint32_t>(_dropTypes.begin(), it));
+}
+
+void kF::UI::DropEventArea::onEventUnsafe(const void * const data, const DropEvent &event, const Area &area,
+        const std::uint32_t dropTypeIndex) noexcept
+{
+    _hovered = event.type == DropEvent::Type::Enter;
+    _dropFunctors[dropTypeIndex](data, event, area);
 }

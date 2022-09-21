@@ -201,28 +201,43 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    const auto hitEntity = traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
-
-    if (hitEntity == _eventCache.lastHovered) [[likely]]
-        return;
-
-    const auto onHoverChanged = [this](auto &component, const bool value) noexcept {
+    constexpr auto OnHoverChanged = [](auto * const self, auto &component, const bool value) noexcept {
         component.hovered = value;
         if (component.hoverEvent)
             component.hoverEvent(value);
         // We may invalidate on hover transitions
         if (component.invalidateOnHoverChanged) [[likely]]
-            invalidate();
+            self->invalidate();
     };
+
+    if (_eventCache.drag.typeHash) [[unlikely]] {
+        invalidate();
+        // Reset previous hovered entity
+        if (_eventCache.lastHovered != ECS::NullEntity)
+            OnHoverChanged(this, get<MotionEventArea>(_eventCache.lastHovered), false);
+
+        traverseDropEventAreas(DropEvent {
+            .type = DropEvent::Type::Enter,
+            .pos = event.pos,
+            .timestamp = event.timestamp
+        });
+        return;
+    }
+
+    const auto hitEntity = traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
+
+    if (hitEntity == _eventCache.lastHovered) [[likely]]
+        return;
+
     auto &table = getTable<MotionEventArea>();
 
     // Reset last hovered state
     if (table.exists(_eventCache.lastHovered)) [[likely]]
-        onHoverChanged(table.get(_eventCache.lastHovered), false);
+        OnHoverChanged(this, table.get(_eventCache.lastHovered), false);
 
     // Set new hovered state
     if (hitEntity != ECS::NullEntity)
-        onHoverChanged(table.get(hitEntity), true);
+        OnHoverChanged(this, table.get(hitEntity), true);
 
     _eventCache.lastHovered = hitEntity;
 }
@@ -393,5 +408,119 @@ void UI::UISystem::processPainterAreas(void) noexcept
 
         // Paint self
         handler.event(painter, area);
+    }
+
+    // Draw drag if any
+    if (_eventCache.drag.typeHash) {
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
+        const Area area(mousePos - _eventCache.drag.size / 2, _eventCache.drag.size);
+        _eventCache.drag.painterArea.event(painter, area);
+    }
+}
+
+void UI::UISystem::onDrag(const TypeHash typeHash, const void * const data, const Size &size, PainterArea &&painterArea) noexcept
+{
+    _eventCache.drag.typeHash = typeHash;
+    _eventCache.drag.data = data;
+    _eventCache.drag.size = size;
+    _eventCache.drag.painterArea = std::move(painterArea);
+
+    // Trigger begin event of every DropEventArea matching typeHash
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    applyDropEventAreas(DropEvent {
+        .type = DropEvent::Type::Begin,
+        .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
+        .timestamp = SDL_GetTicks()
+    });
+}
+
+void UI::UISystem::onDrop(const Point pos, const std::uint32_t timestamp) noexcept
+{
+    // Trigger drop event of every DropEventArea matching typeHash
+    traverseDropEventAreas(DropEvent {
+        .type = DropEvent::Type::Drop,
+        .pos = pos,
+        .timestamp = timestamp
+    });
+
+    // Trigger end event of every DropEventArea matching typeHash
+    applyDropEventAreas(DropEvent {
+        .type = DropEvent::Type::End,
+        .pos = pos,
+        .timestamp = timestamp
+    });
+
+    _eventCache.drag.typeHash = TypeHash();
+    _eventCache.drag.data = nullptr;
+    _eventCache.drag.size = Size();
+    _eventCache.drag.painterArea = PainterArea();
+}
+
+void UI::UISystem::applyDropEventAreas(const DropEvent &event) noexcept
+{
+    kFAssert(event.type == DropEvent::Type::Begin || event.type == DropEvent::Type::End,
+        "UI::UISystem::applyDropEventAreas: DropEvent's type must be 'Begin' or 'End'");
+
+    auto &table = getTable<DropEventArea>();
+    auto &areaTable = getTable<Area>();
+
+    for (auto index = 0u; DropEventArea &dropEventArea : table) {
+        const auto &dropTypes = dropEventArea.dropTypes();
+        const auto it = dropTypes.find(_eventCache.drag.typeHash);
+        if (it == dropTypes.end()) [[unlikely]]
+            continue;
+        const auto entity = table.entities().at(index);
+        const auto &area = areaTable.get(entity);
+        dropEventArea.onEventUnsafe(
+            _eventCache.drag.data,
+            event,
+            getClippedArea(entity, area),
+            Core::Distance<std::uint32_t>(dropTypes.begin(), it)
+        );
+    }
+}
+
+void UI::UISystem::traverseDropEventAreas(const DropEvent &event) noexcept
+{
+    kFAssert(event.type == DropEvent::Type::Enter || event.type == DropEvent::Type::Drop,
+        "UI::UISystem::traverseDropEventAreas: DropEvent's type must be 'Enter' or 'Drop'");
+
+    auto &table = getTable<DropEventArea>();
+    auto &areaTable = getTable<Area>();
+
+    for (std::uint32_t index = ~0u; const auto entity : table.entities()) {
+        const auto area = areaTable.get(entity);
+        ++index;
+
+        // Test non-clipped area
+        if (!area.contains(event.pos)) [[likely]]
+            continue;
+
+        // Test clipped area
+        const auto clippedArea = getClippedArea(entity, area);
+        if (!clippedArea.contains(event.pos)) [[likely]]
+            continue;
+
+        // Process event
+        DropEventArea &component = table.atIndex(index);
+        if (event.type == DropEvent::Type::Enter && _eventCache.lastDragHovered != entity) {
+            // If previous entity was non null, call leave event
+            if (_eventCache.lastDragHovered != ECS::NullEntity) {
+                const auto &area = areaTable.get(_eventCache.lastDragHovered);
+                const auto lastClippedArea = getClippedArea(_eventCache.lastDragHovered, area);
+                const DropEvent leaveEvent {
+                    .type = DropEvent::Type::Leave,
+                    .pos = event.pos,
+                    .timestamp = event.timestamp
+                };
+                component.onEvent(_eventCache.drag.typeHash, _eventCache.drag.data, leaveEvent, lastClippedArea);
+            }
+            // Call enter event
+            component.onEvent(_eventCache.drag.typeHash, _eventCache.drag.data, event, clippedArea);
+        }
+        break;
     }
 }
