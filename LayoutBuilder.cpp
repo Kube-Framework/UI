@@ -380,6 +380,16 @@ void UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextA
     if (childCount >= 2.0 && flexSize == 0.0f && layout.spacingType == SpacingType::SpaceBetween) [[unlikely]]
         spacing += freeSpace / (childCount - 1u);
 
+    // Compute global anchor offset
+    const auto globalAnchorOffset = [](const auto &contextArea, const auto &layout, const auto flexCount, const auto freeSpace) {
+        const Pixel totalWidth = GetX(contextArea.size) - Core::BranchlessIf(flexCount, 0.0f, freeSpace);
+        Size size;
+        GetX(size) = totalWidth;
+        GetY(size) = GetY(contextArea.size);
+        const auto anchoredArea = Area::ApplyAnchor(contextArea, size, layout.anchor);
+        return anchoredArea.pos - contextArea.pos;
+    }(contextArea, layout, flexCount, freeSpace);
+
     for (const auto childEntityIndex : childIndexRange) {
         const auto &constraints = _traverseContext->constraintsAt(childEntityIndex);
         auto &area = _traverseContext->areaAt(childEntityIndex);
@@ -395,6 +405,7 @@ void UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextA
             GetY(transformedArea.pos) = GetY(offset);
             GetX(offset) += GetX(area.size) + spacing;
             area = Area::ApplyAnchor(transformedArea, area.size, layout.anchor);
+            area.pos += globalAnchorOffset;
         }
 
         // Apply children transform
