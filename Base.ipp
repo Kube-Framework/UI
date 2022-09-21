@@ -348,28 +348,28 @@ constexpr kF::UI::Area kF::UI::Area::ApplyAnchor(const Area &area, const Size ch
         childSize
     };
     switch (anchor) {
-    case Anchor::Center:
-        child.pos += (area.size - child.size) / 2;
-        break;
-    case Anchor::Left:
-        child.pos += Size(0, area.size.height / 2 - child.size.height / 2);
-        break;
-    case Anchor::Right:
-        child.pos += Size(area.size.width - child.size.width, area.size.height / 2 - child.size.height / 2);
+    case Anchor::TopLeft:
         break;
     case Anchor::Top:
         child.pos += Size(area.size.width / 2 - child.size.width / 2, 0);
         break;
-    case Anchor::Bottom:
-        child.pos += Size(area.size.width / 2 - child.size.width / 2, area.size.height - child.size.height);
-        break;
-    case Anchor::TopLeft:
-        break;
     case Anchor::TopRight:
         child.pos += Size(area.size.width - child.size.width, 0);
         break;
+    case Anchor::Left:
+        child.pos += Size(0, area.size.height / 2 - child.size.height / 2);
+        break;
+    case Anchor::Center:
+        child.pos += (area.size - child.size) / 2;
+        break;
+    case Anchor::Right:
+        child.pos += Size(area.size.width - child.size.width, area.size.height / 2 - child.size.height / 2);
+        break;
     case Anchor::BottomLeft:
         child.pos += Size(0, area.size.height - child.size.height);
+        break;
+    case Anchor::Bottom:
+        child.pos += Size(area.size.width / 2 - child.size.width / 2, area.size.height - child.size.height);
         break;
     case Anchor::BottomRight:
         child.pos += Size(area.size.width - child.size.width, area.size.height - child.size.height);

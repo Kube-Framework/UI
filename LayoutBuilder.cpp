@@ -263,7 +263,7 @@ void UI::Internal::LayoutBuilder::traverseAreas(void) noexcept
 
     // Build position of children using the context node area
     if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]]
-        computeChildrenArea(area, Anchor::Center);
+        computeChildrenArea(area, Anchor {});
     else [[unlikely]]
         buildLayoutArea(area);
 

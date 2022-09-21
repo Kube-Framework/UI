@@ -38,7 +38,11 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
         } else if constexpr (ItemListConstructible<ItemType, Args...>) {
             child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)...);
         }
-        delegate(*child, modelData);
+
+        if constexpr (std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>)
+            delegate(*child, modelData);
+        else
+            delegate(*child, *modelData);
     };
 
     // Setup list model & connect to its event dispatcher

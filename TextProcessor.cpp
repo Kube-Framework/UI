@@ -314,20 +314,7 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to,
     // Compute global offset
     Point offset {};
     switch (params.text->anchor) {
-    case Anchor::Center:
-        offset = (params.text->area.size / 2.0f - metrics / 2.0f).toPoint();
-        break;
-    case Anchor::Left:
-        offset = Point {
-            .x = 0.0f,
-            .y = params.text->area.size.height / 2.0f - metrics.height / 2.0f
-        };
-        break;
-    case Anchor::Right:
-        offset = Point {
-            .x = params.text->area.size.width - metrics.width,
-            .y = params.text->area.size.height / 2.0f - metrics.height / 2.0f
-        };
+    case Anchor::TopLeft:
         break;
     case Anchor::Top:
         offset = Point {
@@ -335,23 +322,36 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to,
             .y = 0.0f
         };
         break;
-    case Anchor::Bottom:
-        offset = Point {
-            .x = params.text->area.size.width / 2.0f - metrics.width / 2.0f,
-            .y = params.text->area.size.height - metrics.height
-        };
-        break;
-    case Anchor::TopLeft:
-        break;
     case Anchor::TopRight:
         offset = Point {
             .x = params.text->area.size.width - metrics.width,
             .y = 0.0f
         };
         break;
+    case Anchor::Left:
+        offset = Point {
+            .x = 0.0f,
+            .y = params.text->area.size.height / 2.0f - metrics.height / 2.0f
+        };
+        break;
+    case Anchor::Center:
+        offset = (params.text->area.size / 2.0f - metrics / 2.0f).toPoint();
+        break;
+    case Anchor::Right:
+        offset = Point {
+            .x = params.text->area.size.width - metrics.width,
+            .y = params.text->area.size.height / 2.0f - metrics.height / 2.0f
+        };
+        break;
     case Anchor::BottomLeft:
         offset = Point {
             .x = 0.0f,
+            .y = params.text->area.size.height - metrics.height
+        };
+        break;
+    case Anchor::Bottom:
+        offset = Point {
+            .x = params.text->area.size.width / 2.0f - metrics.width / 2.0f,
             .y = params.text->area.size.height - metrics.height
         };
         break;

@@ -39,14 +39,14 @@ namespace kF::UI
     /** @brief Layout anchor */
     enum class Anchor : std::uint8_t
     {
-        Center,
-        Left,
-        Right,
-        Top,
-        Bottom,
         TopLeft,
+        Top,
         TopRight,
+        Left,
+        Center,
+        Right,
         BottomLeft,
+        Bottom,
         BottomRight
     };
 

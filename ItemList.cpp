@@ -9,7 +9,7 @@
 
 using namespace kF;
 
-void kF::UI::ItemList::reset(void) noexcept
+void UI::ItemList::reset(void) noexcept
 {
     // Disconnect from dispatcher
     if (_listModel)
