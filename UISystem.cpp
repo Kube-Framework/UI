@@ -176,13 +176,14 @@ UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &
 void UI::UISystem::processEventHandlers(void) noexcept
 {
     // @todo Events can crash if they remove Items from the tree
-    _eventCache.mouseQueue->consume([this](const auto &range) {
-        for (const auto &event : range)
-            processMouseEventAreas(event);
-    });
+    // @todo Motion / mouse / wheel events processed out of order
     _eventCache.motionQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processMotionEventAreas(event);
+    });
+    _eventCache.mouseQueue->consume([this](const auto &range) {
+        for (const auto &event : range)
+            processMouseEventAreas(event);
     });
     _eventCache.wheelQueue->consume([this](const auto &range) {
         for (const auto &event : range)
