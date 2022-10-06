@@ -14,7 +14,7 @@ namespace kF::UI::Internal
 {
     /** @brief Compute axis constraint (rhs) to another (lhs) */
     template<Accumulate AccumulateValue>
-    void ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noexcept;
+    void ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs, [[maybe_unused]] Pixel &maxFixed) noexcept;
 
     /** @brief Compute child size inside parent space according to min/max range */
     template<BoundType Bound>
@@ -172,12 +172,12 @@ void UI::Internal::LayoutBuilder::buildLayoutConstraints(Constraints &constraint
 
     if (hugWidth) {
         constraints.maxSize.width += layout.padding.left + layout.padding.right;
-        constraints.minSize.width = std::max(constraints.minSize.width, constraints.maxSize.width);
+        // constraints.minSize.width = std::max(constraints.minSize.width, constraints.maxSize.width);
     }
 
     if (hugHeight) {
         constraints.maxSize.height += layout.padding.top + layout.padding.bottom;
-        constraints.minSize.height = std::max(constraints.minSize.height, constraints.maxSize.height);
+        // constraints.minSize.height = std::max(constraints.minSize.height, constraints.maxSize.height);
     }
 }
 
@@ -185,13 +185,20 @@ template<kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate 
 void UI::Internal::LayoutBuilder::computeChildrenHugConstraints(Constraints &constraints, [[maybe_unused]] const Pixel spacing,
         const bool hugWidth, const bool hugHeight) noexcept
 {
+    Size maxFixed {};
     for (const auto childEntityIndex : _traverseContext->counter()) {
         const auto &rhs = _traverseContext->constraintsAt(childEntityIndex);
         if (hugWidth)
-            ComputeAxisHugConstraint<AccumulateX>(constraints.maxSize.width, rhs.maxSize.width);
+            ComputeAxisHugConstraint<AccumulateX>(constraints.maxSize.width, rhs.maxSize.width, maxFixed.width);
         if (hugHeight)
-            ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height);
+            ComputeAxisHugConstraint<AccumulateY>(constraints.maxSize.height, rhs.maxSize.height, maxFixed.height);
     }
+
+    // If we have at least one fixed children we use it as fill value
+    if ((constraints.maxSize.width == PixelInfinity) & (maxFixed.width != 0))
+        constraints.maxSize.width = maxFixed.width;
+    if ((constraints.maxSize.height == PixelInfinity) & (maxFixed.height != 0))
+        constraints.maxSize.height = maxFixed.height;
 
     if constexpr (AccumulateX == Accumulate::Yes) {
         if (hugWidth)
@@ -203,16 +210,18 @@ void UI::Internal::LayoutBuilder::computeChildrenHugConstraints(Constraints &con
 }
 
 template<kF::UI::Internal::Accumulate AccumulateValue>
-void kF::UI::Internal::ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs) noexcept
+void kF::UI::Internal::ComputeAxisHugConstraint(Pixel &lhs, const Pixel rhs, [[maybe_unused]] Pixel &maxFixed) noexcept
 {
     if constexpr (AccumulateValue == Accumulate::Yes) {
         if (lhs != PixelInfinity)
             lhs = rhs == PixelInfinity ? PixelInfinity : lhs + rhs;
     } else {
-        if ((lhs == PixelInfinity) | (rhs == PixelInfinity)) [[likely]]
-            lhs = std::min(lhs, rhs);
-        else
-            lhs = std::max(lhs, rhs);
+        // if ((lhs == PixelInfinity) | (rhs == PixelInfinity)) [[likely]]
+        //     lhs = std::min(lhs, rhs);
+        // else
+        lhs = std::max(lhs, rhs);
+        if ((rhs != PixelInfinity) & (rhs > maxFixed))
+            maxFixed = rhs;
     }
 }
 

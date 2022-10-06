@@ -21,22 +21,6 @@ namespace kF::UI
 
     template<typename Type, typename ...Args>
     concept ItemListConstructible = requires(Type *data, Args ...args) { new (data) Type(Internal::ForwardArg(args)...); };
-
-    /** @brief Requirements of item list delegate */
-    template<typename ListModelType, typename Delegate, typename ...Args>
-    concept ItemListDelegateRequirements = (!std::is_same_v<typename Core::FunctionDecomposerHelper<Delegate>::ArgsTuple, std::tuple<>>) &&
-            [] {
-                if constexpr (ItemListConstructible<ItemListDelegateType<Delegate>, Args...>
-                        || ItemListConstructible<ItemListDelegateType<Delegate>, typename ListModelType::Type &, Args...>
-                        || ItemListConstructible<ItemListDelegateType<Delegate>, Args..., typename ListModelType::Type &>) {
-                    return true;
-                } else if (Core::IsDereferencable<typename ListModelType::Type>) {
-                    if constexpr (ItemListConstructible<ItemListDelegateType<Delegate>, decltype(*std::declval<typename ListModelType::Type &>()), Args...>
-                            || ItemListConstructible<ItemListDelegateType<Delegate>, Args..., decltype(*std::declval<typename ListModelType::Type &>())>)
-                        return true;
-                }
-                return false;
-            }();
 }
 
 /** @brief Create a list of item synchronized with a ListModel */
@@ -115,7 +99,6 @@ public:
 private:
     /** @brief Setup list model with a list model and a custom delegate */
     template<typename ListModelType, typename Delegate, typename ...Args>
-        requires kF::UI::ItemListDelegateRequirements<ListModelType, Delegate, Args...>
     void setup(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept;
 
     /** @brief Setup list model and a generic delegate for ItemType */

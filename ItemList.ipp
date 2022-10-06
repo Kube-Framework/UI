@@ -8,7 +8,6 @@
 #include "ItemList.hpp"
 
 template<typename ListModelType, typename Delegate, typename ...Args>
-    requires kF::UI::ItemListDelegateRequirements<ListModelType, Delegate, Args...>
 inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegate, Args &&...args) noexcept
 {
     // Query delegate's first argument
@@ -19,30 +18,59 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
         ItemType *child {};
         auto &modelData = (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)];
 
-        // #1 model, args...
-        if constexpr (ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>) {
+        // Static assertions
+        static_assert(
+            ItemListConstructible<ItemType, Args...>
+            || ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>
+            || ItemListConstructible<ItemType, Args..., typename ListModelType::Type &>
+            || [] {
+                if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+                    return ItemListConstructible<ItemType, decltype(*modelData), Args...>
+                        || ItemListConstructible<ItemType, Args..., decltype(*modelData)>;
+                } else
+                    return false;
+            }()
+            || ItemListConstructible<ItemType, Args...>,
+            "ItemList::setup: Child item is not constructible"
+        );
+        static_assert(
+            std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>
+            || [] {
+                if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+                    return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>;
+                } else
+                    return false;
+            }()
+            || std::is_invocable_v<Delegate, decltype(*child)>,
+            "ItemList::setup: Delegate is not invocable"
+        );
+
+        // #1 args...
+        if constexpr (ItemListConstructible<ItemType, Args...>) {
+            child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)...);
+        // #2 model, args...
+        } if constexpr (ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>) {
             child = &parent.insertChild<ItemType>(index, modelData, Internal::ForwardArg(args)...);
-        // #2 args..., model
+        // #3 args..., model
         } else if constexpr (ItemListConstructible<ItemType, Args..., typename ListModelType::Type &>) {
             child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)..., modelData);
-        // #3 Model is dereferencable (ex: raw / unique / shared pointers)
+        // #4 Model is dereferencable (ex: raw / unique / shared pointers)
         } else if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
-            // #3A *model, args...
+            // #4A *model, args...
             if constexpr (ItemListConstructible<ItemType, decltype(*modelData), Args...>) {
                 child = &parent.insertChild<ItemType>(index, *modelData, Internal::ForwardArg(args)...);
-            // #3B args..., *model
+            // #4B args..., *model
             } else if constexpr (ItemListConstructible<ItemType, Args..., decltype(*modelData)>) {
                 child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)..., *modelData);
             }
-        // #4 args...
-        } else if constexpr (ItemListConstructible<ItemType, Args...>) {
-            child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)...);
         }
 
         if constexpr (std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>)
             delegate(*child, modelData);
-        else
+        else if constexpr (std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>)
             delegate(*child, *modelData);
+        else
+            delegate(*child);
     };
 
     // Setup list model & connect to its event dispatcher
