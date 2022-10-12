@@ -183,6 +183,12 @@ template <kF::UI::Internal::Accumulate AccumulateX, kF::UI::Internal::Accumulate
 void UI::Internal::LayoutBuilder::computeChildrenHugConstraints(
     Constraints &constraints, [[maybe_unused]] const Pixel spacing, const bool hugWidth, const bool hugHeight) noexcept
 {
+    // Make hug constraints starts accumulating from 0
+    if (hugWidth)
+        constraints.maxSize.width = Pixel {};
+    if (hugHeight)
+        constraints.maxSize.height = Pixel {};
+
     Size maxFixed {};
     for (const auto childEntityIndex : _traverseContext->counter()) {
         const auto &rhs = _traverseContext->constraintsAt(childEntityIndex);

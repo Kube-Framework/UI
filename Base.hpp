@@ -84,7 +84,7 @@ namespace kF::UI
     constexpr Pixel PixelInfinity = std::numeric_limits<Pixel>::infinity();
 
     /** @brief Pixel hug */
-    constexpr Pixel PixelHug = 0.0f;
+    constexpr Pixel PixelHug = -std::numeric_limits<Pixel>::infinity();
 
 
     /** @brief Dot per inches */
