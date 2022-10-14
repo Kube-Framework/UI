@@ -56,6 +56,9 @@ UI::Item &UI::Item::addChild(ItemPtr &&item) noexcept
 
 UI::Item &UI::Item::insertChild(const std::uint32_t index, ItemPtr &&item) noexcept
 {
+    kFAssert(index <= _children.size(),
+        "UI::Item::insertChild: Insert index '", index, "' out of children range [0, ", _children.size(), "]");
+
     item->_parent = this;
     item->get<TreeNode>().parent = _entity;
     auto &child = **_children.insert(_children.begin() + index, std::move(item));

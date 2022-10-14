@@ -79,11 +79,11 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
         reinterpret_cast<ListModelType * const>(listModel)->eventDispatcher().remove(handle);
     };
     _dispatcherHandle = listModel.eventDispatcher().template add<&ItemList::onListModelEvent>(this);
-    _modelSize = listModel.size();
+    _modelSize = 0;
 
     // Insert list model items
-    if (_modelSize) [[likely]]
-        onInsert(ListModelEvent::Insert { 0, _modelSize });
+    if (const auto modelSize = listModel.size(); modelSize) [[likely]]
+        onInsert(ListModelEvent::Insert { 0, modelSize });
 }
 
 template<typename ItemType, typename ListModelType, typename ...Args>
