@@ -513,11 +513,12 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
     const auto toScissor = [extent](const auto &area) {
         if (area == DefaultClip)
             return Rect2D { Offset2D(), extent };
-        else
+        else {
             return Rect2D(
                 Offset2D(static_cast<int>(area.pos.x), static_cast<int>(area.pos.y)),
-                Extent2D(static_cast<int>(area.size.width), static_cast<int>(area.size.height))
+                Extent2D(static_cast<std::uint32_t>(std::max(area.size.width, 0.0f)), static_cast<std::uint32_t>(std::max(area.size.height, 0.0f)))
             );
+        }
     };
 
     // Reset scissor
