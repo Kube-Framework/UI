@@ -82,7 +82,7 @@ namespace kF::UI
 
 
     /** @brief Requirements of ListModel's container */
-    template<typename Type>
+    template<typename Type> // @todo implement this
     concept ListModelContainerRequirements = true;//typeid(Type) == kF::Core::Internal::VectorDetails;
 
 

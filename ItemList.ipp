@@ -75,10 +75,7 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
 
     // Setup list model & connect to its event dispatcher
     _listModel = &listModel;
-    _disconnect = [](void * const listModel, const std::uint32_t handle) noexcept {
-        reinterpret_cast<ListModelType * const>(listModel)->eventDispatcher().remove(handle);
-    };
-    _dispatcherHandle = listModel.eventDispatcher().template add<&ItemList::onListModelEvent>(this);
+    _dispatcherSlot = listModel.eventDispatcher().template add<&ItemList::onListModelEvent>(this);
     _modelSize = 0;
 
     // Insert list model items

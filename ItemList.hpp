@@ -126,13 +126,9 @@ private:
     void onMove(const ListModelEvent::Move &data) noexcept;
 
 
-    /** @brief Disconnect function signature */
-    using DisconnectFunc = void(*)(void * const, const std::uint32_t) noexcept;
-
     Core::Functor<void(ItemList &, void * const, const std::uint32_t)> _delegate {};
     void *_listModel {};
-    DisconnectFunc _disconnect {};
-    std::uint32_t _dispatcherHandle {};
+    Core::DispatcherSlot _dispatcherSlot {};
     std::uint32_t _modelSize {};
 };
 

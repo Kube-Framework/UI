@@ -11,13 +11,10 @@ using namespace kF;
 
 void UI::ItemList::reset(void) noexcept
 {
-    // Disconnect from dispatcher
-    if (_listModel)
-        _disconnect(_listModel, _dispatcherHandle);
-
     // Reset members
     _delegate.release();
     _listModel = nullptr;
+    _dispatcherSlot = {};
     _modelSize = 0u;
 
     // Remove all previous children
