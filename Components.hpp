@@ -265,9 +265,6 @@ namespace kF::UI
         /** @brief MotionEventArea event functor */
         using Event = Core::Functor<EventFlags(const MotionEvent &, const Area &), UIAllocator>;
 
-        /** @brief MotionEventArea hover event functor */
-        using HoverEvent = Core::Functor<void(const bool), UIAllocator, Core::CacheLineEighthSize * 3>;
-
         Event event {};
         // Runtime state
         bool hovered {};

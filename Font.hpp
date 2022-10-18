@@ -80,6 +80,9 @@ public:
     [[nodiscard]] inline FontIndex index(void) const noexcept { return _index; }
 
 
+    /** @brief Get font line height */
+    [[nodiscard]] Pixel lineHeight(void) const noexcept;
+
 private:
     FontManager *_manager {};
     FontIndex _index {};

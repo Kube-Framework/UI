@@ -34,3 +34,8 @@ UI::Font &UI::Font::operator=(const Font &other) noexcept
     _manager->incrementRefCount(_index);
     return *this;
 }
+
+UI::Pixel UI::Font::lineHeight(void) const noexcept
+{
+    return _manager->lineHeightAt(_index);
+}

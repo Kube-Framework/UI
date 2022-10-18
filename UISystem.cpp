@@ -217,18 +217,20 @@ void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
             if (hitEntity != _eventCache.lastHovered) [[unlikely]] {
                 // If last hovered entity is not null, call leave event
                 if (_eventCache.lastHovered != ECS::NullEntity) {
-                    motionEvent.type = MotionEvent::Type::Leave;
-                    auto &lastComponent = get<MotionEventArea>(_eventCache.lastHovered);
-                    lastComponent.event(
-                        motionEvent,
-                        getClippedArea(_eventCache.lastHovered, get<Area>(_eventCache.lastHovered))
-                    );
-                    lastComponent.hovered = false;
+                    // @todo remove this DIRTY PATCH
+                    if (getTable<MotionEventArea>().exists(_eventCache.lastHovered)) {
+                        motionEvent.type = MotionEvent::Type::Leave;
+                        auto &lastComponent = get<MotionEventArea>(_eventCache.lastHovered);
+                        const auto &lastClippedArea = getClippedArea(_eventCache.lastHovered, get<Area>(_eventCache.lastHovered));
+                        lastComponent.hovered = false;
+                        lastComponent.event(motionEvent, lastClippedArea);
+                    }
                 }
                 motionEvent.type = MotionEvent::Type::Enter;
-                component.hovered = true;
             }
-            return component.event(event, clippedArea);
+            const auto flags = component.event(motionEvent, clippedArea);
+            component.hovered = !Core::HasFlags(flags, EventFlags::Propagate);
+            return flags;
         }
     );
 
@@ -236,14 +238,18 @@ void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
     const auto last = _eventCache.lastHovered;
     _eventCache.lastHovered = hitEntity;
 
+    // @todo remove this DIRTY PATCH
+    if (!getTable<MotionEventArea>().exists(last))
+        return;
+
     // If no target was found and another target was hovered, we have to leave it
     if (hitEntity == ECS::NullEntity && last != ECS::NullEntity) [[unlikely]] {
         MotionEvent motionEvent(event);
         motionEvent.type = MotionEvent::Type::Leave;
-        get<MotionEventArea>(last).event(
-            motionEvent,
-            getClippedArea(last, get<Area>(last))
-        );
+        auto &lastComponent = get<MotionEventArea>(last);
+        const auto &lastClippedArea = getClippedArea(last, get<Area>(last));
+        lastComponent.hovered = false;
+        lastComponent.event(motionEvent, lastClippedArea);
     }
 }
 
@@ -307,7 +313,7 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
 
         // Process event
         auto &component = table.atIndex(index);
-        const auto flags = component.event ? onEvent(component, event, clippedArea, hitEntity) : EventFlags::Stop;
+        const auto flags = component.event ? onEvent(component, event, clippedArea, entity) : EventFlags::Stop;
 
         // Process event flags
         if (processEventFlags(table, component, entityLock, flags)) {
