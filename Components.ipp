@@ -5,57 +5,112 @@
 
 #include "Components.hpp"
 
-template<auto Functor, typename ...Args>
-inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
+// Internal utils
+
+template<auto Function, typename ReturnType, typename ...Args>
+inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcept
 {
-    return PainterArea {
-        [... args = std::forward<Args>(args)](Painter &painter, const Area &area) noexcept {
-            Functor(painter, area, Internal::ForwardArg(args)...);
-        }
-    };
+    using Decomposer = Core::FunctionDecomposerHelper<ReturnType>;
+    static_assert(Decomposer::IndexSequence.size() >= 1 && Decomposer::IndexSequence.size() <= 2,
+        "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
+    using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+
+    if constexpr (Decomposer::IndexSequence.size() == 2) {
+        using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
+        return ReturnType(
+            [... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
+                return Functor(arg1, Internal::ForwardArg(args)...);
+            }
+        );
+    } else {
+        return ReturnType(
+            [... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
+                return Functor(arg1, Internal::ForwardArg(args)...);
+            }
+        );
+    }
 }
 
-template<auto MemberFunction, typename ClassType, typename ...Args>
+template<auto MemberFunction, typename ReturnType, typename ClassType, typename ...Args>
     requires std::is_member_function_pointer_v<decltype(MemberFunction)>
-inline kF::UI::PainterArea kF::UI::PainterArea::Make(ClassType * const instance, Args &&...args) noexcept
+inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(ClassType &&instance, Args &&...args) noexcept
 {
-    return PainterArea {
-        [instance, ... args = std::forward<Args>(args)](Painter &painter, const Area &area) noexcept {
-            (instance->*MemberFunction)(painter, area, Internal::ForwardArg(args)...);
-        }
-    };
+    using Decomposer = Core::FunctionDecomposerHelper<ReturnType>;
+    static_assert(Decomposer::IndexSequence.size() >= 1 && Decomposer::IndexSequence.size() <= 2,
+        "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
+    using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+
+    if constexpr (Decomposer::IndexSequence.size() == 2) {
+        using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
+        return ReturnType(
+            [instance, ... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
+                if constexpr (std::is_pointer_v<ClassType>)
+                    return (instance->*MemberFunction)(arg1, arg2, Internal::ForwardArg(args)...);
+                else
+                    return (instance.*MemberFunction)(arg1, arg2, Internal::ForwardArg(args)...);
+            }
+        );
+    } else {
+        return ReturnType(
+            [instance, ... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
+                if constexpr (std::is_pointer_v<ClassType>)
+                    return (instance->*MemberFunction)(arg1, Internal::ForwardArg(args)...);
+                else
+                    return (instance.*MemberFunction)(arg1, Internal::ForwardArg(args)...);
+            }
+        );
+    }
 }
 
-template<auto MemberFunction, typename ClassType, typename ...Args>
-    requires std::is_member_function_pointer_v<decltype(MemberFunction)>
-inline kF::UI::PainterArea kF::UI::PainterArea::Make(const ClassType * const instance, Args &&...args) noexcept
+template<typename ReturnType, typename Functor, typename ...Args>
+inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Functor &&functor, Args &&...args) noexcept
 {
-    return PainterArea {
-        [instance, ... args = std::forward<Args>(args)](Painter &painter, const Area &area) noexcept {
-            (instance->*MemberFunction)(painter, area, Internal::ForwardArg(args)...);
-        }
-    };
+    using Decomposer = Core::FunctionDecomposerHelper<ReturnType>;
+    static_assert(Decomposer::IndexSequence.size() >= 1 && Decomposer::IndexSequence.size() <= 2,
+        "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
+    using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+
+    if constexpr (Decomposer::IndexSequence.size() == 2) {
+        using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
+        return ReturnType(
+            [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
+                return functor(arg1, arg2, Internal::ForwardArg(args)...);
+            }
+        );
+    } else {
+        return ReturnType(
+            [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
+                return functor(arg1, Internal::ForwardArg(args)...);
+            }
+        );
+    }
 }
 
-template<typename Functor, typename ...Args>
-inline kF::UI::PainterArea kF::UI::PainterArea::Make(Functor &&functor, Args &&...args) noexcept
+template<typename ReturnType, typename Functor, typename ...Args>
+inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcept
 {
-    return PainterArea {
-        [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](Painter &painter, const Area &area) noexcept {
-            functor(painter, area, Internal::ForwardArg(args)...);
-        }
-    };
+    using Decomposer = Core::FunctionDecomposerHelper<ReturnType>;
+    static_assert(Decomposer::IndexSequence.size() >= 1 && Decomposer::IndexSequence.size() <= 2,
+        "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
+    using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+
+    if constexpr (Decomposer::IndexSequence.size() == 2) {
+        using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
+        return ReturnType(
+            [... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
+                return Functor{}(arg1, arg2, Internal::ForwardArg(args)...);
+            }
+        );
+    } else {
+        return ReturnType(
+            [... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
+                return Functor{}(arg1, Internal::ForwardArg(args)...);
+            }
+        );
+    }
 }
 
-template<typename Functor, typename ...Args>
-inline kF::UI::PainterArea kF::UI::PainterArea::Make(Args &&...args) noexcept
-{
-    return PainterArea {
-        [... args = std::forward<Args>(args)](Painter &painter, const Area &area) noexcept {
-            Functor{}(painter, area, Internal::ForwardArg(args)...);
-        }
-    };
-}
+// DropEventArea
 
 template<typename ...Functors>
 inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
@@ -65,16 +120,16 @@ inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
             constexpr auto Forward = []<typename Functor>(Functor &&functor)
             {
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::ArgsTuple.size() > 0, "Drop functor must have at least the catched type as first argument");
+                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
                 using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
                 return DropFunctor(
                     [functor = std::forward<Functor>(functor)](const void * const data,
                             [[maybe_unused]] const DropEvent &dropEvent, [[maybe_unused]] const Area &area)
                     {
                         const auto type = *reinterpret_cast<const Type * const>(data);
-                        if constexpr (Decomposer::ArgsTuple.size() == 1)
+                        if constexpr (Decomposer::IndexSequence.size() == 1)
                             functor(type);
-                        else if constexpr (Decomposer::ArgsTuple.size() == 2)
+                        else if constexpr (Decomposer::IndexSequence.size() == 2)
                             functor(type, dropEvent);
                         else
                             functor(type, dropEvent, area);
@@ -90,7 +145,7 @@ inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
             constexpr auto Forward = []<typename Functor>(Functor &&functor)
             {
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::ArgsTuple.size() > 0, "Drop functor must have at least the catched type as first argument");
+                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
                 using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
                 return TypeHash::Get<Type>();
             };

@@ -328,8 +328,17 @@ static_assert_fit_quarter_cacheline(kF::UI::MouseEvent);
 /** @brief Describe a motion event (mouse movement) */
 struct alignas_half_cacheline kF::UI::MotionEvent
 {
+    /** @brief Motion event type */
+    enum class Type : std::uint8_t
+    {
+        None,
+        Enter,
+        Leave
+    };
+
     Point pos {};
     Point motion {};
+    Type type {};
     Button buttons {};
     Modifier modifiers {};
     std::uint32_t timestamp {};

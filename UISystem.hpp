@@ -181,8 +181,8 @@ private:
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
 
     /** @brief Traverse a table requiring clipped area */
-    template<typename Component, typename Event, typename FixMSVCPLZ = Area> // @todo fix this ****
-    ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept;
+    template<typename Component, typename Event, typename OnEvent, typename FixMSVCPLZ = Area> // @todo fix this ****
+    ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock, OnEvent &&onEvent) noexcept;
 
 
     /** @brief Process EventFlags returned by event components

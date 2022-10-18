@@ -197,40 +197,65 @@ void UI::UISystem::processEventHandlers(void) noexcept
 
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
-    traverseClippedEventTable<MouseEventArea>(event, _eventCache.mouseLock);
+    traverseClippedEventTable<MouseEventArea>(
+        event,
+        _eventCache.mouseLock,
+        [](const MouseEventArea &component, const MouseEvent &event, const Area &clippedArea, const ECS::Entity) {
+            return component.event(event, clippedArea);
+        }
+    );
 }
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    const auto hitEntity = traverseClippedEventTable<MotionEventArea>(event, _eventCache.motionLock);
+    const auto hitEntity = traverseClippedEventTable<MotionEventArea>(
+        event,
+        _eventCache.motionLock,
+        [this](MotionEventArea &component, const MotionEvent &event, const Area &clippedArea, const ECS::Entity hitEntity) noexcept {
+            MotionEvent motionEvent(event);
+            // If last entity is different from current, we have to notify it
+            if (hitEntity != _eventCache.lastHovered) [[unlikely]] {
+                // If last hovered entity is not null, call leave event
+                if (_eventCache.lastHovered != ECS::NullEntity) {
+                    motionEvent.type = MotionEvent::Type::Leave;
+                    auto &lastComponent = get<MotionEventArea>(_eventCache.lastHovered);
+                    lastComponent.event(
+                        motionEvent,
+                        getClippedArea(_eventCache.lastHovered, get<Area>(_eventCache.lastHovered))
+                    );
+                    lastComponent.hovered = false;
+                }
+                motionEvent.type = MotionEvent::Type::Enter;
+                component.hovered = true;
+            }
+            return component.event(event, clippedArea);
+        }
+    );
 
-    if (hitEntity == _eventCache.lastHovered) [[likely]]
-        return;
-
-    const auto onHoverChanged = [this](auto &component, const bool value) noexcept {
-        component.hovered = value;
-        if (component.hoverEvent)
-            component.hoverEvent(value);
-        // We may invalidate on hover transitions
-        if (component.invalidateOnHoverChanged) [[likely]]
-            invalidate();
-    };
-    auto &table = getTable<MotionEventArea>();
-
-    // Reset last hovered state
-    if (table.exists(_eventCache.lastHovered)) [[likely]]
-        onHoverChanged(table.get(_eventCache.lastHovered), false);
-
-    // Set new hovered state
-    if (hitEntity != ECS::NullEntity)
-        onHoverChanged(table.get(hitEntity), true);
-
+    // Store and update last hovered
+    const auto last = _eventCache.lastHovered;
     _eventCache.lastHovered = hitEntity;
+
+    // If no target was found and another target was hovered, we have to leave it
+    if (hitEntity == ECS::NullEntity && last != ECS::NullEntity) [[unlikely]] {
+        MotionEvent motionEvent(event);
+        motionEvent.type = MotionEvent::Type::Leave;
+        get<MotionEventArea>(last).event(
+            motionEvent,
+            getClippedArea(last, get<Area>(last))
+        );
+    }
 }
 
 void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
 {
-    traverseClippedEventTable<WheelEventArea>(event, _eventCache.wheelLock);
+    traverseClippedEventTable<WheelEventArea>(
+        event,
+        _eventCache.wheelLock,
+        [](const WheelEventArea &component, const WheelEvent &event, const Area &clippedArea, const ECS::Entity) {
+            return component.event(event, clippedArea);
+        }
+    );
 }
 
 void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
@@ -244,8 +269,8 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     }
 }
 
-template<typename Component, typename Event, typename OtherComp>
-inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock) noexcept
+template<typename Component, typename Event, typename OnEvent, typename OtherComp>
+inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, ECS::Entity &entityLock, OnEvent &&onEvent) noexcept
 {
     auto &table = getTable<Component>();
     auto &areaTable = getTable<OtherComp>();
@@ -256,8 +281,8 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
         const auto clippedArea = getClippedArea(entityLock, areaTable.get(entityLock));
 
         // Process locked event without checking for mouse collision
-        const auto &component = table.get(entityLock);
-        const auto flags = component.event(event, clippedArea);
+        auto &component = table.get(entityLock);
+        const auto flags = onEvent(component, event, clippedArea, entityLock);
 
         // If locked event flags tells to stop, return now
         if (processEventFlags(table, component, entityLock, flags))
@@ -281,8 +306,8 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
             continue;
 
         // Process event
-        const auto &component = table.atIndex(index);
-        const auto flags = component.event ? component.event(event, clippedArea) : EventFlags::Stop;
+        auto &component = table.atIndex(index);
+        const auto flags = component.event ? onEvent(component, event, clippedArea, hitEntity) : EventFlags::Stop;
 
         // Process event flags
         if (processEventFlags(table, component, entityLock, flags)) {

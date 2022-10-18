@@ -7,7 +7,6 @@
 
 #include <Kube/Core/TupleUtils.hpp>
 #include <Kube/Core/Functor.hpp>
-#include <Kube/Core/TrivialFunctor.hpp>
 #include <Kube/Core/SmallVector.hpp>
 #include <Kube/ECS/Base.hpp>
 
@@ -22,6 +21,26 @@ namespace kF::UI
     class DropEvent;
     class KeyEvent;
     enum class ComponentFlags : std::uint32_t;
+
+    namespace Internal
+    {
+        /** @brief Utility to bind an event area functor with a free function */
+        template<auto Function, typename ReturnType, typename ...Args>
+        [[nodiscard]] ReturnType MakeEventAreaFunctor(Args &&...args) noexcept;
+
+        /** @brief Utility to bind an event area functor with a member function */
+        template<auto MemberFunction, typename ReturnType, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] ReturnType MakeEventAreaFunctor(ClassType &&instance, Args &&...args) noexcept;
+
+        /** @brief Utility to bind an event area functor with a functor instance */
+        template<typename ReturnType, typename Functor, typename ...Args>
+        [[nodiscard]] ReturnType MakeEventAreaFunctor(Functor &&functor, Args &&...args) noexcept;
+
+        /** @brief Utility to bind an event area functor with a functor type */
+        template<typename ReturnType, typename Functor, typename ...Args>
+        [[nodiscard]] ReturnType MakeEventAreaFunctor(Args &&...args) noexcept;
+    }
 
 
     /** @brief Flags used as return type to indicate propagation and frame invalidation of an event */
@@ -75,17 +94,6 @@ namespace kF::UI
         Size minSize {}; // Absolute minimum size after scaling
         Point offset {}; // Absolute translation offset
         Event event {}; // Runtime transform event
-
-
-        /** @brief Bind a member functor within a transform  */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline Transform Make(ClassType &&instance) noexcept
-            { return Transform { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
-
-        /** @brief Bind a static functor within a transform  */
-        template<auto Function>
-        [[nodiscard]] static inline Transform Make(void) noexcept
-            { return Transform { Event::Make<Function>() }; }
     };
     static_assert_fit_cacheline(Transform);
 
@@ -109,7 +117,7 @@ namespace kF::UI
     struct alignas_cacheline Timer
     {
         /** @brief Timer event functor */
-        using Event = Core::Functor<bool(std::uint64_t), UIAllocator>;
+        using Event = Core::Functor<bool(const std::uint64_t), UIAllocator>;
 
         Event event {};
         std::int64_t interval {};
@@ -117,15 +125,38 @@ namespace kF::UI
         std::int64_t elapsedTimeState {};
 
 
-        /** @brief Bind a member functor within a timer  */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline Timer Make(ClassType &&instance, const std::int64_t interval) noexcept
-            { return Timer { Event::Make<MemberFunction>(std::forward<ClassType>(instance)), interval }; }
+        /** @brief Bind a static timer functor within a timer
+         *  @note The functor must take 'const std::uint64_t' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline Timer Make(const std::int64_t interval, Args &&...args) noexcept
+            { return Timer(Internal::MakeEventAreaFunctor<Function, Timer::Event>(std::forward<Args>(args)...), interval); }
 
-        /** @brief Bind a static functor within a timer  */
-        template<auto Function>
-        [[nodiscard]] static inline Timer Make(const std::int64_t interval) noexcept
-            { return Timer { Event::Make<Function>(), interval }; }
+        /** @brief Bind a member timer functor within a timer
+         *  @note The functor must take 'const std::uint64_t' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline Timer Make(const std::int64_t interval, ClassType &&instance, Args &&...args) noexcept
+            { return Timer(Internal::MakeEventAreaFunctor<MemberFunction, Timer::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...), interval); }
+
+        /** @brief Bind a static timer functor within a timer
+         *  @note The functor must take 'const std::uint64_t' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline Timer Make(const std::int64_t interval, Functor &&functor, Args &&...args) noexcept
+            { return Timer(Internal::MakeEventAreaFunctor<Timer::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...), interval); }
+
+        /** @brief Bind a timer functor within a timer
+         *  @note The functor must take 'const std::uint64_t' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline Timer Make(const std::int64_t interval, Args &&...args) noexcept
+            { return Timer(Internal::MakeEventAreaFunctor<Timer::Event, Functor>(std::forward<Args>(args)...), interval); }
     };
     static_assert_fit_cacheline(Timer);
 
@@ -151,38 +182,34 @@ namespace kF::UI
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<auto Functor, typename ...Args>
-        [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline PainterArea Make(Args &&...args) noexcept
+            { return PainterArea(Internal::MakeEventAreaFunctor<Function, PainterArea::Event>(std::forward<Args>(args)...)); }
 
-        /** @brief Bind a non-const member paint functor within a painter area
+        /** @brief Bind a member paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<auto MemberFunction, typename ClassType, typename ...Args>
             requires std::is_member_function_pointer_v<decltype(MemberFunction)>
-        [[nodiscard]] static PainterArea Make(ClassType * const instance, Args &&...args) noexcept;
-
-        /** @brief Bind a const member paint functor within a painter area
-         *  @note The functor must take 'Painter &, const Area &' as its first two arguments
-         *      Additional arguments (Args...) should match remaining functor's arguments
-         *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<auto MemberFunction, typename ClassType, typename ...Args>
-            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
-        [[nodiscard]] static PainterArea Make(const ClassType * const instance, Args &&...args) noexcept;
+        [[nodiscard]] static inline PainterArea Make(ClassType &&instance, Args &&...args) noexcept
+            { return PainterArea(Internal::MakeEventAreaFunctor<MemberFunction, PainterArea::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
 
         /** @brief Bind a static paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
-        [[nodiscard]] static PainterArea Make(Functor &&functor, Args &&...args) noexcept;
+        [[nodiscard]] static inline PainterArea Make(Functor &&functor, Args &&...args) noexcept
+            { return PainterArea(Internal::MakeEventAreaFunctor<PainterArea::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
 
         /** @brief Bind a paint functor within a painter area
          *  @note The functor must take 'Painter &, const Area &' as its first two arguments
          *      Additional arguments (Args...) should match remaining functor's arguments
          *      If an argument doesn't match, it must be a functor that returns the matching argument */
         template<typename Functor, typename ...Args>
-        [[nodiscard]] static PainterArea Make(Args &&...args) noexcept;
+        [[nodiscard]] static inline PainterArea Make(Args &&...args) noexcept
+            { return PainterArea(Internal::MakeEventAreaFunctor<PainterArea::Event, Functor>(std::forward<Args>(args)...)); }
     };
     static_assert_fit_half_cacheline(PainterArea);
 
@@ -196,15 +223,38 @@ namespace kF::UI
         Event event {};
 
 
-        /** @brief Bind a member functor within a mouse event area */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline MouseEventArea Make(ClassType &&instance) noexcept
-            { return MouseEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
+        /** @brief Bind a static mouse functor within a mouse event area
+         *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline MouseEventArea Make(Args &&...args) noexcept
+            { return MouseEventArea(Internal::MakeEventAreaFunctor<Function, MouseEventArea::Event>(std::forward<Args>(args)...)); }
 
-        /** @brief Bind a static functor within a mouse event area */
-        template<auto Function>
-        [[nodiscard]] static inline MouseEventArea Make(void) noexcept
-            { return MouseEventArea { Event::Make<Function>() }; }
+        /** @brief Bind a member mouse functor within a mouse event area
+         *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline MouseEventArea Make(ClassType &&instance, Args &&...args) noexcept
+            { return MouseEventArea(Internal::MakeEventAreaFunctor<MemberFunction, MouseEventArea::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a static mouse functor within a mouse event area
+         *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline MouseEventArea Make(Functor &&functor, Args &&...args) noexcept
+            { return MouseEventArea(Internal::MakeEventAreaFunctor<MouseEventArea::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a mouse functor within a mouse event area
+         *  @note The functor must take 'const MouseEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline MouseEventArea Make(Args &&...args) noexcept
+            { return MouseEventArea(Internal::MakeEventAreaFunctor<MouseEventArea::Event, Functor>(std::forward<Args>(args)...)); }
     };
     static_assert_fit_half_cacheline(MouseEventArea);
 
@@ -219,21 +269,42 @@ namespace kF::UI
         using HoverEvent = Core::Functor<void(const bool), UIAllocator, Core::CacheLineEighthSize * 3>;
 
         Event event {};
-        HoverEvent hoverEvent {};
-        bool invalidateOnHoverChanged { true };
         // Runtime state
         bool hovered {};
 
 
-        /** @brief Bind a member functor within a motion event area */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline MotionEventArea Make(ClassType &&instance) noexcept
-            { return MotionEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
+        /** @brief Bind a static motion functor within a motion event area
+         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline MotionEventArea Make(Args &&...args) noexcept
+            { return MotionEventArea(Internal::MakeEventAreaFunctor<Function, MotionEventArea::Event>(std::forward<Args>(args)...)); }
 
-        /** @brief Bind a static functor within a motion event area */
-        template<auto Function>
-        [[nodiscard]] static inline MotionEventArea Make(void) noexcept
-            { return MotionEventArea { Event::Make<Function>() }; }
+        /** @brief Bind a member motion functor within a motion event area
+         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline MotionEventArea Make(ClassType &&instance, Args &&...args) noexcept
+            { return MotionEventArea(Internal::MakeEventAreaFunctor<MemberFunction, MotionEventArea::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a static motion functor within a motion event area
+         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline MotionEventArea Make(Functor &&functor, Args &&...args) noexcept
+            { return MotionEventArea(Internal::MakeEventAreaFunctor<MotionEventArea::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a motion functor within a motion event area
+         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline MotionEventArea Make(Args &&...args) noexcept
+            { return MotionEventArea(Internal::MakeEventAreaFunctor<MotionEventArea::Event, Functor>(std::forward<Args>(args)...)); }
     };
     static_assert_fit_cacheline(MotionEventArea);
 
@@ -247,15 +318,38 @@ namespace kF::UI
         Event event {};
 
 
-        /** @brief Bind a member functor within a wheel event area */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline WheelEventArea Make(ClassType &&instance) noexcept
-            { return WheelEventArea { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
+        /** @brief Bind a static wheel functor within a wheel event area
+         *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline WheelEventArea Make(Args &&...args) noexcept
+            { return WheelEventArea(Internal::MakeEventAreaFunctor<Function, WheelEventArea::Event>(std::forward<Args>(args)...)); }
 
-        /** @brief Bind a static functor within a wheel event area */
-        template<auto Function>
-        [[nodiscard]] static inline WheelEventArea Make(void) noexcept
-            { return WheelEventArea { Event::Make<Function>() }; }
+        /** @brief Bind a member wheel functor within a wheel event area
+         *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline WheelEventArea Make(ClassType &&instance, Args &&...args) noexcept
+            { return WheelEventArea(Internal::MakeEventAreaFunctor<MemberFunction, WheelEventArea::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a static wheel functor within a wheel event area
+         *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline WheelEventArea Make(Functor &&functor, Args &&...args) noexcept
+            { return WheelEventArea(Internal::MakeEventAreaFunctor<WheelEventArea::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a wheel functor within a wheel event area
+         *  @note The functor must take 'const WheelEvent &, const Area &' as its first two arguments
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline WheelEventArea Make(Args &&...args) noexcept
+            { return WheelEventArea(Internal::MakeEventAreaFunctor<WheelEventArea::Event, Functor>(std::forward<Args>(args)...)); }
     };
     static_assert_fit_half_cacheline(WheelEventArea);
 
@@ -319,15 +413,38 @@ namespace kF::UI
         Event event {};
 
 
-        /** @brief Bind a member functor within a key event receiver */
-        template<auto MemberFunction, typename ClassType>
-        [[nodiscard]] static inline KeyEventReceiver Make(ClassType &&instance) noexcept
-            { return KeyEventReceiver { Event::Make<MemberFunction>(std::forward<ClassType>(instance)) }; }
+        /** @brief Bind a static key functor within a key event receiver
+         *  @note The functor must take 'const KeyEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline KeyEventReceiver Make(Args &&...args) noexcept
+            { return KeyEventReceiver(Internal::MakeEventAreaFunctor<Function, KeyEventReceiver::Event>(std::forward<Args>(args)...)); }
 
-        /** @brief Bind a static functor within a key event receiver */
-        template<auto Function>
-        [[nodiscard]] static inline KeyEventReceiver Make(void) noexcept
-            { return KeyEventReceiver { Event::Make<Function>() }; }
+        /** @brief Bind a member key functor within a key event receiver
+         *  @note The functor must take 'const KeyEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline KeyEventReceiver Make(ClassType &&instance, Args &&...args) noexcept
+            { return KeyEventReceiver(Internal::MakeEventAreaFunctor<MemberFunction, KeyEventReceiver::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a static key functor within a key event receiver
+         *  @note The functor must take 'const KeyEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline KeyEventReceiver Make(Functor &&functor, Args &&...args) noexcept
+            { return KeyEventReceiver(Internal::MakeEventAreaFunctor<KeyEventReceiver::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a key functor within a key event receiver
+         *  @note The functor must take 'const KeyEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline KeyEventReceiver Make(Args &&...args) noexcept
+            { return KeyEventReceiver(Internal::MakeEventAreaFunctor<KeyEventReceiver::Event, Functor>(std::forward<Args>(args)...)); }
     };
     static_assert_fit_half_cacheline(KeyEventReceiver);
 
