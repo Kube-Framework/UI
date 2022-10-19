@@ -19,13 +19,13 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
         using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
         return ReturnType(
             [... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
-                return Functor(arg1, Internal::ForwardArg(args)...);
+                return Function(arg1, Internal::ForwardArg(args)...);
             }
         );
     } else {
         return ReturnType(
             [... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
-                return Functor(arg1, Internal::ForwardArg(args)...);
+                return Function(arg1, Internal::ForwardArg(args)...);
             }
         );
     }

@@ -303,12 +303,7 @@ constexpr bool kF::UI::Area::contains(const Point &point) const noexcept
 
 constexpr bool kF::UI::Area::contains(const Area &area) const noexcept
 {
-    const auto l1 = topLeft();
-    const auto r1 = bottomRight();
-    const auto l2 = area.topLeft();
-    const auto r2 = area.bottomRight();
-
-    return (l1.x > r2.x) | (l2.x > r1.x) | (r1.y > l2.y) | (r2.y > l1.y);
+    return (left() < area.right()) & (right() > area.left()) & (bottom() > area.top()) & (top() < area.bottom());
 }
 
 constexpr kF::UI::Area kF::UI::Area::MakeCenter(const Point center, const Size size) noexcept
@@ -336,8 +331,11 @@ constexpr kF::UI::Area kF::UI::Area::ApplyClip(const Area &area, const Area &cli
 
     clipped.pos.x = std::max(area.pos.x, clipArea.pos.x);
     clipped.pos.y = std::max(area.pos.y, clipArea.pos.y);
-    clipped.size.width = std::min(clipped.pos.x + area.size.width, clipArea.pos.x + clipArea.size.width) - clipped.pos.x;
-    clipped.size.height = std::min(clipped.pos.y + area.size.height, clipArea.pos.y + clipArea.size.height) - clipped.pos.y;
+
+    const auto removedWidth = clipped.pos.x - area.pos.x;
+    clipped.size.width = std::min(area.size.width - removedWidth, clipArea.right() - clipped.pos.x);
+    const auto removedHeight = clipped.pos.y - area.pos.y;
+    clipped.size.height = std::min(area.size.height - removedHeight, clipArea.bottom() - clipped.pos.y);
     return clipped;
 }
 
