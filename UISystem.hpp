@@ -148,7 +148,29 @@ public:
     template<kF::UI::PrimitiveKind Primitive>
     inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
 
+
 private:
+    // Item is a friend to prevent unsafe API access
+    friend Item;
+
+    // Hide system entity/components utilities
+    using System::add;
+    using System::addRange;
+    using System::attach;
+    using System::tryAttach;
+    using System::attachRange;
+    using System::dettach;
+    using System::tryDettach;
+    using System::dettachRange;
+    using System::remove;
+    using System::removeUnsafe;
+    using System::removeUnsafeRange;
+
+
+    /** @brief Unsafe function notifying that motion event area has been removed   */
+    void onMotionEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
+        { if (_eventCache.lastHovered == entity) _eventCache.lastHovered = ECS::NullEntity; }
+
     /** @brief Check if a frame is invalid */
     [[nodiscard]] inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept
         { return _cache.invalidateFlags & (static_cast<GPU::FrameIndex>(1) << frame); }
@@ -204,6 +226,7 @@ private:
 
     /** @brief Process all PainterArea instances */
     void processPainterAreas(void) noexcept;
+
 
 
     /** @brief Query current window Size */

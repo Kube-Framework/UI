@@ -55,8 +55,11 @@ template<typename ...Components>
 inline void kF::UI::Item::dettach(void) noexcept
 {
     static_assert(((!IsBaseItemComponent<Components>) && ...),
-        "UI::Item::dettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettacged by Item's destructor");
+        "UI::Item::dettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettached by Item's destructor");
 
+    // Notify uiSystem that we removed a MotionEventArea
+    if constexpr ((std::is_same_v<Components, MotionEventArea> || ...))
+        uiSystem().onMotionEventAreaRemovedUnsafe(_entity);
     uiSystem().dettach<Components...>(_entity);
     unmarkComponents<Components...>();
 }
@@ -66,8 +69,11 @@ template<typename ...Components>
 inline void kF::UI::Item::tryDettach(void) noexcept
 {
     static_assert(((!IsBaseItemComponent<Components>) && ...),
-        "UI::Item::tryDettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettacged by Item's destructor");
+        "UI::Item::tryDettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettached by Item's destructor");
 
+    // Notify uiSystem that we removed a MotionEventArea
+    if constexpr ((std::is_same_v<Components, MotionEventArea> || ...))
+        uiSystem().onMotionEventAreaRemovedUnsafe(_entity);
     uiSystem().tryDettach<Components...>(_entity);
     unmarkComponents<Components...>();
 }

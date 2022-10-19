@@ -362,10 +362,10 @@ struct alignas_half_cacheline kF::UI::DropEvent
     enum class Type
     {
         Begin,
+        End,
         Enter,
         Leave,
-        Drop,
-        End
+        Drop
     };
 
     Type type {};

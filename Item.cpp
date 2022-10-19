@@ -18,8 +18,12 @@ UI::Item::~Item(void) noexcept
             std::type_identity<std::tuple<Components...>>) {
         constexpr auto DettachComponent = []<typename Component>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
             std::type_identity<Component>) {
-            if (Core::HasFlags(componentFlags, GetComponentFlag<Component>()))
+            if (Core::HasFlags(componentFlags, GetComponentFlag<Component>())) {
+                // Notify uiSystem that we removed a MotionEventArea
+                if constexpr (std::is_same_v<Component, MotionEventArea>)
+                    uiSystem.onMotionEventAreaRemovedUnsafe(entity);
                 uiSystem.dettach<Component>(entity);
+            }
         };
 
         (DettachComponent(uiSystem, entity, componentFlags, std::type_identity<Components> {}), ...);
