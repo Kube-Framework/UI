@@ -61,12 +61,14 @@ public:
     };
     static_assert_fit_cacheline(Cache);
 
-    struct DragCache
+    struct alignas_cacheline DragCache
     {
-        TypeHash type {};
+        TypeHash typeHash {};
         const void *data {};
+        Size size {};
         PainterArea painterArea {};
     };
+    static_assert_fit_cacheline(DragCache);
 
     /** @brief Event cache */
     struct alignas_double_cacheline EventCache
@@ -133,8 +135,8 @@ public:
 
     /** @brief Drag a type rendered with a given painter area */
     template<typename Type>
-    void drag(const Type &type, const PainterArea &painterArea) noexcept;
-
+    inline void drag(const Type &type, const Size &size, PainterArea &&painterArea) noexcept
+        { onDrag(TypeHash::Get<Type>(), &type, size, std::move(painterArea)); }
 
     /** @brief Invalidate UI scene */
     void invalidate(void) noexcept;
@@ -171,12 +173,17 @@ private:
     void onMotionEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
         { if (_eventCache.lastHovered == entity) _eventCache.lastHovered = ECS::NullEntity; }
 
+
     /** @brief Check if a frame is invalid */
     [[nodiscard]] inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept
         { return _cache.invalidateFlags & (static_cast<GPU::FrameIndex>(1) << frame); }
 
     /** @brief Validate a single frame */
     void validateFrame(const GPU::FrameIndex frame) noexcept;
+
+
+    /** @brief Opaque type drag implementation */
+    void onDrag(const TypeHash typeHash, const void * const data, const Size &size, PainterArea &&painterArea) noexcept;
 
 
     /** @brief Get the clipped area of an entity */
@@ -199,19 +206,26 @@ private:
     /** @brief Process a single WheelEvent by traversing WheelEventArea instances */
     void processWheelEventAreas(const WheelEvent &event) noexcept;
 
+    /** @brief Process a single DropEvent by traversing DropEventArea instances */
+    void processDropEventAreas(const DropEvent &event) noexcept;
+
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
+
 
     /** @brief Traverse a table requiring clipped area */
     template<typename Component, typename Event, typename OnEvent, typename FixMSVCPLZ = Area> // @todo fix this ****
     ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock, OnEvent &&onEvent) noexcept;
 
+    /** @brief Traverse a table requiring clipped area & hover management */
+    template<typename Component, typename Event, typename OnEnter, typename OnLeave, typename OnInside>
+    void traverseClippedEventTableWithHover(
+            const Event &event, ECS::Entity &entityLock, ECS::Entity &lastHovered, OnEnter &&onEnter, OnLeave &&onLeave, OnInside &&onInside) noexcept;
+
 
     /** @brief Process EventFlags returned by event components
      *  @return True if the event flags requires to stop event processing */
-    template<typename Table>
-    [[nodiscard]] bool processEventFlags(
-            const Table &table, const typename Table::ValueType &value, ECS::Entity &lock, const EventFlags flags) noexcept;
+    [[nodiscard]] bool processEventFlags(ECS::Entity &lock, const EventFlags flags, const ECS::Entity hitEntity) noexcept;
 
 
     /** @brief Process system time elapsed */

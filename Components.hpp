@@ -358,7 +358,7 @@ namespace kF::UI
         using DropTypes = Core::SmallVector<TypeHash, 2, UIAllocator>;
 
         /** @brief Drag functor */
-        using DropFunctor = Core::Functor<void(const void *, const DropEvent &, const Area &), UIAllocator>;
+        using DropFunctor = Core::Functor<void(const void * const, const DropEvent &, const Area &), UIAllocator>;
 
         /** @brief List of drop functors managed by the drop area */
         using DropFunctors = Core::SmallVector<DropFunctor, 2, UIAllocator>;
@@ -371,16 +371,11 @@ namespace kF::UI
          *  @note Each drop functor must have the following arguments:
          *  template<DropType>(const DropType &, const DropEvent &, const Area &) */
         template<typename ...Functors>
+            requires (sizeof...(Functors) > 0)
         DropEventArea(Functors &&...functors) noexcept;
-
-        /** @brief Copy constructor */
-        inline DropEventArea(const DropEventArea &other) noexcept = default;
 
         /** @brief Move constructor */
         inline DropEventArea(DropEventArea &&other) noexcept = default;
-
-        /** @brief Copy assignment */
-        inline DropEventArea &operator=(const DropEventArea &other) noexcept = default;
 
         /** @brief Move assignment */
         inline DropEventArea &operator=(DropEventArea &&other) noexcept = default;
@@ -389,14 +384,21 @@ namespace kF::UI
         /** @brief Get hovered state */
         [[nodiscard]] inline bool hovered(void) const noexcept { return _hovered; }
 
+        /** @brief Get drop types */
+        [[nodiscard]] inline const DropTypes &dropTypes(void) const noexcept { return _dropTypes; }
+
 
         /** @brief Process drop event */
         void onEvent(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept;
 
+        /** @brief Process drop event with an unchecked drop type index */
+        void onEventUnsafe(const void * const data, const DropEvent &event, const Area &area,
+                const std::uint32_t dropTypeIndex) noexcept;
+
     private:
-        DropTypes _types {};
+        DropTypes _dropTypes {};
         bool _hovered {};
-        DropFunctors _functors {};
+        DropFunctors _dropFunctors {};
     };
     static_assert_fit_double_cacheline(DropEventArea);
 
