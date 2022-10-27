@@ -111,21 +111,22 @@ bool UI::UISystem::tick(void) noexcept
     return true;
 }
 
-void UI::UISystem::onDrag(const TypeHash typeHash, const void * const data, const Size &size, PainterArea &&painterArea) noexcept
+void UI::UISystem::onDrag(const TypeHash typeHash, const void * const data, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept
 {
-    _eventCache.drag.typeHash = typeHash;
-    _eventCache.drag.data = data;
-    _eventCache.drag.size = size;
-    _eventCache.drag.painterArea = std::move(painterArea);
+    _eventCache.drop.typeHash = typeHash;
+    _eventCache.drop.data = data;
+    _eventCache.drop.size = size;
+    _eventCache.drop.dropTrigger = dropTrigger;
+    _eventCache.drop.painterArea = std::move(painterArea);
 
     // Trigger begin event of every DropEventArea matching typeHash
-    // int x, y;
-    // SDL_GetMouseState(&x, &y);
-    // applyDropEventAreas(DropEvent {
-    //     .type = DropEvent::Type::Begin,
-    //     .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
-    //     .timestamp = SDL_GetTicks()
-    // });
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    processDropEventAreas(DropEvent {
+        .type = DropEvent::Type::Begin,
+        .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
+        .timestamp = SDL_GetTicks()
+    });
 }
 
 void UI::UISystem::sortTables(void) noexcept
@@ -214,6 +215,29 @@ void UI::UISystem::processEventHandlers(void) noexcept
 
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
+    // Handle drop trigger
+    if (_eventCache.drop.typeHash != TypeHash {} && _eventCache.drop.dropTrigger.button == event.button
+            && _eventCache.drop.dropTrigger.state == event.state) {
+        // Send drop event
+        processDropEventAreas(DropEvent {
+            .type = DropEvent::Type::Drop,
+            .pos = event.pos,
+            .timestamp = event.timestamp
+        });
+        // Send end drop event
+        processDropEventAreas(DropEvent {
+            .type = DropEvent::Type::End,
+            .pos = event.pos,
+            .timestamp = event.timestamp
+        });
+        // Reset drop cache
+        _eventCache.drop = {};
+        _eventCache.lastHovered = ECS::NullEntity;
+        _eventCache.mouseLock = ECS::NullEntity;
+        _eventCache.motionLock = ECS::NullEntity;
+        return;
+    }
+
     traverseClippedEventTable<MouseEventArea>(
         event,
         _eventCache.mouseLock,
@@ -221,10 +245,23 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
             return component.event(event, clippedArea);
         }
     );
+
+    kFEnsure(!(_eventCache.drop.typeHash != TypeHash {} && _eventCache.mouseLock != ECS::NullEntity),
+        "UI::UISystem::processMouseEventAreas: Cannot lock mouse while dragging");
 }
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
+    if (_eventCache.drop.typeHash != TypeHash {}) {
+        processDropEventAreas(DropEvent {
+            .type = DropEvent::Type::Motion,
+            .pos = event.pos,
+            .timestamp = event.timestamp
+        });
+        invalidate();
+        return;
+    }
+
     traverseClippedEventTableWithHover<MotionEventArea>(
         event,
         _eventCache.motionLock,
@@ -246,48 +283,12 @@ void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
         },
         // On inside
         [this](const MotionEvent &event, MotionEventArea &component, const Area &clippedArea) noexcept {
-            const auto flags = component.event(event, clippedArea);
-            component.hovered = !Core::HasFlags(flags, EventFlags::Propagate);
-            return flags;
+            return component.event(event, clippedArea);
         }
     );
 
-    // const auto hitEntity = traverseClippedEventTable<MotionEventArea>(
-    //     event,
-    //     _eventCache.motionLock,
-    //     [this](const MotionEvent &event, MotionEventArea &component, const Area &clippedArea, const ECS::Entity hitEntity) noexcept {
-    //         MotionEvent motionEvent(event);
-    //         // If last entity is different from current, we have to notify it
-    //         if (hitEntity != _eventCache.lastHovered) [[unlikely]] {
-    //             // If last hovered entity is not null, call leave event
-    //             if (_eventCache.lastHovered != ECS::NullEntity) {
-    //                 motionEvent.type = MotionEvent::Type::Leave;
-    //                 auto &lastComponent = get<MotionEventArea>(_eventCache.lastHovered);
-    //                 const auto &lastClippedArea = getClippedArea(_eventCache.lastHovered, get<Area>(_eventCache.lastHovered));
-    //                 lastComponent.hovered = false;
-    //                 lastComponent.event(motionEvent, lastClippedArea);
-    //             }
-    //             motionEvent.type = MotionEvent::Type::Enter;
-    //         }
-    //         const auto flags = component.event(motionEvent, clippedArea);
-    //         component.hovered = !Core::HasFlags(flags, EventFlags::Propagate);
-    //         return flags;
-    //     }
-    // );
-
-    // // Store and update last hovered
-    // const auto last = _eventCache.lastHovered;
-    // _eventCache.lastHovered = hitEntity;
-
-    // // If no target was found and another target was hovered, we have to leave it
-    // if (hitEntity == ECS::NullEntity && last != ECS::NullEntity) [[unlikely]] {
-    //     MotionEvent motionEvent(event);
-    //     motionEvent.type = MotionEvent::Type::Leave;
-    //     auto &lastComponent = get<MotionEventArea>(last);
-    //     const auto &lastClippedArea = getClippedArea(last, get<Area>(last));
-    //     lastComponent.hovered = false;
-    //     lastComponent.event(motionEvent, lastClippedArea);
-    // }
+    kFEnsure(!(_eventCache.drop.typeHash != TypeHash {} && _eventCache.mouseLock != ECS::NullEntity),
+        "UI::UISystem::processMotionEventAreas: Cannot lock motion when dragging");
 }
 
 void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
@@ -303,18 +304,72 @@ void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
 
 void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
 {
+    switch (event.type) {
+    case DropEvent::Type::Begin:
+    case DropEvent::Type::End:
+    {
+        const auto &areaTable = getTable<Area>();
+        getTable<DropEventArea>().traverse([this, &event, &areaTable](const ECS::Entity entity, DropEventArea &component) {
+            component.event(
+                _eventCache.drop.typeHash,
+                _eventCache.drop.data,
+                event,
+                getClippedArea(entity, areaTable.get(entity))
+            );
+        });
+        break;
+    }
+    case DropEvent::Type::Motion:
+    case DropEvent::Type::Enter:
+    case DropEvent::Type::Leave:
+        traverseClippedEventTableWithHover<DropEventArea>(
+            event,
+            _eventCache.motionLock,
+            _eventCache.lastHovered,
+            // On enter
+            [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea) noexcept {
+                auto dropEvent { event };
+                dropEvent.type = DropEvent::Type::Enter;
+                const auto flags = component.event(_eventCache.drop.typeHash, _eventCache.drop.data, dropEvent, clippedArea);
+                component.hovered = !Core::HasFlags(flags, EventFlags::Propagate);
+                return flags;
+            },
+            // On leave
+            [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea) noexcept {
+                auto dropEvent { event };
+                dropEvent.type = DropEvent::Type::Leave;
+                component.hovered = false;
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, dropEvent, clippedArea);
+            },
+            // On inside
+            [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea) noexcept {
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, event, clippedArea);
+            }
+        );
+        break;
+    case DropEvent::Type::Drop:
+        traverseClippedEventTable<DropEventArea>(
+            event,
+            _eventCache.mouseLock,
+            [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity) noexcept {
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, event, clippedArea);
+            }
+        );
+        // Reset locks that could be affected by drag events
+        _eventCache.mouseLock = ECS::NullEntity;
+        _eventCache.motionLock = ECS::NullEntity;
+        break;
+    }
 }
 
 void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 {
-    auto &keyTable = getTable<KeyEventReceiver>();
-
-    for (ECS::EntityIndex index {}, count = keyTable.count(); index != count; ++index) {
-        const auto flags = keyTable.atIndex(index).event(event);
-        const auto hitEntity = keyTable.entities().at(index);
-        if (processEventFlags(_eventCache.keyLock, flags, hitEntity))
-            break;
-    }
+    getTable<KeyEventReceiver>().traverse([this, &event](const ECS::Entity entity, KeyEventReceiver &component) noexcept {
+        const auto flags = component.event(event);
+        if (processEventFlags(_eventCache.keyLock, flags, entity))
+            return false;
+        return true;
+    });
 }
 
 template<typename Component, typename Event, typename OnEvent, typename OtherComp>
@@ -355,7 +410,7 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
 
         // Process event
         auto &component = table.atIndex(index);
-        const auto flags = component.event ? onEvent(event, component, clippedArea, entity) : EventFlags::Stop;
+        const auto flags = onEvent(event, component, clippedArea, entity);
 
         // Process event flags
         if (processEventFlags(entityLock, flags, entity)) {
@@ -366,9 +421,8 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
     return hitEntity;
 }
 
-
 template<typename Component, typename Event, typename OnEnter, typename OnLeave, typename OnInside>
-inline void UI::UISystem::traverseClippedEventTableWithHover(
+inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
         const Event &event, ECS::Entity &entityLock, ECS::Entity &lastHovered, OnEnter &&onEnter, OnLeave &&onLeave, OnInside &&onInside) noexcept
 {
     const auto hitEntity = traverseClippedEventTable<Component>(
@@ -413,6 +467,7 @@ inline void UI::UISystem::traverseClippedEventTableWithHover(
         if (processEventFlags(entityLock, flags, lastHovered))
             lastHovered = entityLock;
     }
+    return hitEntity;
 }
 
 inline bool UI::UISystem::processEventFlags(ECS::Entity &lock, const EventFlags flags, const ECS::Entity hitEntity) noexcept
@@ -489,7 +544,7 @@ void UI::UISystem::processPainterAreas(void) noexcept
     auto nextClipDepth = clipCount ? clipDepths[0] : MaxDepth;
 
     painter.clear();
-    for (std::uint32_t index = 0u; const PainterArea &handler : paintTable) {
+    for (ECS::EntityIndex index {}; const PainterArea &handler : paintTable) {
         // Skip invisible item
         if (!handler.event) [[unlikely]]
             continue;
@@ -517,11 +572,11 @@ void UI::UISystem::processPainterAreas(void) noexcept
     }
 
     // Draw drag if any
-    if (_eventCache.drag.typeHash != TypeHash {}) [[unlikely]] {
+    if (_eventCache.drop.typeHash != TypeHash {}) [[unlikely]] {
         int x, y;
         SDL_GetMouseState(&x, &y);
         const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
-        const Area area(mousePos - _eventCache.drag.size / 2, _eventCache.drag.size);
-        _eventCache.drag.painterArea.event(painter, area);
+        const Area area(mousePos - _eventCache.drop.size / 2, _eventCache.drop.size);
+        _eventCache.drop.painterArea.event(painter, area);
     }
 }

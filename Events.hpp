@@ -364,6 +364,7 @@ struct alignas_half_cacheline kF::UI::DropEvent
         Begin,
         End,
         Enter,
+        Motion,
         Leave,
         Drop
     };

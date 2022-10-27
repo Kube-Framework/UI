@@ -8,6 +8,7 @@
 #include <Kube/Core/TupleUtils.hpp>
 #include <Kube/Core/Functor.hpp>
 #include <Kube/Core/SmallVector.hpp>
+#include <Kube/Core/Vector.hpp>
 #include <Kube/ECS/Base.hpp>
 
 #include "Animator.hpp"
@@ -352,55 +353,35 @@ namespace kF::UI
 
 
     /** @brief Drop handler */
-    struct alignas_double_cacheline DropEventArea
+    struct alignas_cacheline DropEventArea
     {
         /** @brief List of opaque types managed by the drop area */
-        using DropTypes = Core::SmallVector<TypeHash, 2, UIAllocator>;
+        using DropTypes = Core::SmallVector<TypeHash, 1, UIAllocator>;
 
         /** @brief Drag functor */
-        using DropFunctor = Core::Functor<void(const void * const, const DropEvent &, const Area &), UIAllocator>;
+        using DropFunctor = Core::Functor<EventFlags(const void * const, const DropEvent &, const Area &), UIAllocator>;
 
         /** @brief List of drop functors managed by the drop area */
-        using DropFunctors = Core::SmallVector<DropFunctor, 2, UIAllocator>;
+        using DropFunctors = Core::Vector<DropFunctor, UIAllocator>;
 
 
-        /** @brief Destructor */
-        ~DropEventArea(void) noexcept = default;
+        DropTypes dropTypes {};
+        DropFunctors dropFunctors {};
+        bool hovered {};
+
 
         /** @brief Construct a drop event area with a list of drop functors that determines handled drop types
          *  @note Each drop functor must have the following arguments:
          *  template<DropType>(const DropType &, const DropEvent &, const Area &) */
         template<typename ...Functors>
             requires (sizeof...(Functors) > 0)
-        DropEventArea(Functors &&...functors) noexcept;
-
-        /** @brief Move constructor */
-        inline DropEventArea(DropEventArea &&other) noexcept = default;
-
-        /** @brief Move assignment */
-        inline DropEventArea &operator=(DropEventArea &&other) noexcept = default;
-
-
-        /** @brief Get hovered state */
-        [[nodiscard]] inline bool hovered(void) const noexcept { return _hovered; }
-
-        /** @brief Get drop types */
-        [[nodiscard]] inline const DropTypes &dropTypes(void) const noexcept { return _dropTypes; }
+        [[nodiscard]] static DropEventArea Make(Functors &&...functors) noexcept;
 
 
         /** @brief Process drop event */
-        void onEvent(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept;
-
-        /** @brief Process drop event with an unchecked drop type index */
-        void onEventUnsafe(const void * const data, const DropEvent &event, const Area &area,
-                const std::uint32_t dropTypeIndex) noexcept;
-
-    private:
-        DropTypes _dropTypes {};
-        bool _hovered {};
-        DropFunctors _dropFunctors {};
+        EventFlags event(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept;
     };
-    static_assert_fit_double_cacheline(DropEventArea);
+    static_assert_fit_cacheline(DropEventArea);
 
 
     /** @brief Key handler */

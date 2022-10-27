@@ -19,6 +19,13 @@
 namespace kF::UI
 {
     class UISystem;
+
+    /** @brief Describe the drop trigger condition */
+    struct DropTrigger
+    {
+        Button button { Button::Left };
+        bool state { false };
+    };
 }
 
 /** @brief UI renderer system */
@@ -61,14 +68,15 @@ public:
     };
     static_assert_fit_cacheline(Cache);
 
-    struct alignas_cacheline DragCache
+    struct alignas_cacheline DropCache
     {
         TypeHash typeHash {};
         const void *data {};
         Size size {};
+        DropTrigger dropTrigger {};
         PainterArea painterArea {};
     };
-    static_assert_fit_cacheline(DragCache);
+    static_assert_fit_cacheline(DropCache);
 
     /** @brief Event cache */
     struct alignas_double_cacheline EventCache
@@ -87,8 +95,8 @@ public:
         ECS::Entity lastHovered { ECS::NullEntity };
         // Time
         std::int64_t lastTick {};
-        // Drag
-        DragCache drag {};
+        // Drag & drop
+        DropCache drop {};
     };
     static_assert_fit_double_cacheline(EventCache);
 
@@ -135,8 +143,8 @@ public:
 
     /** @brief Drag a type rendered with a given painter area */
     template<typename Type>
-    inline void drag(const Type &type, const Size &size, PainterArea &&painterArea) noexcept
-        { onDrag(TypeHash::Get<Type>(), &type, size, std::move(painterArea)); }
+    inline void drag(const Type &type, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept
+        { onDrag(TypeHash::Get<std::remove_cvref_t<Type>>(), &type, size, dropTrigger, std::move(painterArea)); }
 
     /** @brief Invalidate UI scene */
     void invalidate(void) noexcept;
@@ -183,7 +191,7 @@ private:
 
 
     /** @brief Opaque type drag implementation */
-    void onDrag(const TypeHash typeHash, const void * const data, const Size &size, PainterArea &&painterArea) noexcept;
+    void onDrag(const TypeHash typeHash, const void * const data, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept;
 
 
     /** @brief Get the clipped area of an entity */
@@ -219,7 +227,7 @@ private:
 
     /** @brief Traverse a table requiring clipped area & hover management */
     template<typename Component, typename Event, typename OnEnter, typename OnLeave, typename OnInside>
-    void traverseClippedEventTableWithHover(
+    ECS::Entity traverseClippedEventTableWithHover(
             const Event &event, ECS::Entity &entityLock, ECS::Entity &lastHovered, OnEnter &&onEnter, OnLeave &&onLeave, OnInside &&onInside) noexcept;
 
 

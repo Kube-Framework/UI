@@ -114,44 +114,42 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
 
 template<typename ...Functors>
     requires (sizeof...(Functors) > 0)
-inline kF::UI::DropEventArea::DropEventArea(Functors &&...functors) noexcept
-    : _dropTypes(
-        [](Functors &&...functors)
-        {
-            constexpr auto Forward = []<typename Functor>(Functor &&)
-            {
+inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors) noexcept
+{
+    return DropEventArea {
+        [](const std::type_identity<Functors> ...functorTypes) noexcept -> DropTypes {
+            constexpr auto Forward = []<typename Functor>(const std::type_identity<Functor>) noexcept -> TypeHash {
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
                 static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
                 using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
                 return TypeHash::Get<Type>();
             };
-            return DropTypes { Forward(std::forward<Functors>(functors))... };
-        }(std::forward<Functors>(functors)...)
-    )
-    , _dropFunctors(
-        [](Functors &&...functors)
-        {
-            constexpr auto Forward = []<typename Functor>(Functor &&functor)
-            {
+            return DropTypes { Forward(functorTypes)... };
+        }(std::type_identity<Functors>()...),
+        [](Functors &&...functors) noexcept -> DropFunctors {
+            constexpr auto ForwardFunc = []<typename Functor>(Functor &&functor) noexcept -> DropFunctor {
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
                 static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
+                static_assert(std::is_same_v<typename Decomposer::ReturnType, UI::EventFlags>, "Drop functor must return UI::EventFlags");
                 using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
                 return DropFunctor(
-                    [functor = std::forward<Functor>(functor)](const void * const data,
-                            [[maybe_unused]] const DropEvent &dropEvent, [[maybe_unused]] const Area &area)
-                    {
+                    [functor = std::forward<Functor>(functor)](
+                        const void * const data, [[maybe_unused]] const DropEvent &dropEvent, [[maybe_unused]] const Area &area
+                    ) noexcept {
                         const auto &type = *reinterpret_cast<const Type * const>(data);
                         if constexpr (Decomposer::IndexSequence.size() == 1)
-                            functor(type);
+                            return functor(type);
                         else if constexpr (Decomposer::IndexSequence.size() == 2)
-                            functor(type, dropEvent);
+                            return functor(type, dropEvent);
                         else
-                            functor(type, dropEvent, area);
+                            return functor(type, dropEvent, area);
                     }
                 );
             };
-            return DropFunctors { Forward(std::forward<Functors>(functors))... };
+            DropFunctors dropFunctors;
+            dropFunctors.reserve(sizeof...(Functors));
+            (dropFunctors.push(ForwardFunc(functors)), ...);
+            return dropFunctors;
         }(std::forward<Functors>(functors)...)
-    )
-{
+    };
 }
