@@ -235,6 +235,7 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
         _eventCache.lastHovered = ECS::NullEntity;
         _eventCache.mouseLock = ECS::NullEntity;
         _eventCache.motionLock = ECS::NullEntity;
+        invalidate();
         return;
     }
 
