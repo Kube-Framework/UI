@@ -17,13 +17,13 @@ void UI::Animator::start(const Animation &animation) noexcept
     kFEnsure(animation.tickEvent,
         "UI::Animator::start: Animation must have a tick event callback");
     if (!index.success()) [[likely]] {
-        state = &_states.push(AnimationState { .animation = &animation });
+        state = &_states.push(AnimationState { .animation = Core::TaggedPtr(&animation) });
     } else {
         state = &_states.at(index.value());
     }
     // if (state->elapsed) // This is a restart
     state->elapsed = {};
-    state->reverse = animation.reverse;
+    state->setReverse(animation.reverse);
     if (animation.statusEvent)
         animation.statusEvent(AnimationStatus::Start);
 }
@@ -42,7 +42,7 @@ void UI::Animator::stop(const Animation &animation) noexcept
 
 Core::Expected<std::uint32_t> UI::Animator::findIndex(const Animation &animation) const noexcept
 {
-    auto it = _states.find([&animation](const auto &state) { return &animation == state.animation; });
+    auto it = _states.find([&animation](const auto &state) { return &animation == state.animation.get(); });
 
     if (it != _states.end()) [[likely]]
         return Core::Expected<std::uint32_t>(Core::Distance<std::uint32_t>(_states.begin(), it));
@@ -56,7 +56,8 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
         const auto &animation = *state.animation;
         const auto totalElapsed = std::min(state.elapsed + elapsed, animation.duration);
         const auto ratio = static_cast<float>(totalElapsed) / static_cast<float>(animation.duration);
-        const auto reversedRatio = !state.reverse ? ratio : 1.0f - ratio;
+        const auto reverse = state.reverse();
+        const auto reversedRatio = !reverse ? ratio : 1.0f - ratio;
         animation.tickEvent(reversedRatio);
         if (animation.duration != totalElapsed) [[likely]] {
             state.elapsed = totalElapsed;
@@ -64,7 +65,7 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
         } else [[unlikely]] {
             state.elapsed = 0;
             if (animation.animationMode == AnimationMode::Bounce)
-                state.reverse = !state.reverse;
+                state.setReverse(!reverse);
             if (animation.statusEvent)
                 animation.statusEvent(AnimationStatus::Finish);
             return animation.animationMode == AnimationMode::Single;

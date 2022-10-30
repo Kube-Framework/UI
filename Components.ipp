@@ -15,11 +15,12 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
         "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
     using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
 
-    if constexpr (Decomposer::IndexSequence.size() == 2) {
+    if constexpr (Decomposer::IndexSequence.size() == 2
+            && Core::FunctionDecomposerHelper<decltype(Function)>::IndexSequence.size() != 1) {
         using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
         return ReturnType(
             [... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
-                return Function(arg1, Internal::ForwardArg(args)...);
+                return Function(arg1, arg2, Internal::ForwardArg(args)...);
             }
         );
     } else {
@@ -40,23 +41,19 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(ClassType &&instance, A
         "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
     using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
 
-    if constexpr (Decomposer::IndexSequence.size() == 2) {
+    auto * const target = ConstexprTernaryRef(std::is_pointer_v<ClassType>, instance, &instance);
+    if constexpr (Decomposer::IndexSequence.size() == 2
+            && Core::FunctionDecomposerHelper<decltype(MemberFunction)>::IndexSequence.size() != 1) {
         using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
         return ReturnType(
-            [instance, ... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
-                if constexpr (std::is_pointer_v<ClassType>)
-                    return (instance->*MemberFunction)(arg1, arg2, Internal::ForwardArg(args)...);
-                else
-                    return (instance.*MemberFunction)(arg1, arg2, Internal::ForwardArg(args)...);
+            [target, ... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
+                return (target->*MemberFunction)(arg1, arg2, Internal::ForwardArg(args)...);
             }
         );
     } else {
         return ReturnType(
-            [instance, ... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
-                if constexpr (std::is_pointer_v<ClassType>)
-                    return (instance->*MemberFunction)(arg1, Internal::ForwardArg(args)...);
-                else
-                    return (instance.*MemberFunction)(arg1, Internal::ForwardArg(args)...);
+            [target, ... args = std::forward<Args>(args)](Arg1 arg1) noexcept {
+                return (target->*MemberFunction)(arg1, Internal::ForwardArg(args)...);
             }
         );
     }
@@ -70,7 +67,8 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Functor &&functor, Args
         "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
     using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
 
-    if constexpr (Decomposer::IndexSequence.size() == 2) {
+    if constexpr (Decomposer::IndexSequence.size() == 2
+            && Core::FunctionDecomposerHelper<Functor>::IndexSequence.size() != 1) {
         using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
         return ReturnType(
             [functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
@@ -94,7 +92,7 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
         "UI::Internal::MakeEventAreaFunctor: Invalid return functor format");
     using Arg1 = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
 
-    if constexpr (Decomposer::IndexSequence.size() == 2) {
+    if constexpr (Decomposer::IndexSequence.size() == 2) { // @todo make this callable with 1 argument in Functor
         using Arg2 = std::tuple_element_t<1, typename Decomposer::ArgsTuple>;
         return ReturnType(
             [... args = std::forward<Args>(args)](Arg1 arg1, Arg2 arg2) noexcept {
@@ -136,7 +134,7 @@ inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors)
                     [functor = std::forward<Functor>(functor)](
                         const void * const data, [[maybe_unused]] const DropEvent &dropEvent, [[maybe_unused]] const Area &area
                     ) noexcept {
-                        const auto &type = *reinterpret_cast<const Type * const>(data);
+                        const auto &type = *reinterpret_cast<const Type *>(data);
                         if constexpr (Decomposer::IndexSequence.size() == 1)
                             return functor(type);
                         else if constexpr (Decomposer::IndexSequence.size() == 2)

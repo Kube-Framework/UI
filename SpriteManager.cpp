@@ -3,6 +3,8 @@
  * @ Description: Sprite manager
  */
 
+#include <Kube/Core/Platform.hpp>
+
 #if KUBE_COMPILER_GCC
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wold-style-cast"

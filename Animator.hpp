@@ -24,9 +24,14 @@ public:
     /** @brief State of an animation */
     struct alignas_quarter_cacheline AnimationState
     {
-        const Animation *animation {};
-        std::int64_t elapsed : 63;
-        std::int64_t reverse : 1;
+        Core::TaggedPtr<const Animation> animation {};
+        std::int64_t elapsed;
+
+        /** @brief Get reverse state */
+        [[nodiscard]] inline bool reverse(void) const noexcept { return static_cast<bool>(animation.tag()); }
+
+        /** @brief Set reverse state */
+        inline void setReverse(const bool value) noexcept { animation.setTag(value); }
     };
     static_assert_fit_quarter_cacheline(AnimationState);
 

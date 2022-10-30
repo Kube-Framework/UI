@@ -16,7 +16,7 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
     // Setup delegate
     _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemList &parent, void * const model, const std::uint32_t index) {
         ItemType *child {};
-        auto &modelData = (*reinterpret_cast<ListModelType * const>(model))[static_cast<ListModelType::Range>(index)];
+        auto &modelData = (*reinterpret_cast<ListModelType *>(model))[static_cast<ListModelType::Range>(index)];
 
         // Static assertions
         static_assert(

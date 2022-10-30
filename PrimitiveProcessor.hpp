@@ -51,7 +51,7 @@ namespace kF::UI
                 const Primitive * const primitiveBegin, const Primitive * const primitiveEnd,
                 std::uint8_t * const instanceBegin) noexcept
         {
-            std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive * const>(instanceBegin));
+            std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive *>(instanceBegin));
             return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd);
         }
     }
