@@ -367,6 +367,7 @@ namespace kF::UI
 
         DropTypes dropTypes {};
         DropFunctors dropFunctors {};
+        // Runtime state
         bool hovered {};
 
 

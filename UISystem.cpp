@@ -216,7 +216,7 @@ void UI::UISystem::processEventHandlers(void) noexcept
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
     // Handle drop trigger
-    if (_eventCache.drop.typeHash != TypeHash {} && _eventCache.drop.dropTrigger.button == event.button
+    if (isDragging() && _eventCache.drop.dropTrigger.button == event.button
             && _eventCache.drop.dropTrigger.state == event.state) {
         // Send drop event
         processDropEventAreas(DropEvent {
@@ -247,13 +247,13 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
         }
     );
 
-    kFEnsure(!(_eventCache.drop.typeHash != TypeHash {} && _eventCache.mouseLock != ECS::NullEntity),
+    kFEnsure(!(isDragging() && _eventCache.mouseLock != ECS::NullEntity),
         "UI::UISystem::processMouseEventAreas: Cannot lock mouse while dragging");
 }
 
 void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
 {
-    if (_eventCache.drop.typeHash != TypeHash {}) {
+    if (isDragging()) {
         processDropEventAreas(DropEvent {
             .type = DropEvent::Type::Motion,
             .pos = event.pos,
@@ -288,7 +288,7 @@ void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
         }
     );
 
-    kFEnsure(!(_eventCache.drop.typeHash != TypeHash {} && _eventCache.mouseLock != ECS::NullEntity),
+    kFEnsure(!(isDragging() && _eventCache.mouseLock != ECS::NullEntity),
         "UI::UISystem::processMotionEventAreas: Cannot lock motion when dragging");
 }
 
@@ -573,7 +573,7 @@ void UI::UISystem::processPainterAreas(void) noexcept
     }
 
     // Draw drag if any
-    if (_eventCache.drop.typeHash != TypeHash {}) [[unlikely]] {
+    if (isDragging()) [[unlikely]] {
         int x, y;
         SDL_GetMouseState(&x, &y);
         const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));

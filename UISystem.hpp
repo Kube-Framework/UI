@@ -143,8 +143,11 @@ public:
 
     /** @brief Drag a type rendered with a given painter area */
     template<typename Type>
-    inline void drag(const Type &type, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept
+    inline void drag(const Type &type, const Size &size, PainterArea &&painterArea, const DropTrigger dropTrigger = {}) noexcept
         { onDrag(TypeHash::Get<std::remove_cvref_t<Type>>(), &type, size, dropTrigger, std::move(painterArea)); }
+
+    /** @brief Check if UISystem is currently dragging something */
+    [[nodiscard]] inline bool isDragging(void) const noexcept { return _eventCache.drop.typeHash != TypeHash {}; }
 
     /** @brief Invalidate UI scene */
     void invalidate(void) noexcept;
