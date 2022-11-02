@@ -14,7 +14,6 @@ namespace kF::UI
     /** @brief Event requirementes */
     template<typename EventType>
     concept EventRequirements = std::same_as<EventType, MouseEvent>
-            || std::same_as<EventType, MotionEvent>
             || std::same_as<EventType, WheelEvent>
             || std::same_as<EventType, KeyEvent>;
 

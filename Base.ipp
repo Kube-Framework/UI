@@ -295,10 +295,7 @@ namespace kF::UI
 
 constexpr bool kF::UI::Area::contains(const Point &point) const noexcept
 {
-    return (pos.x <= point.x)
-        & (pos.y <= point.y)
-        & (pos.x + size.width >= point.x)
-        & (pos.y + size.height >= point.y);
+    return (left() <= point.x) & (right() >= point.x) & (top() <= point.y) & (bottom() >= point.y);
 }
 
 constexpr bool kF::UI::Area::contains(const Area &area) const noexcept

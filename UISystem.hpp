@@ -24,7 +24,7 @@ namespace kF::UI
     struct DropTrigger
     {
         Button button { Button::Left };
-        bool state { false };
+        bool buttonState { false }; // False = Release, True = Press
     };
 }
 
@@ -44,7 +44,6 @@ class alignas_double_cacheline kF::UI::UISystem
         Clip,
         // Input
         MouseEventArea,
-        MotionEventArea,
         WheelEventArea,
         DropEventArea,
         KeyEventReceiver,
@@ -83,12 +82,10 @@ public:
     {
         // Event queues
         EventQueuePtr<MouseEvent> mouseQueue {};
-        EventQueuePtr<MotionEvent> motionQueue {};
         EventQueuePtr<WheelEvent> wheelQueue {};
         EventQueuePtr<KeyEvent> keyQueue {};
         // Locks
         ECS::Entity mouseLock { ECS::NullEntity };
-        ECS::Entity motionLock { ECS::NullEntity };
         ECS::Entity wheelLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
         // Hover
@@ -180,8 +177,8 @@ private:
     using System::removeUnsafeRange;
 
 
-    /** @brief Unsafe function notifying that motion event area has been removed   */
-    void onMotionEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
+    /** @brief Unsafe function notifying that mouse event area has been removed   */
+    void onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
         { if (_eventCache.lastHovered == entity) _eventCache.lastHovered = ECS::NullEntity; }
 
 
@@ -211,8 +208,11 @@ private:
     /** @brief Process a single MouseEvent by traversing MouseEventArea instances */
     void processMouseEventAreas(const MouseEvent &event) noexcept;
 
-    /** @brief Process a single MotionEvent by traversing MotionEventArea instances */
-    void processMotionEventAreas(const MotionEvent &event) noexcept;
+    /** @brief Process a single action MouseEvent by traversing MouseEventArea instances */
+    void processMouseEventAreasAction(const MouseEvent &event) noexcept;
+
+    /** @brief Process a single motion MouseEvent by traversing MouseEventArea instances */
+    void processMouseEventAreasMotion(const MouseEvent &event) noexcept;
 
     /** @brief Process a single WheelEvent by traversing WheelEventArea instances */
     void processWheelEventAreas(const WheelEvent &event) noexcept;

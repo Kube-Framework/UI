@@ -13,7 +13,6 @@
 namespace kF::UI
 {
     struct MouseEvent;
-    struct MotionEvent;
     struct WheelEvent;
     struct DropEvent;
     struct KeyEvent;
@@ -315,35 +314,27 @@ namespace kF::UI
 }
 
 /** @brief Describe a mouse event (single button action) */
-struct alignas_quarter_cacheline kF::UI::MouseEvent
+struct alignas_half_cacheline kF::UI::MouseEvent
 {
-    Point pos {};
-    Button button {};
-    bool state {};
-    Modifier modifiers {};
-    std::uint32_t timestamp {};
-};
-static_assert_fit_quarter_cacheline(kF::UI::MouseEvent);
-
-/** @brief Describe a motion event (mouse movement) */
-struct alignas_half_cacheline kF::UI::MotionEvent
-{
-    /** @brief Motion event type */
+    /** @brief Mouse event type */
     enum class Type : std::uint8_t
     {
-        None,
+        Motion,
         Enter,
-        Leave
+        Leave,
+        Press,
+        Release
     };
 
     Point pos {};
     Point motion {};
     Type type {};
-    Button buttons {};
+    Button button {};
+    Button activeButtons {};
     Modifier modifiers {};
     std::uint32_t timestamp {};
 };
-static_assert_fit_half_cacheline(kF::UI::MotionEvent);
+static_assert_fit_half_cacheline(kF::UI::MouseEvent);
 
 /** @brief Describe a wheel event */
 struct alignas_half_cacheline kF::UI::WheelEvent

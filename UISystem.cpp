@@ -44,7 +44,6 @@ UI::UISystem::UISystem(void) noexcept
         }),
         _eventCache(EventCache {
             .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
-            .motionQueue = parent().getSystem<EventSystem>().addEventQueue<MotionEvent>(),
             .wheelQueue = parent().getSystem<EventSystem>().addEventQueue<WheelEvent>(),
             .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>()
         }),
@@ -141,7 +140,6 @@ void UI::UISystem::sortTables(void) noexcept
 
     getTable<PainterArea>().sort(ascentCompareFunc);
     getTable<MouseEventArea>().sort(descentCompareFunc);
-    getTable<MotionEventArea>().sort(descentCompareFunc);
     getTable<WheelEventArea>().sort(descentCompareFunc);
     getTable<DropEventArea>().sort(descentCompareFunc);
     getTable<KeyEventReceiver>().sort(descentCompareFunc);
@@ -194,11 +192,7 @@ UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &
 void UI::UISystem::processEventHandlers(void) noexcept
 {
     // @todo Events can crash if they remove Items from the tree
-    // @todo Motion / mouse / wheel events processed out of order
-    _eventCache.motionQueue->consume([this](const auto &range) {
-        for (const auto &event : range)
-            processMotionEventAreas(event);
-    });
+    // @todo Mouse / wheel events processed out of order
     _eventCache.mouseQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processMouseEventAreas(event);
@@ -215,9 +209,18 @@ void UI::UISystem::processEventHandlers(void) noexcept
 
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
 {
+    if (event.type == MouseEvent::Type::Motion)
+        return processMouseEventAreasMotion(event);
+    else
+        return processMouseEventAreasAction(event);
+}
+
+void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcept
+{
     // Handle drop trigger
     if (isDragging() && _eventCache.drop.dropTrigger.button == event.button
-            && _eventCache.drop.dropTrigger.state == event.state) {
+            && ((_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Press)
+            || (!_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Release))) {
         // Send drop event
         processDropEventAreas(DropEvent {
             .type = DropEvent::Type::Drop,
@@ -234,7 +237,6 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
         _eventCache.drop = {};
         _eventCache.lastHovered = ECS::NullEntity;
         _eventCache.mouseLock = ECS::NullEntity;
-        _eventCache.motionLock = ECS::NullEntity;
         invalidate();
         return;
     }
@@ -242,16 +244,33 @@ void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
     traverseClippedEventTable<MouseEventArea>(
         event,
         _eventCache.mouseLock,
-        [](const MouseEvent &event, const MouseEventArea &component, const Area &clippedArea, const ECS::Entity) {
-            return component.event(event, clippedArea);
+        [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
+            const auto flags = component.event(event, clippedArea);
+            component.hovered = !Core::HasFlags(flags, EventFlags::Propagate) && clippedArea.contains(event.pos);
+            // If mouse is not inside and not locked, then trigger leave event
+            if (!component.hovered && !Core::HasFlags(flags, EventFlags::Lock)) {
+                MouseEvent mouseEvent(event);
+                mouseEvent.type = UI::MouseEvent::Type::Leave;
+                const auto leaveFlags = component.event(mouseEvent, clippedArea);
+                if (processEventFlags(_eventCache.mouseLock, leaveFlags, entity)) {
+                    _eventCache.lastHovered = _eventCache.mouseLock;
+                    // If leave event did lock, stop
+                    if (Core::HasFlags(leaveFlags, EventFlags::Lock)) {
+                        if (Core::HasFlags(flags, EventFlags::Invalidate))
+                            invalidate();
+                        return EventFlags::Stop;
+                    }
+                }
+            }
+            return flags;
         }
     );
 
     kFEnsure(!(isDragging() && _eventCache.mouseLock != ECS::NullEntity),
-        "UI::UISystem::processMouseEventAreas: Cannot lock mouse while dragging");
+        "UI::UISystem::processMouseEventAreasAction: Cannot lock mouse while dragging");
 }
 
-void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
+void UI::UISystem::processMouseEventAreasMotion(const MouseEvent &event) noexcept
 {
     if (isDragging()) {
         processDropEventAreas(DropEvent {
@@ -263,33 +282,33 @@ void UI::UISystem::processMotionEventAreas(const MotionEvent &event) noexcept
         return;
     }
 
-    traverseClippedEventTableWithHover<MotionEventArea>(
+    traverseClippedEventTableWithHover<MouseEventArea>(
         event,
-        _eventCache.motionLock,
+        _eventCache.mouseLock,
         _eventCache.lastHovered,
         // On enter
-        [this](const MotionEvent &event, MotionEventArea &component, const Area &clippedArea) noexcept {
-            auto motionEvent { event };
-            motionEvent.type = MotionEvent::Type::Enter;
-            const auto flags = component.event(motionEvent, clippedArea);
+        [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea) noexcept {
+            auto mouseEvent { event };
+            mouseEvent.type = MouseEvent::Type::Enter;
+            const auto flags = component.event(mouseEvent, clippedArea);
             component.hovered = !Core::HasFlags(flags, EventFlags::Propagate);
             return flags;
         },
         // On leave
-        [this](const MotionEvent &event, MotionEventArea &component, const Area &clippedArea) noexcept {
-            auto motionEvent { event };
-            motionEvent.type = MotionEvent::Type::Leave;
+        [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea) noexcept {
+            auto mouseEvent { event };
+            mouseEvent.type = MouseEvent::Type::Leave;
             component.hovered = false;
-            return component.event(motionEvent, clippedArea);
+            return component.event(mouseEvent, clippedArea);
         },
         // On inside
-        [this](const MotionEvent &event, MotionEventArea &component, const Area &clippedArea) noexcept {
+        [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea) noexcept {
             return component.event(event, clippedArea);
         }
     );
 
     kFEnsure(!(isDragging() && _eventCache.mouseLock != ECS::NullEntity),
-        "UI::UISystem::processMotionEventAreas: Cannot lock motion when dragging");
+        "UI::UISystem::processMouseEventAreasMotion: Cannot lock mouse when dragging");
 }
 
 void UI::UISystem::processWheelEventAreas(const WheelEvent &event) noexcept
@@ -325,7 +344,7 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
     case DropEvent::Type::Leave:
         traverseClippedEventTableWithHover<DropEventArea>(
             event,
-            _eventCache.motionLock,
+            _eventCache.mouseLock,
             _eventCache.lastHovered,
             // On enter
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea) noexcept {
@@ -358,7 +377,6 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
         );
         // Reset locks that could be affected by drag events
         _eventCache.mouseLock = ECS::NullEntity;
-        _eventCache.motionLock = ECS::NullEntity;
         break;
     }
 }

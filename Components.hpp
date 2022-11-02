@@ -17,7 +17,6 @@ namespace kF::UI
 {
     class Painter;
     class MouseEvent;
-    class MotionEvent;
     class WheelEvent;
     class DropEvent;
     class KeyEvent;
@@ -216,12 +215,14 @@ namespace kF::UI
 
 
     /** @brief Mouse handler */
-    struct alignas_half_cacheline MouseEventArea
+    struct alignas_cacheline MouseEventArea
     {
         /** @brief MouseEventArea event functor */
-        using Event = Core::Functor<EventFlags(const MouseEvent &, const Area &), UIAllocator>;
+        using Event = Core::Functor<EventFlags(const MouseEvent &, const Area &), UIAllocator, Core::CacheLineSize - Core::CacheLineEighthSize>;
 
         Event event {};
+        // Hovered
+        bool hovered {};
 
 
         /** @brief Bind a static mouse functor within a mouse event area
@@ -257,54 +258,7 @@ namespace kF::UI
         [[nodiscard]] static inline MouseEventArea Make(Args &&...args) noexcept
             { return MouseEventArea(Internal::MakeEventAreaFunctor<MouseEventArea::Event, Functor>(std::forward<Args>(args)...)); }
     };
-    static_assert_fit_half_cacheline(MouseEventArea);
-
-
-    /** @brief Motion handler */
-    struct alignas_cacheline MotionEventArea
-    {
-        /** @brief MotionEventArea event functor */
-        using Event = Core::Functor<EventFlags(const MotionEvent &, const Area &), UIAllocator>;
-
-        Event event {};
-        // Runtime state
-        bool hovered {};
-
-
-        /** @brief Bind a static motion functor within a motion event area
-         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
-         *      Additional arguments (Args...) should match remaining functor's arguments
-         *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<auto Function, typename ...Args>
-        [[nodiscard]] static inline MotionEventArea Make(Args &&...args) noexcept
-            { return MotionEventArea(Internal::MakeEventAreaFunctor<Function, MotionEventArea::Event>(std::forward<Args>(args)...)); }
-
-        /** @brief Bind a member motion functor within a motion event area
-         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
-         *      Additional arguments (Args...) should match remaining functor's arguments
-         *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<auto MemberFunction, typename ClassType, typename ...Args>
-            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
-        [[nodiscard]] static inline MotionEventArea Make(ClassType &&instance, Args &&...args) noexcept
-            { return MotionEventArea(Internal::MakeEventAreaFunctor<MemberFunction, MotionEventArea::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
-
-        /** @brief Bind a static motion functor within a motion event area
-         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
-         *      Additional arguments (Args...) should match remaining functor's arguments
-         *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<typename Functor, typename ...Args>
-        [[nodiscard]] static inline MotionEventArea Make(Functor &&functor, Args &&...args) noexcept
-            { return MotionEventArea(Internal::MakeEventAreaFunctor<MotionEventArea::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
-
-        /** @brief Bind a motion functor within a motion event area
-         *  @note The functor must take 'const MotionEvent &, const Area &' as its first two arguments
-         *      Additional arguments (Args...) should match remaining functor's arguments
-         *      If an argument doesn't match, it must be a functor that returns the matching argument */
-        template<typename Functor, typename ...Args>
-        [[nodiscard]] static inline MotionEventArea Make(Args &&...args) noexcept
-            { return MotionEventArea(Internal::MakeEventAreaFunctor<MotionEventArea::Event, Functor>(std::forward<Args>(args)...)); }
-    };
-    static_assert_fit_cacheline(MotionEventArea);
+    static_assert_fit_cacheline(MouseEventArea);
 
 
     /** @brief Wheel handler */
@@ -443,7 +397,6 @@ namespace kF::UI
         PainterArea         = 0b000000001000000,
         Clip                = 0b000000010000000,
         MouseEventArea      = 0b000000100000000,
-        MotionEventArea     = 0b000001000000000,
         WheelEventArea      = 0b000010000000000,
         DropEventArea       = 0b000100000000000,
         KeyEventReceiver    = 0b001000000000000,
@@ -462,7 +415,6 @@ namespace kF::UI
         PainterArea,
         Clip,
         MouseEventArea,
-        MotionEventArea,
         WheelEventArea,
         DropEventArea,
         KeyEventReceiver,

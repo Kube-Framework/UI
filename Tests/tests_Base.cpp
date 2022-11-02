@@ -9,7 +9,51 @@
 
 using namespace kF;
 
-TEST(Area, Contains)
+TEST(Area, ContainsPoint)
+{
+    constexpr auto ContainsTest = [](const bool result, const UI::Area &area, const UI::Point &point) {
+        ASSERT_EQ(area.contains(point), result);
+    };
+
+    const UI::Area area {
+        { 0, 0 },
+        { 100, 100 }
+    };
+
+    { // Top-Left
+        ContainsTest(false, area, UI::Point { 0, -1 });
+        ContainsTest(false, area, UI::Point { -1, 0 });
+        ContainsTest(false, area, UI::Point { -1, -1 });
+        ContainsTest(true, area, UI::Point { 0, 0 });
+    }
+
+    { // Top-Right
+        ContainsTest(false, area, UI::Point { 100, -1 });
+        ContainsTest(false, area, UI::Point { 101, 0 });
+        ContainsTest(false, area, UI::Point { 101, -1 });
+        ContainsTest(true, area, UI::Point { 100, 0 });
+    }
+
+    { // Bottom-Left
+        ContainsTest(false, area, UI::Point { 0, 101 });
+        ContainsTest(false, area, UI::Point { -1, 100 });
+        ContainsTest(false, area, UI::Point { -1, 101 });
+        ContainsTest(true, area, UI::Point { 0, 100 });
+    }
+
+    { // Bottom-Right
+        ContainsTest(false, area, UI::Point { 100, 101 });
+        ContainsTest(false, area, UI::Point { 101, 100 });
+        ContainsTest(false, area, UI::Point { 101, 101 });
+        ContainsTest(true, area, UI::Point { 100, 100 });
+    }
+
+    { // In
+        ContainsTest(true, area, UI::Point { 50, 50 });
+    }
+}
+
+TEST(Area, ContainsArea)
 {
     constexpr auto ContainsTest = [](const bool result, const UI::Area &a1, const UI::Area &a2) {
         ASSERT_EQ(a1.contains(a2), result);
