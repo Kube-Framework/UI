@@ -36,7 +36,7 @@ inline kF::UI::ListModelEvent::ListModelEvent(const DataType &data_) noexcept
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::invalidate(const ConstIterator from, const ConstIterator to) noexcept
 {
-    const auto begin_ = begin();
+    const auto begin_ = cbegin();
     invalidate(static_cast<Range>(std::distance(begin_, from)), static_cast<Range>(std::distance(begin_, to)));
 }
 

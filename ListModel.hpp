@@ -133,6 +133,9 @@ public:
     /** @brief Get ListModel's event dispatcher */
     [[nodiscard]] auto &eventDispatcher(void) noexcept { return _eventDispatcher; }
 
+    /** @brief Invalidate all elements that must be updated */
+    inline void invalidate(void) noexcept { invalidate(0, size()); }
+
     /** @brief Invalidate an element that must be updated */
     inline void invalidate(const ConstIterator at) noexcept { invalidate(at, at + 1); }
 
