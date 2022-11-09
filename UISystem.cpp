@@ -205,6 +205,25 @@ void UI::UISystem::processEventHandlers(void) noexcept
         for (const auto &event : range)
             processKeyEventReceivers(event);
     });
+
+    if (isDragging() && _eventCache.lastMouseHovered != ECS::NullEntity) {
+        auto &lastComponent = get<MouseEventArea>(_eventCache.lastMouseHovered);
+        const auto &lastClippedArea = getClippedArea(_eventCache.lastMouseHovered, get<Area>(_eventCache.lastMouseHovered));
+        int x, y;
+        const auto activeButtons = static_cast<Button>(SDL_GetMouseState(&x, &y));
+        const MouseEvent leaveEvent {
+            .pos = UI::Point(static_cast<UI::Pixel>(x), static_cast<UI::Pixel>(y)),
+            .type = MouseEvent::Type::Leave,
+            .activeButtons = activeButtons,
+            .modifiers = static_cast<Modifier>(SDL_GetModState()),
+            .timestamp = SDL_GetTicks()
+        };
+        lastComponent.hovered = false;
+        const auto flags = lastComponent.event(leaveEvent, lastClippedArea);
+        _eventCache.lastMouseHovered = ECS::NullEntity;
+        kFEnsure(!Core::HasFlags(flags, EventFlags::Lock),
+            "UI::UISystem::processEventHandlers: Cannot lock mouse while dragging");
+    }
 }
 
 void UI::UISystem::processMouseEventAreas(const MouseEvent &event) noexcept
@@ -235,7 +254,7 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
         });
         // Reset drop cache
         _eventCache.drop = {};
-        _eventCache.lastHovered = ECS::NullEntity;
+        _eventCache.lastDropHovered = ECS::NullEntity;
         _eventCache.mouseLock = ECS::NullEntity;
         invalidate();
         return;
@@ -253,7 +272,7 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
                 mouseEvent.type = UI::MouseEvent::Type::Leave;
                 const auto leaveFlags = component.event(mouseEvent, clippedArea);
                 if (processEventFlags(_eventCache.mouseLock, leaveFlags, entity)) {
-                    _eventCache.lastHovered = _eventCache.mouseLock;
+                    _eventCache.lastMouseHovered = _eventCache.mouseLock;
                     // If leave event did lock, stop
                     if (Core::HasFlags(leaveFlags, EventFlags::Lock)) {
                         if (Core::HasFlags(flags, EventFlags::Invalidate))
@@ -285,7 +304,7 @@ void UI::UISystem::processMouseEventAreasMotion(const MouseEvent &event) noexcep
     traverseClippedEventTableWithHover<MouseEventArea>(
         event,
         _eventCache.mouseLock,
-        _eventCache.lastHovered,
+        _eventCache.lastMouseHovered,
         // On enter
         [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea) noexcept {
             auto mouseEvent { event };
@@ -345,7 +364,7 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
         traverseClippedEventTableWithHover<DropEventArea>(
             event,
             _eventCache.mouseLock,
-            _eventCache.lastHovered,
+            _eventCache.lastDropHovered,
             // On enter
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea) noexcept {
                 auto dropEvent { event };
@@ -383,6 +402,7 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
 
 void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
 {
+    // @todo prevent crash when deleting KeyEventReceiver inside event
     getTable<KeyEventReceiver>().traverse([this, &event](const ECS::Entity entity, KeyEventReceiver &component) noexcept {
         const auto flags = component.event(event);
         if (processEventFlags(_eventCache.keyLock, flags, entity))
@@ -411,32 +431,29 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTable(const Event &event, E
             return entityLock;
     }
 
-    std::uint32_t index { ~0u };
     ECS::Entity hitEntity { ECS::NullEntity };
-
-    for (const auto entity : table.entities()) {
+    table.traverse([&](const ECS::Entity entity) {
         const auto area = areaTable.get(entity);
-        ++index;
-
         // Test non-clipped area
         if (!area.contains(event.pos)) [[likely]]
-            continue;
+            return true;
 
         // Test clipped area
         const auto clippedArea = getClippedArea(entity, area);
         if (!clippedArea.contains(event.pos)) [[likely]]
-            continue;
+            return true;
 
         // Process event
-        auto &component = table.atIndex(index);
+        auto &component = table.get(entity);
         const auto flags = onEvent(event, component, clippedArea, entity);
 
         // Process event flags
         if (processEventFlags(entityLock, flags, entity)) {
             hitEntity = entity;
-            break;
+            return false;
         }
-    }
+        return true;
+    });
     return hitEntity;
 }
 
@@ -528,13 +545,14 @@ void UI::UISystem::processElapsedTime(void) noexcept
 bool UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
 {
     bool invalidateState = false;
-    for (Timer &handler : getTable<Timer>()) {
+
+    getTable<Timer>().traverse([elapsed, &invalidateState](Timer &handler) {
         handler.elapsedTimeState += elapsed;
         if (handler.elapsedTimeState >= handler.interval) [[unlikely]] {
             invalidateState |= handler.event(elapsed);
             handler.elapsedTimeState = 0;
         }
-    }
+    });
     return invalidateState;
 }
 
@@ -543,8 +561,9 @@ bool UI::UISystem::processAnimators(const std::int64_t elapsed) noexcept
     // @todo Fix bug when removing an animator at tick time
     bool invalidateState { false };
 
-    for (Animator &handler : getTable<Animator>())
+    getTable<Animator>().traverse([elapsed, &invalidateState](Animator &handler) {
         invalidateState |= handler.tick(elapsed);
+    });
     return invalidateState;
 }
 

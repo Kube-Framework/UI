@@ -43,13 +43,13 @@ class alignas_double_cacheline kF::UI::UISystem
         PainterArea,
         Clip,
         // Input
-        MouseEventArea,
-        WheelEventArea,
-        DropEventArea,
-        KeyEventReceiver,
+        ECS::StableComponent<MouseEventArea>,
+        ECS::StableComponent<WheelEventArea>,
+        ECS::StableComponent<DropEventArea>,
+        ECS::StableComponent<KeyEventReceiver>,
         // Time
-        Timer,
-        Animator
+        ECS::StableComponent<Timer>,
+        ECS::StableComponent<Animator>
     >
 {
 public:
@@ -64,6 +64,7 @@ public:
         DepthUnit maxDepth {};
         GPU::FrameIndex invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
         bool invalidateTree { true };
+        Core::Vector<ECS::Entity, UIAllocator> entityCache {};
     };
     static_assert_fit_cacheline(Cache);
 
@@ -89,7 +90,8 @@ public:
         ECS::Entity wheelLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
         // Hover
-        ECS::Entity lastHovered { ECS::NullEntity };
+        ECS::Entity lastMouseHovered { ECS::NullEntity };
+        ECS::Entity lastDropHovered { ECS::NullEntity };
         // Time
         std::int64_t lastTick {};
         // Drag & drop
@@ -179,7 +181,7 @@ private:
 
     /** @brief Unsafe function notifying that mouse event area has been removed   */
     void onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
-        { if (_eventCache.lastHovered == entity) _eventCache.lastHovered = ECS::NullEntity; }
+        { if (_eventCache.lastMouseHovered == entity) _eventCache.lastMouseHovered = ECS::NullEntity; }
 
 
     /** @brief Check if a frame is invalid */

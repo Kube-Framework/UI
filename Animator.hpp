@@ -25,7 +25,7 @@ public:
     struct alignas_quarter_cacheline AnimationState
     {
         Core::TaggedPtr<const Animation> animation {};
-        std::int64_t elapsed;
+        std::int64_t elapsed {};
 
         /** @brief Get reverse state */
         [[nodiscard]] inline bool reverse(void) const noexcept { return static_cast<bool>(animation.tag()); }

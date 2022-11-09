@@ -10,4 +10,8 @@ kube_add_unit_tests(UITests
 
     LIBRARIES
         UI
+
+
+    RESOURCES
+        Resources/Test.png
 )
