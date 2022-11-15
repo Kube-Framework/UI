@@ -255,10 +255,13 @@ namespace kF::UI
 
 
         /** @brief Check if a point overlap with area */
-        [[nodiscard]] constexpr bool contains(const Point &point) const noexcept;
+        [[nodiscard]] constexpr bool contains(const Point point) const noexcept;
 
         /** @brief Check if an area overlap with area */
         [[nodiscard]] constexpr bool contains(const Area &area) const noexcept;
+
+        /** @brief Check if an area overlap with a segment */
+        [[nodiscard]] constexpr bool contains(const Point a, const Point b) const noexcept;
 
 
         /** @brief Create an Area of given 'size' centered to a given 'center' point */

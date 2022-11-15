@@ -117,6 +117,29 @@ TEST(Area, ContainsArea)
     }
 }
 
+TEST(Area, ContainsSegment)
+{
+    constexpr auto TestSegment = [](const auto expected, const auto &area, const auto p1, const auto p2) {
+        ASSERT_EQ(expected, area.contains(p1, p2));
+        ASSERT_EQ(expected, area.contains(p2, p1));
+    };
+
+    const UI::Area area {
+        { 0, 0 },
+        { 100, 100 }
+    };
+
+    TestSegment(true, area, UI::Point { 0, 0 }, UI::Point { 100, 100 });
+    TestSegment(true, area, UI::Point { 100, 0 }, UI::Point { 0, 100 });
+    TestSegment(true, area, UI::Point { -50, -50 }, UI::Point { 50, 50 });
+    TestSegment(true, area, UI::Point { 150, -50 }, UI::Point { 50, 50 });
+    TestSegment(true, area, UI::Point { -1000, 50 }, UI::Point { 1000, 50 });
+    TestSegment(true, area, UI::Point { 50, -1000 }, UI::Point { 50, 1000 });
+    TestSegment(false, area, UI::Point { -100, -100 }, UI::Point { -1, -1 });
+    TestSegment(false, area, UI::Point { 200, -100 }, UI::Point { -1, -1 });
+    TestSegment(false, area, UI::Point { 50, 101 }, UI::Point { 200, 200 });
+}
+
 TEST(Area, Clip)
 {
     const UI::Area area {

@@ -293,7 +293,7 @@ namespace kF::UI
         { lhs.left /= rhs; lhs.right /= rhs; lhs.top /= rhs; lhs.bottom /= rhs; return lhs; }
 }
 
-constexpr bool kF::UI::Area::contains(const Point &point) const noexcept
+constexpr bool kF::UI::Area::contains(const Point point) const noexcept
 {
     return (left() <= point.x) & (right() >= point.x) & (top() <= point.y) & (bottom() >= point.y);
 }
@@ -301,6 +301,44 @@ constexpr bool kF::UI::Area::contains(const Point &point) const noexcept
 constexpr bool kF::UI::Area::contains(const Area &area) const noexcept
 {
     return (left() < area.right()) & (right() > area.left()) & (bottom() > area.top()) & (top() < area.bottom());
+}
+
+constexpr bool kF::UI::Area::contains(const Point a, const Point b) const noexcept
+{
+    constexpr auto GetX = [](const auto y, const auto slope, const auto dt) {
+        return slope != 0.0f ? (y - dt) / slope : 0.0f;
+    };
+    constexpr auto GetY = [](const auto x, const auto slope, const auto dt) {
+        return x * slope + dt;
+    };
+
+    // Compute Y slope & dt
+    const auto slope = b.x != a.x ? (b.y - a.y) / (b.x - a.x) : 0.0f;
+    const auto dt = a.y - slope * a.x;
+
+    // Cache area positions
+    const UI::Pixel top_ = top();
+    const UI::Pixel bottom_ = bottom();
+    const UI::Pixel left_ = left();
+    const UI::Pixel right_ = right();
+
+    // Out of bounds check
+    if (((a.y < top_) & (b.y < top_))
+        | ((a.y > bottom_) & (b.y > bottom_))
+        | ((a.x < left_) & b.x < left_)
+        | ((a.x > right_) & (b.x > right_)))
+        return false;
+
+    // Compute line intersections
+    const auto topX = GetX(top_, slope, dt);
+    const auto bottomX = GetX(bottom_, slope, dt);
+    const auto leftY = GetY(left_, slope, dt);
+    const auto rightY = GetY(right_, slope, dt);
+
+    return ((topX >= left_) & (topX <= right_))
+        | ((bottomX >= left_) & (bottomX <= right_))
+        | ((leftY >= top_) & (leftY <= bottom_))
+        | ((rightY >= top_) & (rightY <= bottom_));
 }
 
 constexpr kF::UI::Area kF::UI::Area::MakeCenter(const Point center, const Size size) noexcept
