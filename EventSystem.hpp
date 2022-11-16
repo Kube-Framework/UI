@@ -50,7 +50,7 @@ private:
     void dispatchEvents(void) noexcept;
 
 
-    Point _lastWheelPosition {};
+    Point _lastMousePosition {};
     GPU::Extent2D _resizeExtent {};
     Button _buttons {};
     Modifier _modifiers {};

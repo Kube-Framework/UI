@@ -28,7 +28,7 @@ inline void kF::UI::EventQueue<EventType>::produce(const Range &range) noexcept
     // Get a node from free list
     Node *nodePtr = ExtractNode(_eventFreeList);
 
-    // No node availabe, we must allocate
+    // No node available, we must allocate
     if (!nodePtr)
         nodePtr = new (EventAllocator::Allocate(sizeof(Node), alignof(Node))) Node {};
 
