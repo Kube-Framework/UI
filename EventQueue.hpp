@@ -31,7 +31,7 @@ namespace kF::UI
 
 /** @brief MPMC event queue bound to a specific event type */
 template<kF::UI::EventRequirements EventType>
-class alignas_quarter_cacheline kF::UI::EventQueue
+class kF::UI::EventQueue
 {
 public:
     /** @brief Event range */
