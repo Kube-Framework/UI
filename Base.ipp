@@ -325,7 +325,7 @@ constexpr bool kF::UI::Area::contains(const Point a, const Point b) const noexce
     // Out of bounds check
     if (((a.y < top_) & (b.y < top_))
         | ((a.y > bottom_) & (b.y > bottom_))
-        | ((a.x < left_) & b.x < left_)
+        | ((a.x < left_) & (b.x < left_))
         | ((a.x > right_) & (b.x > right_)))
         return false;
 

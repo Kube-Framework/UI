@@ -6,6 +6,8 @@
 #pragma once
 
 #include <Kube/Core/SharedPtr.hpp>
+#include <Kube/Core/SPSCQueue.hpp>
+#include <Kube/Core/FlatVector.hpp>
 
 #include "Events.hpp"
 
@@ -32,23 +34,15 @@ template<kF::UI::EventRequirements EventType>
 class alignas_quarter_cacheline kF::UI::EventQueue
 {
 public:
-    /** @brief Linked list node */
-    struct alignas_half_cacheline Node
-    {
-        Core::Vector<EventType, EventAllocator> batch {};
-        Node *next {};
-    };
-    static_assert_fit_half_cacheline(Node);
-
-    /** @brief Tagged node */
-    using TaggedNodePtr = Core::TaggedPtr<Node>;
-
     /** @brief Event range */
     using Range = Core::IteratorRange<const EventType *>;
 
+    /** @brief Event batch */
+    using Batch = Core::FlatVector<EventType, EventAllocator>;
+
 
     /** @brief Destructor */
-    ~EventQueue(void) noexcept;
+    ~EventQueue(void) noexcept = default;
 
     /** @brief Constructor */
     EventQueue(void) noexcept = default;
@@ -63,14 +57,7 @@ public:
 
 
 private:
-    /** @brief Extract a node from an atomic list */
-    [[nodiscard]] static inline Node *ExtractNode(std::atomic<TaggedNodePtr> &head) noexcept;
-
-    /** @brief Insert a node into an atomic list */
-    static inline void InsertNode(std::atomic<TaggedNodePtr> &head, Node * const nodePtr) noexcept;
-
-    std::atomic<TaggedNodePtr> _eventQueue {};
-    std::atomic<TaggedNodePtr> _eventFreeList {};
+    Core::SPSCQueue<Batch, UIAllocator> _queue { 4096 / sizeof(Batch) };
 };
 
 #include "EventQueue.ipp"
