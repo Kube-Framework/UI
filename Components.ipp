@@ -41,7 +41,7 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
         "UI::Internal::MakeEventAreaFunctor: Invalid user functor signature");
 
     if constexpr (ArgumentCount == 0) {
-        return ReturnType([... args = std::forward<Args>(args)] noexcept {
+        return ReturnType([... args = std::forward<Args>(args)](void) noexcept {
             return Function(Internal::ForwardArg(args)...);
         });
     } else {
@@ -93,7 +93,7 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(ClassType &&instance, A
         "UI::Internal::MakeEventAreaFunctor: Invalid user functor signature");
 
     if constexpr (ArgumentCount == 1) {
-        return ReturnType([target, ... args = std::forward<Args>(args)] noexcept {
+        return ReturnType([target, ... args = std::forward<Args>(args)](void) noexcept {
             return (target->*MemberFunction)(Internal::ForwardArg(args)...);
         });
     } else {
@@ -140,7 +140,7 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Functor &&functor, Args
         "UI::Internal::MakeEventAreaFunctor: Invalid user functor signature");
 
     if constexpr (ArgumentCount == 0) {
-        return ReturnType([functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)] noexcept {
+        return ReturnType([functor = std::forward<Functor>(functor), ... args = std::forward<Args>(args)](void) noexcept {
             return functor(Internal::ForwardArg(args)...);
         });
     } else {
@@ -187,7 +187,7 @@ inline ReturnType kF::UI::Internal::MakeEventAreaFunctor(Args &&...args) noexcep
         "UI::Internal::MakeEventAreaFunctor: Invalid user functor signature");
 
     if constexpr (ArgumentCount == 0) {
-        return ReturnType([... args = std::forward<Args>(args)] noexcept {
+        return ReturnType([... args = std::forward<Args>(args)](void) noexcept {
             return Functor{}(Internal::ForwardArg(args)...);
         });
     } else {

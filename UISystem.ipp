@@ -20,7 +20,7 @@ inline void kF::UI::UISystem::validateFrame(const GPU::FrameIndex frame) noexcep
 template<kF::UI::LockComponentRequirements Component>
 inline void kF::UI::UISystem::lockEvents(const ECS::Entity entity) noexcept
 {
-    auto &target = [this] -> ECS::Entity & {
+    auto &target = [this](void) -> ECS::Entity & {
         if constexpr (std::is_same_v<Component, kF::UI::MouseEventArea>)
             return _eventCache.mouseLock;
         else if constexpr (std::is_same_v<Component, kF::UI::WheelEventArea>)
@@ -37,7 +37,7 @@ inline void kF::UI::UISystem::lockEvents(const ECS::Entity entity) noexcept
 template<kF::UI::LockComponentRequirements Component>
 inline void kF::UI::UISystem::unlockEvents(const ECS::Entity entity) noexcept
 {
-    auto &target = [this] -> ECS::Entity & {
+    auto &target = [this](void) -> ECS::Entity & {
         if constexpr (std::is_same_v<Component, kF::UI::MouseEventArea>)
             return _eventCache.mouseLock;
         else if constexpr (std::is_same_v<Component, kF::UI::WheelEventArea>)
