@@ -574,13 +574,33 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
 ) noexcept
 {
     EntityCache hoverStack {};
+    const auto discardHoveredEntities = [this, &event, &hoveredEntities, &onLeave, &hoverStack] {
+        // Discard any entity not on the hover stack
+        const auto it = std::remove_if(hoveredEntities.begin(), hoveredEntities.end(),
+            [this, &event, &onLeave, &hoverStack](const ECS::Entity hoveredEntity) {
+                const auto it = hoverStack.find(hoveredEntity);
+                if (it != hoverStack.end())
+                    return false;
+                auto &component = get<Component>(hoveredEntity);
+                const auto &clippedArea = getClippedArea(hoveredEntity, get<Area>(hoveredEntity));
+                const auto flags = onLeave(event, component, clippedArea, hoveredEntity);
+                if (Core::HasFlags(flags, EventFlags::Invalidate))
+                    invalidate();
+                return true;
+            }
+        );
+        if (it != hoveredEntities.end())
+            hoveredEntities.erase(it, hoveredEntities.end());
+    };
     const auto entity = traverseClippedEventTable<Component>(
         event,
         entityLock,
-        [this, entityLock, &hoveredEntities, &onEnter, &onLeave, &onInside, &hoverStack](
+        [this, entityLock, &hoveredEntities, &onEnter, &onLeave, &onInside, &hoverStack, &discardHoveredEntities](
             const Event &event, Component &component, const Area &clippedArea, const ECS::Entity entity
         ) {
             EventFlags flags;
+            hoverStack.push(entity);
+            discardHoveredEntities();
             // Hit entity is entered
             if (const auto it = hoveredEntities.find(entity); it == hoveredEntities.end()) {
                 flags = onEnter(event, component, clippedArea, entity);
@@ -589,7 +609,6 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
             } else {
                 flags = onInside(event, component, clippedArea, entity);
             }
-            hoverStack.push(entity);
             return flags;
         }
     );
@@ -599,23 +618,7 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
         hoverStack.clear();
         hoverStack.push(_eventCache.mouseLock);
     }
-
-    // Discard any entity not on the hover stack
-    const auto it = std::remove_if(hoveredEntities.begin(), hoveredEntities.end(),
-        [this, &event, &onLeave, &hoverStack](const ECS::Entity hoveredEntity) {
-            const auto it = hoverStack.find(hoveredEntity);
-            if (it != hoverStack.end())
-                return false;
-            auto &component = get<Component>(hoveredEntity);
-            const auto &clippedArea = getClippedArea(hoveredEntity, get<Area>(hoveredEntity));
-            const auto flags = onLeave(event, component, clippedArea, hoveredEntity);
-            if (Core::HasFlags(flags, EventFlags::Invalidate))
-                invalidate();
-            return true;
-        }
-    );
-    if (it != hoveredEntities.end())
-        hoveredEntities.erase(it, hoveredEntities.end());
+    discardHoveredEntities();
     return entity;
 }
 
