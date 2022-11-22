@@ -57,9 +57,7 @@ inline void kF::UI::Item::dettach(void) noexcept
     static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::dettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettached by Item's destructor");
 
-    // Notify uiSystem that we removed a MouseEventArea
-    if constexpr ((std::is_same_v<Components, MouseEventArea> || ...))
-        uiSystem().onMouseEventAreaRemovedUnsafe(_entity);
+    uiSystem().onDettach<Components...>(_entity);
     uiSystem().dettach<Components...>(_entity);
     unmarkComponents<Components...>();
 }
@@ -71,9 +69,7 @@ inline void kF::UI::Item::tryDettach(void) noexcept
     static_assert(((!IsBaseItemComponent<Components>) && ...),
         "UI::Item::tryDettach: 'TreeNode' and 'Area' must not be dettached, they are implicitly dettached by Item's destructor");
 
-    // Notify uiSystem that we removed a MouseEventArea
-    if constexpr ((std::is_same_v<Components, MouseEventArea> || ...))
-        uiSystem().onMouseEventAreaRemovedUnsafe(_entity);
+    uiSystem().onDettach<Components...>(_entity);
     uiSystem().tryDettach<Components...>(_entity);
     unmarkComponents<Components...>();
 }

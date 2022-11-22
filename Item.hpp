@@ -159,6 +159,9 @@ private:
     template<typename ...Components>
     inline void unmarkComponents(void) noexcept;
 
+    /** @brief Dispatch dettach callbacks */
+    template<typename ...Components>
+    void onDettach(void) noexcept;
 
     // vtable pointer
     UISystem *_uiSystem {};

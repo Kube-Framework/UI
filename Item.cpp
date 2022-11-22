@@ -19,13 +19,11 @@ UI::Item::~Item(void) noexcept
         constexpr auto DettachComponent = []<typename Component>(UISystem &uiSystem, const ECS::Entity entity, const ComponentFlags componentFlags,
             std::type_identity<Component>) {
             if (Core::HasFlags(componentFlags, GetComponentFlag<Component>())) {
-                // Notify uiSystem that we removed a MouseEventArea
-                if constexpr (std::is_same_v<Component, MouseEventArea>)
-                    uiSystem.onMouseEventAreaRemovedUnsafe(entity);
                 uiSystem.dettach<Component>(entity);
             }
         };
 
+        uiSystem.onDettach<Components...>(entity);
         (DettachComponent(uiSystem, entity, componentFlags, std::type_identity<Components> {}), ...);
     };
 

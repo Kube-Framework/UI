@@ -26,6 +26,13 @@ namespace kF::UI
         Button button { Button::Left };
         bool buttonState { false }; // False = Release, True = Press
     };
+
+    /** @brief Concept of a lockable component */
+    template<typename Component>
+    concept LockComponentRequirements = std::is_same_v<Component, kF::UI::MouseEventArea>
+        || std::is_same_v<Component, kF::UI::WheelEventArea>
+        || std::is_same_v<Component, kF::UI::DropEventArea>
+        || std::is_same_v<Component, kF::UI::KeyEventReceiver>;
 }
 
 /** @brief UI renderer system */
@@ -55,16 +62,24 @@ class alignas_double_cacheline kF::UI::UISystem
 public:
     static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
 
+    /** @brief Entity list */
+    using EntityCache = Core::SmallVector<ECS::Entity, (Core::CacheLineSize - Core::CacheLineQuarterSize) / sizeof(ECS::Entity), UIAllocator>;
+
     /** @brief Cache */
     struct alignas_cacheline Cache
     {
+        // Root item
         ItemPtr root {};
+        // Window size & DPI
         Size windowSize {};
         DPI windowDPI {};
+        // Entities max depth
         DepthUnit maxDepth {};
+        // Frame invalidation
         GPU::FrameIndex invalidateFlags { ~static_cast<GPU::FrameIndex>(0) };
         bool invalidateTree { true };
-        Core::Vector<ECS::Entity, UIAllocator> entityCache {};
+        // Time
+        std::int64_t lastTick {};
     };
     static_assert_fit_cacheline(Cache);
 
@@ -88,16 +103,16 @@ public:
         // Locks
         ECS::Entity mouseLock { ECS::NullEntity };
         ECS::Entity wheelLock { ECS::NullEntity };
+        ECS::Entity dropLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
-        // Hover
-        ECS::Entity lastMouseHovered { ECS::NullEntity };
-        ECS::Entity lastDropHovered { ECS::NullEntity };
-        // Time
-        std::int64_t lastTick {};
         // Drag & drop
         DropCache drop {};
+        // Hover
+        EntityCache mouseHoveredEntities {};
+        EntityCache dropHoveredEntities {};
     };
-    static_assert_fit_double_cacheline(EventCache);
+    static_assert_alignof_double_cacheline(EventCache);
+    static_assert_sizeof(EventCache, Core::CacheLineDoubleSize * 2);
 
 
     /** @brief Virtual destructor */
@@ -152,6 +167,19 @@ public:
     void invalidate(void) noexcept;
 
 
+    /** @brief Lock an event component (overrides any locked entity) */
+    template<kF::UI::LockComponentRequirements Component>
+    void lockEvents(const ECS::Entity entity) noexcept;
+
+    /** @brief Unlock an event component, only if a lock exists for a given entity */
+    template<kF::UI::LockComponentRequirements Component>
+    void unlockEvents(const ECS::Entity entity) noexcept;
+
+    /** @brief Unlock an event component */
+    template<kF::UI::LockComponentRequirements Component>
+    inline void unlockEvents(void) noexcept { lockEvents<Component>(ECS::NullEntity); }
+
+
     /** @brief Virtual tick callback */
     [[nodiscard]] bool tick(void) noexcept override;
 
@@ -159,7 +187,6 @@ public:
     /** @brief Register renderer primitive */
     template<kF::UI::PrimitiveKind Primitive>
     inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
-
 
 private:
     // Item is a friend to prevent unsafe API access
@@ -178,10 +205,29 @@ private:
     using System::removeUnsafe;
     using System::removeUnsafeRange;
 
+    /** @brief Dettach override */
+    template<typename ...Components>
+    inline void dettach(const ECS::Entity entity) noexcept { onDettach(entity); System::dettach<Components...>(entity); }
+
+    /** @brief Try dettach override */
+    template<typename ...Components>
+    inline void tryDettach(const ECS::Entity entity) noexcept { onDettach(entity); System::tryDettach<Components...>(entity); }
+
+    /** @brief Trigger callbacks on component dettached */
+    template<typename ...Components>
+    void onDettach(const ECS::Entity entity) noexcept;
 
     /** @brief Unsafe function notifying that mouse event area has been removed   */
-    void onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
-        { if (_eventCache.lastMouseHovered == entity) _eventCache.lastMouseHovered = ECS::NullEntity; }
+    void onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept;
+
+    /** @brief Unsafe function notifying that wheel event area has been removed   */
+    void onWheelEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept;
+
+    /** @brief Unsafe function notifying that drop event area has been removed   */
+    void onDropEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept;
+
+    /** @brief Unsafe function notifying that key event receiver has been removed   */
+    void onKeyEventReceiverRemovedUnsafe(const ECS::Entity entity) noexcept;
 
 
     /** @brief Check if a frame is invalid */
@@ -210,11 +256,11 @@ private:
     /** @brief Process a single MouseEvent by traversing MouseEventArea instances */
     void processMouseEventAreas(const MouseEvent &event) noexcept;
 
-    /** @brief Process a single action MouseEvent by traversing MouseEventArea instances */
-    void processMouseEventAreasAction(const MouseEvent &event) noexcept;
-
     /** @brief Process a single motion MouseEvent by traversing MouseEventArea instances */
     void processMouseEventAreasMotion(const MouseEvent &event) noexcept;
+
+    /** @brief Process a single action MouseEvent by traversing MouseEventArea instances */
+    void processMouseEventAreasAction(const MouseEvent &event) noexcept;
 
     /** @brief Process a single WheelEvent by traversing WheelEventArea instances */
     void processWheelEventAreas(const WheelEvent &event) noexcept;
@@ -224,21 +270,6 @@ private:
 
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
-
-
-    /** @brief Traverse a table requiring clipped area */
-    template<typename Component, typename Event, typename OnEvent, typename FixMSVCPLZ = Area> // @todo fix this ****
-    ECS::Entity traverseClippedEventTable(const Event &event, ECS::Entity &entityLock, OnEvent &&onEvent) noexcept;
-
-    /** @brief Traverse a table requiring clipped area & hover management */
-    template<typename Component, typename Event, typename OnEnter, typename OnLeave, typename OnInside>
-    ECS::Entity traverseClippedEventTableWithHover(
-            const Event &event, ECS::Entity &entityLock, ECS::Entity &lastHovered, OnEnter &&onEnter, OnLeave &&onLeave, OnInside &&onInside) noexcept;
-
-
-    /** @brief Process EventFlags returned by event components
-     *  @return True if the event flags requires to stop event processing */
-    [[nodiscard]] bool processEventFlags(ECS::Entity &lock, const EventFlags flags, const ECS::Entity hitEntity) noexcept;
 
 
     /** @brief Process system time elapsed */
@@ -253,6 +284,27 @@ private:
 
     /** @brief Process all PainterArea instances */
     void processPainterAreas(void) noexcept;
+
+
+    /** @brief Traverse a table requiring clipped area */
+    template<typename Component, typename Event, typename OnEvent, typename FixMSVCPLZ = Area> // @todo fix this ****
+    ECS::Entity traverseClippedEventTable(const Event &event, const ECS::Entity entityLock, OnEvent &&onEvent) noexcept;
+
+    /** @brief Traverse a table requiring clipped area & hover management */
+    template<typename Component, typename Event, typename OnEnter, typename OnLeave, typename OnInside>
+    ECS::Entity traverseClippedEventTableWithHover(
+        const Event &event,
+        const ECS::Entity entityLock,
+        EntityCache &hoveredEntities,
+        OnEnter &&onEnter,
+        OnLeave &&onLeave,
+        OnInside &&onInside
+    ) noexcept;
+
+
+    /** @brief Process EventFlags returned by event components
+     *  @return True if the event flags requires to stop event processing */
+    [[nodiscard]] bool processEventFlags(const EventFlags flags) noexcept;
 
 
 
@@ -271,13 +323,13 @@ private:
     FontManager _fontManager {};
     // Cacheline N + 5
     Cache _cache {};
-    // Cacheline N + 6 -> N + 7
+    // Cacheline N + 6 -> N + 9
     EventCache _eventCache {};
-    // Cacheline N + 7 -> N + 10
+    // Cacheline N + 9 -> N + 12
     Renderer _renderer;
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);
-static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 14);
+static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 15);
 
 #include "Item.ipp"
 #include "UISystem.ipp"

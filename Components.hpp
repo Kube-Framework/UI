@@ -20,6 +20,7 @@ namespace kF::UI
     class WheelEvent;
     class DropEvent;
     class KeyEvent;
+    class UISystem;
     enum class ComponentFlags : std::uint32_t;
 
     namespace Internal
@@ -49,9 +50,7 @@ namespace kF::UI
         Stop                    = 0b000,
         Propagate               = 0b001,
         Invalidate              = 0b010,
-        InvalidateAndPropagate  = 0b011,
-        Lock                    = 0b100,
-        InvalidateAndLock       = 0b110
+        InvalidateAndPropagate  = 0b011
     };
 
 
@@ -218,7 +217,7 @@ namespace kF::UI
     struct alignas_cacheline MouseEventArea
     {
         /** @brief MouseEventArea event functor */
-        using Event = Core::Functor<EventFlags(const MouseEvent &, const Area &), UIAllocator, Core::CacheLineSize - Core::CacheLineEighthSize>;
+        using Event = Core::Functor<EventFlags(const MouseEvent &, const Area &, const ECS::Entity, UISystem &), UIAllocator, Core::CacheLineSize - Core::CacheLineEighthSize>;
 
         Event event {};
         // Hovered
@@ -265,7 +264,7 @@ namespace kF::UI
     struct alignas_half_cacheline WheelEventArea
     {
         /** @brief WheelEventArea event functor */
-        using Event = Core::Functor<EventFlags(const WheelEvent &, const Area &), UIAllocator>;
+        using Event = Core::Functor<EventFlags(const WheelEvent &, const Area &, const ECS::Entity, UISystem &), UIAllocator>;
 
         Event event {};
 
@@ -313,7 +312,7 @@ namespace kF::UI
         using DropTypes = Core::SmallVector<TypeHash, 1, UIAllocator>;
 
         /** @brief Drag functor */
-        using DropFunctor = Core::Functor<EventFlags(const void * const, const DropEvent &, const Area &), UIAllocator>;
+        using DropFunctor = Core::Functor<EventFlags(const void * const, const DropEvent &, const Area &, const ECS::Entity, UISystem &), UIAllocator>;
 
         /** @brief List of drop functors managed by the drop area */
         using DropFunctors = Core::Vector<DropFunctor, UIAllocator>;
@@ -334,7 +333,14 @@ namespace kF::UI
 
 
         /** @brief Process drop event */
-        EventFlags event(const TypeHash typeHash, const void * const data, const DropEvent &event, const Area &area) noexcept;
+        EventFlags event(
+            const TypeHash typeHash,
+            const void * const data,
+            const DropEvent &event,
+            const Area &area,
+            const ECS::Entity entity,
+            UISystem &uiSystem
+        ) noexcept;
     };
     static_assert_fit_cacheline(DropEventArea);
 
@@ -343,7 +349,7 @@ namespace kF::UI
     struct alignas_half_cacheline KeyEventReceiver
     {
         /** @brief KeyEventArea event functor */
-        using Event = Core::Functor<EventFlags(const KeyEvent &), UIAllocator>;
+        using Event = Core::Functor<EventFlags(const KeyEvent &, const ECS::Entity, UISystem &), UIAllocator>;
 
         Event event {};
 
