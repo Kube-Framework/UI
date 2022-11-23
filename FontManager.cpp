@@ -116,18 +116,9 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
     // // Save bitmap as a file
     // ::stbi_write_bmp("bitmap.bmp", mapSize.width, mapSize.height, 4, buffer.data());
 
-    kFInfo("Font: ", fontIndex,
-        "\n\tNum glyphs: ", fontFace->num_glyphs,
-        "\n\tNum charmap: ", fontFace->num_charmaps,
-        "\n\tFamily: ", fontFace->family_name,
-        "\n\tStyle: ", fontFace->style_name,
-        "\n\tMetrics max_advance_width: ", fontFace->size->metrics.max_advance / 64,
-        "\n\tMetrics height: ", fontFace->size->metrics.height / 64,
-        "\n\tMetrics Over baseline2: ", fontFace->size->metrics.ascender / 64,
-        "\n\tMetrics Under baseline: ", fontFace->size->metrics.descender / 64,
-        "\n\tMaximum under baseline: ", fontCache.maxUnderBaseline
-    );
-
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Init font ", fontIndex, ":\t Family ", fontFace->family_name, " Style ", fontFace->style_name, " Size (", fontFace->size->metrics.max_advance / 64, ", ", fontFace->size->metrics.height / 64, ')');
+#endif
     // Release font face
     FT_Done_Face(fontFace);
 }

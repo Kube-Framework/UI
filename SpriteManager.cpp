@@ -138,6 +138,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
     kFEnsure(!path.empty(), "UI::SpriteManager::add: Path cannot be empty");
     const auto spriteIndex = addImpl(spriteName);
 
+
     // Build sprite cache at 'spriteIndex'
     load(spriteIndex, SpriteBuffer {
         .data = data,
@@ -146,6 +147,10 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
 
     // Release decoded image
     ::stbi_image_free(data);
+
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Init sprite ", spriteIndex, ":\t Path '", path, "' Extent (", x, ", ", y, ')');
+#endif
 
     // Build sprite
     return Sprite(*this, spriteIndex);
@@ -158,6 +163,10 @@ UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer) noexcept
 
     // Build sprite cache at 'spriteIndex'
     load(spriteIndex, spriteBuffer);
+
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Init sprite ", spriteIndex, ":\t Path '{Buffer}' Extent (", spriteBuffer.extent.width, ", ", spriteBuffer.extent.height, ')');
+#endif
 
     // Build sprite
     return Sprite(*this, spriteIndex);
@@ -299,6 +308,7 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
     _spriteDelayedRemoves.push(SpriteDelayedRemove {
         .spriteIndex = spriteIndex
     });
+    kFInfo("[UI] Delete sprite required ", spriteIndex);
 }
 
 void UI::SpriteManager::prepareFrameCache(void) noexcept
@@ -368,6 +378,21 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
         }
     );
 
+#if KUBE_DEBUG_BUILD
+    if (it != end) {
+        bool first = true;
+        kFInfoRaw("[UI] Delete sprites {");
+        for (auto current = it; current != end; ++current) {
+            if (!first)
+                kFInfoRaw(", ");
+            else
+                first = false;
+            kFInfoRaw(current->spriteIndex);
+        }
+        kFInfo(" }");
+    }
+#endif
+
     if (it != end)
         _spriteDelayedRemoves.erase(it, end);
 }
@@ -391,4 +416,8 @@ void UI::SpriteManager::cancelDelayedRemove(const SpriteIndex spriteIndex) noexc
             });
         }
     }
+
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Delete sprite canceled ", spriteIndex);
+#endif
 }

@@ -69,7 +69,7 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             if (_resizeExtent.width == extent.width && _resizeExtent.height == extent.height)
                 break;
             _resizeExtent = extent;
-            kFInfo("UI::EventSystem::tick: Window resized: ", extent.width, ", ", extent.height);
+            kFInfo("[UI] Window resized: ", extent.width, ", ", extent.height);
             parent().sendEvent<PresentPipeline>([] { GPU::GPUObject::Parent().dispatchViewSizeChanged(); });
             break;
         }
