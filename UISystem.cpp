@@ -506,8 +506,12 @@ void UI::UISystem::processPainterAreas(void) noexcept
         handler.event(painter, area);
     }
 
+
     // Draw drag if any
     if (isDragging()) [[unlikely]] {
+        // Reset clip
+        if (painter.currentClip() != DefaultClip)
+            painter.setClip(DefaultClip);
         int x, y;
         SDL_GetMouseState(&x, &y);
         const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
