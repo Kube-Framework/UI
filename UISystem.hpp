@@ -167,9 +167,14 @@ public:
     void invalidate(void) noexcept;
 
 
+    /** @brief Get locked entity */
+    template<kF::UI::LockComponentRequirements Component>
+    [[nodiscard]] inline ECS::Entity lockedEntity(void) const noexcept
+        { return const_cast<UISystem *>(this)->lockedEntityImpl<Component>(); }
+
     /** @brief Lock an event component (overrides any locked entity) */
     template<kF::UI::LockComponentRequirements Component>
-    void lockEvents(const ECS::Entity entity) noexcept;
+    inline void lockEvents(const ECS::Entity entity) noexcept { lockedEntityImpl<Component>() = entity; }
 
     /** @brief Unlock an event component, only if a lock exists for a given entity */
     template<kF::UI::LockComponentRequirements Component>
@@ -204,6 +209,12 @@ private:
     using System::remove;
     using System::removeUnsafe;
     using System::removeUnsafeRange;
+
+
+    /** @brief Get locked entity reference */
+    template<kF::UI::LockComponentRequirements Component>
+    [[nodiscard]] ECS::Entity &lockedEntityImpl(void) noexcept;
+
 
     /** @brief Dettach override */
     template<typename ...Components>

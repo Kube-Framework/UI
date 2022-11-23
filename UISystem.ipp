@@ -18,40 +18,25 @@ inline void kF::UI::UISystem::validateFrame(const GPU::FrameIndex frame) noexcep
 }
 
 template<kF::UI::LockComponentRequirements Component>
-inline void kF::UI::UISystem::lockEvents(const ECS::Entity entity) noexcept
+inline kF::ECS::Entity &kF::UI::UISystem::lockedEntityImpl(void) noexcept
 {
-    auto &target = [this](void) -> ECS::Entity & {
-        if constexpr (std::is_same_v<Component, kF::UI::MouseEventArea>)
-            return _eventCache.mouseLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::WheelEventArea>)
-            return _eventCache.wheelLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::DropEventArea>)
-            return _eventCache.dropLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::KeyEventReceiver>)
-            return _eventCache.keyLock;
-    }();
-
-    target = entity;
+    if constexpr (std::is_same_v<Component, kF::UI::MouseEventArea>)
+        return _eventCache.mouseLock;
+    else if constexpr (std::is_same_v<Component, kF::UI::WheelEventArea>)
+        return _eventCache.wheelLock;
+    else if constexpr (std::is_same_v<Component, kF::UI::DropEventArea>)
+        return _eventCache.dropLock;
+    else if constexpr (std::is_same_v<Component, kF::UI::KeyEventReceiver>)
+        return _eventCache.keyLock;
 }
 
 template<kF::UI::LockComponentRequirements Component>
 inline void kF::UI::UISystem::unlockEvents(const ECS::Entity entity) noexcept
 {
-    auto &target = [this](void) -> ECS::Entity & {
-        if constexpr (std::is_same_v<Component, kF::UI::MouseEventArea>)
-            return _eventCache.mouseLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::WheelEventArea>)
-            return _eventCache.wheelLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::DropEventArea>)
-            return _eventCache.dropLock;
-        else if constexpr (std::is_same_v<Component, kF::UI::KeyEventReceiver>)
-            return _eventCache.keyLock;
-    }();
-
+    auto &target = lockedEntityImpl<Component>();
     if (target == entity)
         target = ECS::NullEntity;
 }
-
 
 template<typename ...Components>
 inline void kF::UI::UISystem::onDettach(const ECS::Entity entity) noexcept
