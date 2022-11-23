@@ -326,7 +326,6 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
         [this, &currentCache](const auto index) {
             const auto &event = currentCache.events.at(index);
             const auto targetSprite = event.type == Event::Type::Add ? event.spriteIndex : DefaultSprite;
-            kFEnsure(_spriteCaches.at(targetSprite).imageView != GPU::NullHandle, "ERRRROOOR");
             return GPU::DescriptorImageInfo(
                 _sampler,
                 _spriteCaches.at(targetSprite).imageView,
