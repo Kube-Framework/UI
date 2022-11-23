@@ -307,7 +307,10 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
     _spriteDelayedRemoves.push(SpriteDelayedRemove {
         .spriteIndex = spriteIndex
     });
-    kFInfo("[UI] Delete sprite required ", spriteIndex);
+
+// #if KUBE_DEBUG_BUILD
+//     kFInfo("[UI] Delete sprite required ", spriteIndex);
+// #endif
 }
 
 void UI::SpriteManager::prepareFrameCache(void) noexcept
@@ -415,7 +418,7 @@ void UI::SpriteManager::cancelDelayedRemove(const SpriteIndex spriteIndex) noexc
         }
     }
 
-#if KUBE_DEBUG_BUILD
-    kFInfo("[UI] Delete sprite canceled ", spriteIndex);
-#endif
+// #if KUBE_DEBUG_BUILD
+//     kFInfo("[UI] Delete sprite canceled ", spriteIndex);
+// #endif
 }
