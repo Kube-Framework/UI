@@ -30,15 +30,15 @@
 using namespace kF;
 
 UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
-    :   _maxSpriteCount([this, maxSpriteCount] {
-            const auto max = std::min(
-                maxSpriteCount,
-                parent().physicalDevice().limits().maxDescriptorSetSampledImages
-            );
-            kFEnsure(max != 0u, "UI::SpriteManager: Maximum sprite count cannot be 0");
-            return max;
-        }()),
-        _sampler(GPU::SamplerModel(
+    : _maxSpriteCount([this, maxSpriteCount] {
+        const auto max = std::min(
+            maxSpriteCount,
+            parent().physicalDevice().limits().maxDescriptorSetSampledImages
+        );
+        kFEnsure(max != 0u, "UI::SpriteManager: Maximum sprite count cannot be 0");
+        return max;
+    }())
+    , _sampler(GPU::SamplerModel(
             GPU::SamplerCreateFlags::None,
             GPU::Filter::Linear,
             GPU::Filter::Linear,
@@ -51,40 +51,39 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
             0.0f, 0.0f, 0.0f, // Lod
             GPU::BorderColor::FloatTransparentBlack, // Border
             false // Unormalized
-        )),
-        _descriptorSetLayout(GPU::DescriptorSetLayout::Make(
-            GPU::DescriptorSetLayoutCreateFlags::UpdateAfterBindPool,
-            {
-                GPU::DescriptorSetLayoutBinding(
-                    0u,
-                    GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount,
-                    Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
-                )
-            },
-            {
-                Core::MakeFlags(
-                    GPU::DescriptorBindingFlags::UpdateAfterBind,
-                    GPU::DescriptorBindingFlags::UpdateUnusedWhilePending,
-                    GPU::DescriptorBindingFlags::PartiallyBound
-                )
-            }
-        )),
-                _commandPool(GPU::QueueType::Transfer,
-        GPU::CommandPoolCreateFlags::Transient),
-        _command(_commandPool.add(GPU::CommandLevel::Primary)),
-        _perFrameCache(parent().frameCount(), [this] {
-            FrameCache frameCache {
-                .descriptorPool = GPU::DescriptorPool::Make(
-                    GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
-                    1,
-                    {
-                        GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount)
-                    }
-                ),
-                .descriptorSet = frameCache.descriptorPool.allocate(_descriptorSetLayout)
-            };
-            return frameCache;
-        })
+        ))
+    , _descriptorSetLayout(GPU::DescriptorSetLayout::Make(
+        GPU::DescriptorSetLayoutCreateFlags::UpdateAfterBindPool,
+        {
+            GPU::DescriptorSetLayoutBinding(
+                0u,
+                GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount,
+                Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
+            )
+        },
+        {
+            Core::MakeFlags(
+                GPU::DescriptorBindingFlags::UpdateAfterBind,
+                GPU::DescriptorBindingFlags::UpdateUnusedWhilePending,
+                GPU::DescriptorBindingFlags::PartiallyBound
+            )
+        }
+    ))
+    , _commandPool(GPU::QueueType::Transfer, GPU::CommandPoolCreateFlags::Transient)
+    , _command(_commandPool.add(GPU::CommandLevel::Primary))
+    , _perFrameCache(parent().frameCount(), [this] {
+        FrameCache frameCache {
+            .descriptorPool = GPU::DescriptorPool::Make(
+                GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
+                1,
+                {
+                    GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount)
+                }
+            ),
+            .descriptorSet = frameCache.descriptorPool.allocate(_descriptorSetLayout)
+        };
+        return frameCache;
+    })
 {
     parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) noexcept {
         _perFrameCache.setCurrentFrame(frameIndex);
