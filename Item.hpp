@@ -100,6 +100,12 @@ public:
     void moveChild(const std::uint32_t from, const std::uint32_t to, const std::uint32_t output) noexcept;
 
 
+    /** @brief Check Item has 'Components' */
+    template<typename ...Components>
+        requires kF::UI::ComponentRequirements<Components...>
+    [[nodiscard]] bool exists(void) const noexcept;
+
+
     /** @brief Attach components to Item */
     template<typename ...Components>
         requires kF::UI::ComponentRequirements<Components...>

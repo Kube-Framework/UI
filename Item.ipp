@@ -10,6 +10,13 @@
 
 template<typename ...Components>
     requires kF::UI::ComponentRequirements<Components...>
+bool kF::UI::Item::exists(void) const noexcept
+{
+    return uiSystem().exists<Components...>(_entity);
+}
+
+template<typename ...Components>
+    requires kF::UI::ComponentRequirements<Components...>
 inline kF::UI::Item &kF::UI::Item::attach(Components &&...components) noexcept
 {
     static_assert(((!IsBaseItemComponent<Components>) && ...),
