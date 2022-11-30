@@ -229,6 +229,11 @@ public:
     template<std::input_iterator InputIterator, typename Map>
     Iterator insert(const Iterator pos, const InputIterator from, const InputIterator to, Map &&map) noexcept;
 
+    /** @brief Insert a range of element by using a custom insert functor
+     *  @note The functor must have the following signature: void(Range count, Iterator output) */
+    template<typename InsertFunc>
+    Iterator insertCustom(const Iterator pos, const Range count, InsertFunc &&insertFunc) noexcept;
+
 
     /** @brief Remove a range of elements */
     Iterator erase(Iterator from, Iterator to) noexcept;

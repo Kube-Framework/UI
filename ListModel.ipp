@@ -126,6 +126,19 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
+template<typename InsertFunc>
+inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertCustom(const Iterator pos, const Range count, InsertFunc &&insertFunc) noexcept
+{
+    const auto index = static_cast<Range>(std::distance(begin(), pos));
+    const auto it = _container.insertCustom(pos, count, std::forward<InsertFunc>(insertFunc));
+    _eventDispatcher.dispatch(ListModelEvent::Insert {
+        .from = index,
+        .to = index + count
+    });
+    return it;
+}
+
+template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::erase(Iterator from, Iterator to) noexcept
 {
     const auto index = static_cast<Range>(std::distance(begin(), from));
