@@ -435,21 +435,20 @@ UI::Pixel kF::UI::Internal::ComputeSize([[maybe_unused]] const Pixel parent, [[m
         return std::max(parent, min);
     };
 
-    constexpr auto ComputeFinite = [](const auto parent, const auto min, const auto max) {
+    constexpr auto ComputeFinite = [](const auto min, const auto max) {
         return std::max(max, min);
-        // return std::max(std::min(parent, max), min);
     };
 
     if constexpr (Bound == BoundType::Unknown) {
         if (max == PixelInfinity) [[likely]]
             return ComputeInfinite(parent, min);
         else [[unlikely]]
-            return ComputeFinite(parent, min, max);
+            return ComputeFinite(min, max);
     } else {
         if constexpr (Bound == BoundType::Infinite)
             return ComputeInfinite(parent, min);
         else
-            return ComputeFinite(parent, min, max);
+            return ComputeFinite(min, max);
     }
 }
 
