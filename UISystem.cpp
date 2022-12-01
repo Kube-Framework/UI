@@ -604,9 +604,9 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
         ) {
             EventFlags flags;
             hoverStack.push(entity);
-            discardHoveredEntities();
             // Hit entity is entered
             if (const auto it = hoveredEntities.find(entity); it == hoveredEntities.end()) {
+                discardHoveredEntities();
                 flags = onEnter(event, component, clippedArea, entity);
                 hoveredEntities.push(entity);
             // Hit entity is already entered
