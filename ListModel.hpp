@@ -96,7 +96,7 @@ class kF::UI::ListModel
 public:
     /** @brief Static which indicates if the container is sorted */
     static constexpr bool IsSorted = Container::IsSorted;
-    static_assert(!IsSorted, "ListModel doesn't support sorted containers yiet");
+    static_assert(!IsSorted, "UI::ListModel doesn't support sorted containers yiet");
 
     /** @brief Container range type */
     using Range = decltype(std::declval<const Container &>().size());
@@ -131,7 +131,7 @@ public:
 
 
     /** @brief Get ListModel's event dispatcher */
-    [[nodiscard]] auto &eventDispatcher(void) noexcept { return _eventDispatcher; }
+    [[nodiscard]] inline auto &eventDispatcher(void) noexcept { return _eventDispatcher; }
 
     /** @brief Invalidate all elements that must be updated */
     inline void invalidate(void) noexcept { invalidate(0, size()); }
@@ -189,10 +189,10 @@ public:
 
 
     /** @brief Get container size */
-    [[nodiscard]] Range size(void) noexcept { return _container.size(); }
+    [[nodiscard]] inline Range size(void) const noexcept { return _container.size(); }
 
     /** @brief Get container capacity */
-    [[nodiscard]] Range capacity(void) noexcept { return _container.capacity(); }
+    [[nodiscard]] inline Range capacity(void) const noexcept { return _container.capacity(); }
 
 
     /** @brief Push an element into the vector */
@@ -203,7 +203,7 @@ public:
     void pop(void) noexcept;
 
 
-    /** @brief Insert a range of copies */
+    /** @brief Insert a range of default constructed values */
     Iterator insertDefault(const Iterator pos, const Range count) noexcept;
 
     /** @brief Insert a range of copies */
@@ -283,8 +283,7 @@ public:
 
 
     /** @brief Move range [from, to] at [output, to - from] */
-    void move(const Range from, const Range to, const Range out) noexcept
-        requires (!IsSorted);
+    void move(const Range from, const Range to, const Range out) noexcept;
 
 
     /** @brief Comparison operators */

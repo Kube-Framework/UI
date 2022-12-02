@@ -37,16 +37,24 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 inline void kF::UI::ListModel<Container, Allocator>::invalidate(const ConstIterator from, const ConstIterator to) noexcept
 {
     const auto begin_ = cbegin();
-    invalidate(static_cast<Range>(std::distance(begin_, from)), static_cast<Range>(std::distance(begin_, to)));
+    invalidate(Core::Distance<Range>(begin_, from), Core::Distance<Range>(begin_, to));
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::invalidate(const Range from, const Range to) noexcept
 {
-    _eventDispatcher.dispatch(ListModelEvent::Update {
-        .from = from,
-        .to = to
-    });
+    if constexpr (IsSorted) {
+        _container.sort();
+        _eventDispatcher.dispatch(ListModelEvent::Update {
+            .from = 0,
+            .to = _container.size()
+        });
+    } else {
+        _eventDispatcher.dispatch(ListModelEvent::Update {
+            .from = from,
+            .to = to
+        });
+    }
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
@@ -76,7 +84,7 @@ inline void kF::UI::ListModel<Container, Allocator>::pop(void) noexcept
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertDefault(const Iterator pos, const Range count) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), pos));
+    const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertDefault(pos, count);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
@@ -88,7 +96,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertFill(const Iterator pos, const Range count, const Type &value) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), pos));
+    const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertFill(pos, count, value);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
@@ -101,8 +109,8 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 template<std::input_iterator InputIterator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insert(const Iterator pos, const InputIterator from, const InputIterator to) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), pos));
-    const auto count = static_cast<Range>(std::distance(from, to));
+    const auto index = Core::Distance<Range>(begin(), pos);
+    const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.insert(pos, from, to);
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
@@ -115,8 +123,8 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 template<std::input_iterator InputIterator, typename Map>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insert(const Iterator pos, const InputIterator from, const InputIterator to, Map &&map) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), pos));
-    const auto count = static_cast<Range>(std::distance(from, to));
+    const auto index = Core::Distance<Range>(begin(), pos);
+    const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.insert(pos, from, to, std::forward<Map>(map));
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
@@ -129,7 +137,7 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 template<typename InsertFunc>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::insertCustom(const Iterator pos, const Range count, InsertFunc &&insertFunc) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), pos));
+    const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertCustom(pos, count, std::forward<InsertFunc>(insertFunc));
     _eventDispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
@@ -141,8 +149,8 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Container, Allocator>::erase(Iterator from, Iterator to) noexcept
 {
-    const auto index = static_cast<Range>(std::distance(begin(), from));
-    const auto count = static_cast<Range>(std::distance(from, to));
+    const auto index = Core::Distance<Range>(begin(), from);
+    const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.erase(from, to);
     _eventDispatcher.dispatch(ListModelEvent::Erase {
         .from = index,
@@ -187,7 +195,7 @@ inline void kF::UI::ListModel<Container, Allocator>::resize(const InputIterator 
 {
     _container.resize(from, to);
     _eventDispatcher.dispatch(ListModelEvent::Resize {
-        .count = static_cast<Range>(std::distance(from, to))
+        .count = Core::Distance<Range>(from, to)
     });
 }
 
@@ -197,7 +205,7 @@ inline void kF::UI::ListModel<Container, Allocator>::resize(const InputIterator 
 {
     _container.resize(from, to, std::forward<Map>(map));
     _eventDispatcher.dispatch(ListModelEvent::Resize {
-        .count = static_cast<Range>(std::distance(from, to))
+        .count = Core::Distance<Range>(from, to)
     });
 }
 
@@ -225,7 +233,6 @@ inline void kF::UI::ListModel<Container, Allocator>::release(void) noexcept
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::move(const Range from, const Range to, const Range out) noexcept
-    requires (!IsSorted)
 {
     const auto count = _container.size();
     _container.move(from, to, out);
