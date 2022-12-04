@@ -160,7 +160,10 @@ private:
         Point vertUV;
         std::uint32_t vertSpriteIndex;
         Color vertColor;
+        Color vertBorderColor;
+        Pixel vertBorderWidth;
         Pixel vertEdgeSoftness;
+        std::uint32_t padding;
         Point vertRotationCosSin;
     };
 

@@ -97,6 +97,8 @@ void main(void)
     vertex.radius = vec4(0.0);
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
+    vertex.borderColor = 0;
+    vertex.borderWidth = 0.0;
     vertex.edgeSoftness = 0.0;
     vertex.rotationCosSin = rotationCosSin;
     //   TopLeft

@@ -22,6 +22,8 @@ struct Vertex
     vec2 uv;
     uint spriteIndex;
     uint color;
+    uint borderColor;
+    float borderWidth;
     float edgeSoftness;
     uint _padding;
     vec2 rotationCosSin;

@@ -113,6 +113,8 @@ void main(void)
     vertex.radius = instance.radius;
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
+    vertex.borderColor = instance.borderColor;
+    vertex.borderWidth = instance.borderWidth;
     vertex.edgeSoftness = instance.edgeSoftness;
     vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
