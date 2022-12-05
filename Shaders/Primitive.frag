@@ -75,13 +75,14 @@ void main(void)
 
     // Compute SDF alpha
     const vec2 inversedPoint = applyRotation(getInversedRotationMatrix(fragRotationCosSin), fragCenter, gl_FragCoord.xy);
-    const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize - fragEdgeSoftness - fragBorderWidth, fragRadius);
+    // const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize - fragEdgeSoftness - fragBorderWidth, fragRadius);
+    const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize, fragRadius);
 
     // Smooth the border by antialiasing
-    const float smoothedBorderAlpha =  smoothstep(-fragEdgeSoftness, 0.0, dist);
+    const float smoothedBorderAlpha = smoothstep(-fragBorderWidth - fragEdgeSoftness, -fragBorderWidth, dist);
     outColor = fragBorderColor * smoothedBorderAlpha + outColor * (1.0 - smoothedBorderAlpha);
 
     // Smooth the outer bound by antialiasing
-    const float smoothedAlpha =  1.0 - smoothstep(fragBorderWidth, fragBorderWidth + fragEdgeSoftness, dist);
+    const float smoothedAlpha =  smoothstep(fragEdgeSoftness, 0.0 , dist);
     outColor.a *= smoothedAlpha;
 }
