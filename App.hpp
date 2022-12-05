@@ -75,14 +75,16 @@ public:
     ~App(void) noexcept;
 
     /** @brief App initializer */
-    App(const std::string_view windowTitle,
-            const Point windowPos = UndefinedWindowPos,
-            const Size windowSize = FillWindowSize,
-            const WindowFlags windowFlags = WindowFlags::None,
-            const Core::Version version = Core::Version(0, 1, 0),
-            const std::size_t workerCount = Flow::Scheduler::AutoWorkerCount,
-            const std::size_t taskQueueSize = Flow::Scheduler::DefaultTaskQueueSize,
-            const std::size_t eventQueueSize = ECS::Executor::DefaultExecutorEventQueueSize) noexcept;
+    App(
+        const std::string_view windowTitle,
+        const Point windowPos = UndefinedWindowPos,
+        const Size windowSize = FillWindowSize,
+        const WindowFlags windowFlags = WindowFlags::None,
+        const Core::Version version = Core::Version(0, 1, 0),
+        const std::size_t workerCount = Flow::Scheduler::AutoWorkerCount,
+        const std::size_t taskQueueSize = Flow::Scheduler::DefaultTaskQueueSize,
+        const std::size_t eventQueueSize = ECS::Executor::DefaultExecutorEventQueueSize
+    ) noexcept;
 
 
     /** @brief Get GPU instance */

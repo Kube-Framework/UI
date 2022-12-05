@@ -176,12 +176,19 @@ UI::App::~App(void) noexcept
     gpu().logicalDevice().waitIdle();
 }
 
-UI::App::App(const std::string_view windowTitle, const Point windowPos, const Size windowSize,
-            const WindowFlags windowFlags, const Core::Version version,
-            const std::size_t workerCount, const std::size_t taskQueueSize, const std::size_t eventQueueSize) noexcept
-    :   _backendInstance(windowTitle, windowPos, windowSize, windowFlags),
-        _gpu(_backendInstance.window, MakeFrameImageModels(), { &MakeRenderPass }, version),
-        _executor(workerCount, taskQueueSize, eventQueueSize)
+UI::App::App(
+    const std::string_view windowTitle,
+    const Point windowPos,
+    const Size windowSize,
+    const WindowFlags windowFlags,
+    const Core::Version version,
+    const std::size_t workerCount,
+    const std::size_t taskQueueSize,
+    const std::size_t eventQueueSize
+) noexcept
+    : _backendInstance(windowTitle, windowPos, windowSize, windowFlags)
+    , _gpu(_backendInstance.window, MakeFrameImageModels(), { &MakeRenderPass }, version)
+    , _executor(workerCount, taskQueueSize, eventQueueSize)
 {
     kFEnsure(!_Instance,
         "UI::App: App already initialized");
