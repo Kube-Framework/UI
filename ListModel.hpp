@@ -126,6 +126,10 @@ public:
     /** @brief Move constructor */
     ListModel(ListModel &&other) noexcept = default;
 
+    /** @brief Move constructor */
+    template<typename ...Args>
+    inline ListModel(Args &&...args) noexcept : _container(std::forward<Args>(args)...) {}
+
     /** @brief Move assignment */
     ListModel &operator=(ListModel &&other) noexcept = default;
 
