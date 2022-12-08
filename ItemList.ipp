@@ -97,9 +97,8 @@ inline void kF::UI::ItemList::traverseItemList(Functor &&functor) noexcept
 {
     // Query functor's first argument
     using ItemType = ItemListDelegateType<Functor>;
-    static_assert(std::is_base_of_v<Item, ItemType>, "UI::ItemList::traverseItemList: Functor's first argument is not an Item-derived class");
 
-    for (auto &child : children()) {
-        functor(*reinterpret_cast<ItemType *>(const_cast<Item *>(child.get())));
+    for (auto index = 0u; index != _modelSize; ++index) {
+        functor(childAt<ItemType>(index));
     }
 }

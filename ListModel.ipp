@@ -214,10 +214,12 @@ inline void kF::UI::ListModel<Container, Allocator>::clear(void) noexcept
 {
     const auto count = _container.size();
     _container.clear();
-    _eventDispatcher.dispatch(ListModelEvent::Erase {
-        .from = 0,
-        .to = count
-    });
+    if (count) [[likely]] {
+        _eventDispatcher.dispatch(ListModelEvent::Erase {
+            .from = 0,
+            .to = count
+        });
+    }
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
