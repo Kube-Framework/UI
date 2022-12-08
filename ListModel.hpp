@@ -286,7 +286,7 @@ public:
     void reserve(const Range capacity) noexcept { _container.reserve(capacity); }
 
 
-    /** @brief Move range [from, to] at [output, to - from] */
+    /** @brief Move range [from, to[ into out */
     void move(const Range from, const Range to, const Range out) noexcept;
 
 

@@ -96,7 +96,7 @@ public:
     inline void moveChild(const std::uint32_t source, const std::uint32_t output) noexcept
         { return moveChild(source, source + 1u, output); }
 
-    /** @brief Move children */
+    /** @brief Move children [from, to[ into out */
     void moveChild(const std::uint32_t from, const std::uint32_t to, const std::uint32_t output) noexcept;
 
 

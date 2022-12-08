@@ -117,8 +117,8 @@ void UI::Item::swapChild(const std::uint32_t source, const std::uint32_t output)
 
 void UI::Item::moveChild(const std::uint32_t from_, const std::uint32_t to_, const std::uint32_t output_) noexcept
 {
-    kFAssert(output_ < from_ || output_ > to_,
-        "UI::Item::moveChild: Invalid move range [", from_, ", ", to_, "] -> ", output_);
+    kFAssert(output_ < from_ || output_ >= to_,
+        "UI::Item::moveChild: Invalid move range [", from_, ", ", to_, "[ -> ", output_);
 
     auto from = from_;
     auto to = to_;
