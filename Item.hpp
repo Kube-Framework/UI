@@ -62,6 +62,16 @@ public:
     /** @brief Get the list of children */
     [[nodiscard]] inline const Children &children(void) const noexcept { return _children; }
 
+    /** @brief Get child at index */
+    template<typename ItemType = Item>
+        requires std::derived_from<ItemType, Item>
+    [[nodiscard]] inline ItemType &childAt(const std::uint32_t index) noexcept
+        { return const_cast<ItemType &>(std::as_const(*this).childAt<ItemType>(index)); }
+    template<typename ItemType = Item>
+        requires std::derived_from<ItemType, kF::UI::Item>
+    [[nodiscard]] inline const ItemType &childAt(const std::uint32_t index) const noexcept;
+
+
     /** @brief Add a child to item children list */
     template<typename Derived, typename ...Args>
         requires std::derived_from<Derived, kF::UI::Item> && std::is_constructible_v<Derived, Args...>
@@ -96,7 +106,7 @@ public:
     inline void moveChild(const std::uint32_t source, const std::uint32_t output) noexcept
         { return moveChild(source, source + 1u, output); }
 
-    /** @brief Move children */
+    /** @brief Move children [from, to[ into out */
     void moveChild(const std::uint32_t from, const std::uint32_t to, const std::uint32_t output) noexcept;
 
 
@@ -177,3 +187,13 @@ private:
     Children _children {};
 };
 static_assert_fit_cacheline(kF::UI::Item);
+
+
+template<typename ItemType>
+    requires std::derived_from<ItemType, kF::UI::Item>
+inline const ItemType &kF::UI::Item::childAt(const std::uint32_t index) const noexcept
+{
+    const auto ptr = _children.at(index).get();
+    kFAssert(dynamic_cast<const ItemType *>(ptr), "kF::UI::Item::childAt: Child at index '", index, "' is not derived from ItemType");
+    return reinterpret_cast<const ItemType &>(*ptr);
+}

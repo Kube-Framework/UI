@@ -76,7 +76,7 @@ void UI::ItemList::onResize(const ListModelEvent::Resize &data) noexcept
 
 void UI::ItemList::onMove(const ListModelEvent::Move &data) noexcept
 {
-    kFAssert(data.from < data.to && (data.out < data.from || data.out > data.to),
-        "UI::ItemList::onMove: Invalid event range (", data.from, ", ", data.to, ")");
+    kFAssert(data.from < data.to && (data.out < data.from || data.out >= data.to),
+        "UI::ItemList::onMove: Invalid event range [", data.from, ", ", data.to, "[ -> ", data.out);
     moveChild(data.from, data.to, data.out);
 }

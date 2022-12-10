@@ -33,17 +33,6 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
             || ItemListConstructible<ItemType, Args...>,
             "ItemList::setup: Child item is not constructible"
         );
-        static_assert(
-            std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>
-            || [] {
-                if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
-                    return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>;
-                } else
-                    return false;
-            }()
-            || std::is_invocable_v<Delegate, decltype(*child)>,
-            "ItemList::setup: Delegate is not invocable"
-        );
 
         // #1 args...
         if constexpr (ItemListConstructible<ItemType, Args...>) {
@@ -65,9 +54,20 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
             }
         }
 
-        if constexpr (std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>)
+        constexpr bool IsInvocableModel = std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>;
+        constexpr bool IsInvocableDerefencedModel = [] {
+            if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+                return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>;
+            } else
+                return false;
+        }();
+        constexpr bool IsInvocableWithoutModel = std::is_invocable_v<Delegate, decltype(*child)>;
+        static_assert(IsInvocableModel || IsInvocableDerefencedModel || IsInvocableWithoutModel,
+            "ItemList::setup: Delegate is not invocable");
+
+        if constexpr (IsInvocableModel)
             delegate(*child, modelData);
-        else if constexpr (std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>)
+        else if constexpr (IsInvocableDerefencedModel)
             delegate(*child, *modelData);
         else
             delegate(*child);
@@ -97,9 +97,8 @@ inline void kF::UI::ItemList::traverseItemList(Functor &&functor) noexcept
 {
     // Query functor's first argument
     using ItemType = ItemListDelegateType<Functor>;
-    static_assert(std::is_base_of_v<Item, ItemType>, "UI::ItemList::traverseItemList: Functor's first argument is not an Item-derived class");
 
-    for (auto &child : children()) {
-        functor(*reinterpret_cast<ItemType *>(const_cast<Item *>(child.get())));
+    for (auto index = 0u; index != _modelSize; ++index) {
+        functor(childAt<ItemType>(index));
     }
 }
