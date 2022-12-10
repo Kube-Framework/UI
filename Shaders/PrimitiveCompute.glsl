@@ -40,6 +40,8 @@ struct Offset
 layout(std430, binding = 0) buffer ContextSection {
     vec2 windowSize;
     vec2 halfWindowSize;
+    mat4 view;
+    mat4 projection;
 } context;
 
 // Instances section

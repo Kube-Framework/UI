@@ -28,6 +28,7 @@ kube_add_library(UI
         LayoutBuilder.hpp
         ListModel.hpp
         ListModel.ipp
+        Matrix.hpp
         Font.cpp
         Font.hpp
         Font.ipp
@@ -72,4 +73,5 @@ kube_add_library(UI
         IO
         stb
         FreeTypeStatic
+        glm::glm
 )

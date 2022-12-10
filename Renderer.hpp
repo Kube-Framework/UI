@@ -17,6 +17,7 @@
 #include <Kube/GPU/CommandPool.hpp>
 
 #include "Painter.hpp"
+#include "Matrix.hpp"
 
 namespace kF::UI
 {
@@ -148,6 +149,8 @@ private:
     {
         Size windowSize;
         Size halfWindowSize;
+        Mat4 view;
+        Mat4 projection;
     };
 
     /** @brief Primitive vertex layout */

@@ -24,7 +24,8 @@ layout(location = 5) out vec4 fragBorderColor;
 layout(location = 6) out flat float fragBorderWidth;
 layout(location = 7) out flat uint fragSpriteIndex;
 layout(location = 8) out flat float fragEdgeSoftness;
-layout(location = 9) out flat vec2 fragRotationCosSin;
+layout(location = 9) out flat float fragEnableRectangleSDF;
+layout(location = 10) out flat vec2 fragRotationCosSin;
 
 void main(void)
 {
@@ -39,5 +40,6 @@ void main(void)
     fragBorderWidth = vertBorderWidth;
     fragSpriteIndex = vertSpriteIndex;
     fragEdgeSoftness = vertEdgeSoftness;
+    fragEnableRectangleSDF = float(vertRadius != vec4(0.0, 0.0, 0.0, 0.0) || vertBorderWidth != 0.0);
     fragRotationCosSin = vertRotationCosSin;
 }

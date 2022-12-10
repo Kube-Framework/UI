@@ -328,7 +328,9 @@ void UI::Renderer::transferPrimitives(void) noexcept
     };
     new (mappedMemory) PrimitiveContext {
         .windowSize = windowSize,
-        .halfWindowSize = windowSize / 2.0f
+        .halfWindowSize = windowSize / 2.0f,
+        .view = Mat4 {},
+        .projection = Mat4 {};
     };
 
     // Transfer all primitives
