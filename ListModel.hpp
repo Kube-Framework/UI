@@ -133,6 +133,14 @@ public:
     /** @brief Move assignment */
     ListModel &operator=(ListModel &&other) noexcept = default;
 
+    /** @brief Container copy assignment */
+    inline ListModel &operator=(const Container &other) noexcept
+        { resize(other.begin(), other.end()); return *this; }
+
+    /** @brief Container move assignment */
+    inline ListModel &operator=(Container &&other) noexcept
+        { resize(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end())); return *this; }
+
 
     /** @brief Get ListModel's event dispatcher */
     [[nodiscard]] inline auto &eventDispatcher(void) noexcept { return _eventDispatcher; }

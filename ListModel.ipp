@@ -236,7 +236,6 @@ inline void kF::UI::ListModel<Container, Allocator>::release(void) noexcept
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::move(const Range from, const Range to, const Range out) noexcept
 {
-    const auto count = _container.size();
     _container.move(from, to, out);
     _eventDispatcher.dispatch(ListModelEvent::Move {
         .from = from,

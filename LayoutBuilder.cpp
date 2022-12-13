@@ -234,7 +234,7 @@ void UI::Internal::LayoutBuilder::computeFlexChildrenHugConstraints(
     Constraints &constraints, const Layout &layout, [[maybe_unused]] const bool hugWidth, [[maybe_unused]] const bool hugHeight) noexcept
 {
     if constexpr (DistributionAxis == Axis::Vertical) {
-        kFAssert(!hugWidth,
+            kFAssert(!hugWidth,
                  "UI::LayoutBuilder::computeFlexChildrenConstraints: FlowType::FlexColumn cannot take Hug as width constraint");
         kFAssert(constraints.maxSize.width != PixelInfinity,
                  "UI::LayoutBuilder::computeFlexChildrenConstraints: FlowType::FlexColumn cannot take Fill width constraint when height is Hug constraint");
@@ -249,6 +249,7 @@ void UI::Internal::LayoutBuilder::computeFlexChildrenHugConstraints(
     const auto lineWidth = GetX(constraints.maxSize);
 
     // Loop over each child to compute self constraints
+    GetY(constraints.maxSize) = 0.0f;
     while (childIndexRange.from != childIndexRange.to) {
         Pixel lineHeight {};
         Pixel lineRemain { lineWidth };
@@ -521,10 +522,10 @@ void UI::Internal::LayoutBuilder::computeFlexLayoutChildrenLineMetrics(
         const auto childMax = GetX(childConstraints.maxSize) == PixelInfinity ? lineWidth : GetX(childConstraints.maxSize);
 
         // Try to insert maximum children size and spacing
-        if (const auto totalInsert = childMax + spacing; lineRemain > totalInsert)
+        if (const auto totalInsert = childMax + spacing; lineRemain > totalInsert) {
             lineRemain -= totalInsert;
         // If the size doesn't fit we break the line
-        else
+        } else
             lineRemain = 0;
 
         // Get maximum height of all line's children
