@@ -153,6 +153,10 @@ public:
     /** @brief Stop app */
     void stop(void) noexcept;
 
+
+    /** @brief Open an url with default browser */
+    bool openUrl(const std::string_view &url) const noexcept;
+
 private:
     /** @brief Backend Instance */
     struct BackendInstance

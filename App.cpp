@@ -274,6 +274,11 @@ void UI::App::setKeyboardGrab(const bool state) noexcept
     SDL_SetWindowKeyboardGrab(_backendInstance.window, static_cast<SDL_bool>(state));
 }
 
+bool UI::App::openUrl(const std::string_view &url) const noexcept
+{
+    return SDL_OpenURL(url.data()) == 0;
+}
+
 void UI::App::run(void) noexcept
 {
     _executor.run();
