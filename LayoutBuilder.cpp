@@ -299,7 +299,7 @@ void UI::Internal::LayoutBuilder::traverseAreas(void) noexcept
         }
 
         // Traverse each child
-        std::uint32_t childIndex{0u};
+        std::uint32_t childIndex { 0u };
         for (const auto childEntityIndex : nodeCounter) {
             _traverseContext->setupEntity(node.children.at(childIndex++), childEntityIndex);
             traverseAreas();
