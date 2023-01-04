@@ -21,7 +21,7 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
                 return opaqueModel;
             else
                 return const_cast<void *>(opaqueModel);
-        };
+        }();
         auto &modelData = (*reinterpret_cast<ListModelType *>(model))[static_cast<ListModelType::Range>(index)];
         using ModelDataRef = decltype(modelData);
         using ModelData = std::remove_reference_t<ModelDataRef>;

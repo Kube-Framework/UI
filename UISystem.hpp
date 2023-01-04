@@ -60,10 +60,10 @@ class alignas_double_cacheline kF::UI::UISystem
     >
 {
 public:
-    static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
-
     /** @brief Entity list */
     using EntityCache = Core::SmallVector<ECS::Entity, (Core::CacheLineSize - Core::CacheLineQuarterSize) / sizeof(ECS::Entity), UIAllocator>;
+    static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
+
 
     /** @brief Cache */
     struct alignas_cacheline Cache
@@ -83,15 +83,18 @@ public:
     };
     static_assert_fit_cacheline(Cache);
 
-    struct alignas_cacheline DropCache
+    struct alignas_double_cacheline DropCache
     {
+        /** @brief Data functor */
+        using DataFunctor = Core::Functor<const void *(void), UIAllocator>;
+
         TypeHash typeHash {};
-        const void *data {};
         Size size {};
         DropTrigger dropTrigger {};
+        DataFunctor data {};
         PainterArea painterArea {};
     };
-    static_assert_fit_cacheline(DropCache);
+    static_assert_fit_double_cacheline(DropCache);
 
     /** @brief Event cache */
     struct alignas_double_cacheline EventCache
@@ -112,7 +115,7 @@ public:
         EntityCache dropHoveredEntities {};
     };
     static_assert_alignof_double_cacheline(EventCache);
-    static_assert_sizeof(EventCache, Core::CacheLineDoubleSize * 2);
+    static_assert_sizeof(EventCache, Core::CacheLineDoubleSize * 3);
 
 
     /** @brief Virtual destructor */
@@ -157,8 +160,8 @@ public:
 
     /** @brief Drag a type rendered with a given painter area */
     template<typename Type>
-    inline void drag(const Type &type, const Size &size, PainterArea &&painterArea, const DropTrigger dropTrigger = {}) noexcept
-        { onDrag(TypeHash::Get<std::remove_cvref_t<Type>>(), &type, size, dropTrigger, std::move(painterArea)); }
+    inline void drag(Type &&type, const Size &size, PainterArea &&painterArea, const DropTrigger dropTrigger = {}) noexcept
+        { onDrag(TypeHash::Get<std::remove_cvref_t<Type>>(), size, dropTrigger, [type = std::forward<Type>(type)] { return &type; }, std::move(painterArea)); }
 
     /** @brief Check if UISystem is currently dragging something */
     [[nodiscard]] inline bool isDragging(void) const noexcept { return _eventCache.drop.typeHash != TypeHash {}; }
@@ -250,7 +253,7 @@ private:
 
 
     /** @brief Opaque type drag implementation */
-    void onDrag(const TypeHash typeHash, const void * const data, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept;
+    void onDrag(const TypeHash typeHash, const Size &size, const DropTrigger dropTrigger, DropCache::DataFunctor &&data, PainterArea &&painterArea) noexcept;
 
 
     /** @brief Get the clipped area of an entity */
@@ -334,13 +337,13 @@ private:
     FontManager _fontManager {};
     // Cacheline N + 5
     Cache _cache {};
-    // Cacheline N + 6 -> N + 9
+    // Cacheline N + 6 -> N + 11
     EventCache _eventCache {};
-    // Cacheline N + 9 -> N + 12
+    // Cacheline N + 11 -> N + 14
     Renderer _renderer;
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);
-static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 15);
+static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 16);
 
 #include "Item.ipp"
 #include "UISystem.ipp"

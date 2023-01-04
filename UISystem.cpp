@@ -110,12 +110,12 @@ bool UI::UISystem::tick(void) noexcept
     return true;
 }
 
-void UI::UISystem::onDrag(const TypeHash typeHash, const void * const data, const Size &size, const DropTrigger dropTrigger, PainterArea &&painterArea) noexcept
+void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropTrigger dropTrigger, DropCache::DataFunctor &&data, PainterArea &&painterArea) noexcept
 {
     _eventCache.drop.typeHash = typeHash;
-    _eventCache.drop.data = data;
     _eventCache.drop.size = size;
     _eventCache.drop.dropTrigger = dropTrigger;
+    _eventCache.drop.data = std::move(data);
     _eventCache.drop.painterArea = std::move(painterArea);
 
     // Trigger begin event of every DropEventArea matching typeHash
@@ -351,7 +351,7 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
             component.hovered = false;
             component.event(
                 _eventCache.drop.typeHash,
-                _eventCache.drop.data,
+                _eventCache.drop.data(),
                 event,
                 getClippedArea(entity, getTable<Area>().get(entity)),
                 entity,
@@ -371,18 +371,18 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
                 DropEvent dropEvent { event };
                 dropEvent.type = DropEvent::Type::Enter;
                 component.hovered = true;
-                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, dropEvent, clippedArea, entity, *this);
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), dropEvent, clippedArea, entity, *this);
             },
             // On leave
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
                 DropEvent dropEvent { event };
                 dropEvent.type = DropEvent::Type::Leave;
                 component.hovered = false;
-                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, dropEvent, clippedArea, entity, *this);
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), dropEvent, clippedArea, entity, *this);
             },
             // On inside
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
-                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, event, clippedArea, entity, *this);
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), event, clippedArea, entity, *this);
             }
         );
         break;
@@ -391,7 +391,7 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
             event,
             _eventCache.dropLock,
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
-                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data, event, clippedArea, entity, *this);
+                return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), event, clippedArea, entity, *this);
             }
         );
         break;

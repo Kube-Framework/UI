@@ -240,7 +240,8 @@ inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors)
                 using Decomposer = Core::FunctionDecomposerHelper<Functor>;
                 static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
                 static_assert(std::is_same_v<typename Decomposer::ReturnType, UI::EventFlags>, "Drop functor must return UI::EventFlags");
-                using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+                using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
+                using FlatType = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
                 return DropFunctor(
                     [functor = std::forward<Functor>(functor)](
                         const void * const data,
@@ -249,7 +250,12 @@ inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors)
                         [[maybe_unused]] const ECS::Entity entity,
                         [[maybe_unused]] UISystem &uiSystem
                     ) noexcept {
-                        const auto &type = *reinterpret_cast<const Type *>(data);
+                        auto &type = [data] -> auto & {
+                            if constexpr (std::is_const_v<Type>)
+                                return *reinterpret_cast<const FlatType *>(data);
+                            else
+                                return const_cast<FlatType &>(*reinterpret_cast<const FlatType *>(data));
+                        }();
                         return Core::Invoke(functor, type, dropEvent, area, entity, uiSystem);
                     }
                 );
