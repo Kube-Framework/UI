@@ -57,6 +57,8 @@ public:
     /** @brief Move assignment */
     Sprite &operator=(Sprite &&other) noexcept;
 
+    /** @brief Check if the sprite is valid */
+    [[nodiscard]] inline bool isValid(void) const noexcept { return _index != NullSpriteIndex; }
 
     /** @brief Implicit conversion to SpriteIndex */
     [[nodiscard]] inline operator SpriteIndex(void) const noexcept { return _index; }
@@ -67,7 +69,7 @@ public:
 
 private:
     SpriteManager *_manager {};
-    SpriteIndex _index {};
+    SpriteIndex _index { NullSpriteIndex };
 };
 static_assert_fit_quarter_cacheline(kF::UI::Sprite);
 
