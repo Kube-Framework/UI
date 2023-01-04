@@ -126,8 +126,8 @@ private:
     void onMove(const ListModelEvent::Move &data) noexcept;
 
 
-    Core::Functor<void(ItemList &, void * const, const std::uint32_t)> _delegate {};
-    void *_listModel {};
+    Core::Functor<void(ItemList &, const void * const, const std::uint32_t)> _delegate {};
+    const void *_listModel {};
     Core::DispatcherSlot _dispatcherSlot {};
     std::uint32_t _modelSize {};
 };

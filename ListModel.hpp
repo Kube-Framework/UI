@@ -143,7 +143,8 @@ public:
 
 
     /** @brief Get ListModel's event dispatcher */
-    [[nodiscard]] inline auto &eventDispatcher(void) noexcept { return _eventDispatcher; }
+    [[nodiscard]] inline auto &eventDispatcher(void) const noexcept { return _eventDispatcher; }
+
 
     /** @brief Invalidate all elements that must be updated */
     inline void invalidate(void) noexcept { invalidate(0, size()); }
@@ -406,7 +407,7 @@ public:
 
 private:
     Container _container {};
-    Core::RemovableDispatcher<void(const ListModelEvent &), Allocator> _eventDispatcher {};
+    mutable Core::RemovableDispatcher<void(const ListModelEvent &), Allocator> _eventDispatcher {};
 };
 
 #include "ListModel.ipp"

@@ -43,18 +43,10 @@ inline void kF::UI::ListModel<Container, Allocator>::invalidate(const ConstItera
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::invalidate(const Range from, const Range to) noexcept
 {
-    if constexpr (IsSorted) {
-        _container.sort();
-        _eventDispatcher.dispatch(ListModelEvent::Update {
-            .from = 0,
-            .to = _container.size()
-        });
-    } else {
-        _eventDispatcher.dispatch(ListModelEvent::Update {
-            .from = from,
-            .to = to
-        });
-    }
+    _eventDispatcher.dispatch(ListModelEvent::Update {
+        .from = from,
+        .to = to
+    });
 }
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>

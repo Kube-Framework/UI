@@ -14,15 +14,23 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
     using ItemType = ItemListDelegateType<Delegate>;
 
     // Setup delegate
-    _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemList &parent, void * const model, const std::uint32_t index) {
-        ItemType *child {};
+    _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemList &parent, const void * const opaqueModel, const std::uint32_t index) {
+        // Query model data
+        const auto model = [opaqueModel] {
+            if constexpr (std::is_const_v<ListModelType>)
+                return opaqueModel;
+            else
+                return const_cast<void *>(opaqueModel);
+        };
         auto &modelData = (*reinterpret_cast<ListModelType *>(model))[static_cast<ListModelType::Range>(index)];
+        using ModelDataRef = decltype(modelData);
+        using ModelData = std::remove_reference_t<ModelDataRef>;
 
         // Static assertions
         static_assert(
             ItemListConstructible<ItemType, Args...>
-            || ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>
-            || ItemListConstructible<ItemType, Args..., typename ListModelType::Type &>
+            || ItemListConstructible<ItemType, ModelDataRef, Args...>
+            || ItemListConstructible<ItemType, Args..., ModelDataRef>
             || [] {
                 if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
                     return ItemListConstructible<ItemType, decltype(*modelData), Args...>
@@ -34,17 +42,18 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
             "ItemList::setup: Child item is not constructible"
         );
 
+        ItemType *child {};
         // #1 args...
         if constexpr (ItemListConstructible<ItemType, Args...>) {
             child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)...);
         // #2 model, args...
-        } if constexpr (ItemListConstructible<ItemType, typename ListModelType::Type &, Args...>) {
+        } if constexpr (ItemListConstructible<ItemType, ModelDataRef, Args...>) {
             child = &parent.insertChild<ItemType>(index, modelData, Internal::ForwardArg(args)...);
         // #3 args..., model
-        } else if constexpr (ItemListConstructible<ItemType, Args..., typename ListModelType::Type &>) {
+        } else if constexpr (ItemListConstructible<ItemType, Args..., ModelDataRef>) {
             child = &parent.insertChild<ItemType>(index, Internal::ForwardArg(args)..., modelData);
         // #4 Model is dereferencable (ex: raw / unique / shared pointers)
-        } else if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+        } else if constexpr (Core::IsDereferencable<ModelData>) {
             // #4A *model, args...
             if constexpr (ItemListConstructible<ItemType, decltype(*modelData), Args...>) {
                 child = &parent.insertChild<ItemType>(index, *modelData, Internal::ForwardArg(args)...);
@@ -56,7 +65,7 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
 
         constexpr bool IsInvocableModel = std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>;
         constexpr bool IsInvocableDerefencedModel = [] {
-            if constexpr (Core::IsDereferencable<typename ListModelType::Type>) {
+            if constexpr (Core::IsDereferencable<ModelData>) {
                 return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>;
             } else
                 return false;
@@ -87,7 +96,7 @@ template<typename ItemType, typename ListModelType, typename ...Args>
     requires std::derived_from<ItemType, kF::UI::Item>
 inline void kF::UI::ItemList::setup(ListModelType &listModel, Args &&...args) noexcept
 {
-    constexpr auto NullDelegate = [](ItemType &, const typename ListModelType::Type &) {};
+    constexpr auto NullDelegate = [](ItemType &) {};
 
     setup(listModel, NullDelegate, std::forward<Args>(args)...);
 }
