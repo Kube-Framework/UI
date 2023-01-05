@@ -241,7 +241,7 @@ inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors)
                 static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
                 static_assert(std::is_same_v<typename Decomposer::ReturnType, UI::EventFlags>, "Drop functor must return UI::EventFlags");
                 using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
-                using FlatType = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+                using FlatType = std::remove_cvref_t<Type>;
                 return DropFunctor(
                     [functor = std::forward<Functor>(functor)](
                         const void * const data,
