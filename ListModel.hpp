@@ -262,11 +262,11 @@ public:
 
     /** @brief Resize the vector using default constructor to initialize each element */
     void resize(const Range count) noexcept
-        requires std::constructible_from<Type>;
+        requires std::constructible_from<kF::UI::ListModel<Container, Allocator>::Type>;
 
     /** @brief Resize the vector by copying given element */
     void resize(const Range count, const Type &value) noexcept
-        requires std::copy_constructible<Type>;
+        requires std::copy_constructible<kF::UI::ListModel<Container, Allocator>::Type>;
 
     /** @brief Resize the vector by initializing each element with a functor
      *  @note The initializer functor can take an optional argument of type 'Range' as index */

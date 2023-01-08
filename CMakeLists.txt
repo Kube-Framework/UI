@@ -1,3 +1,4 @@
+# FreeType
 kube_add_library(UI
     SOURCES
         Animation.hpp
@@ -71,5 +72,5 @@ kube_add_library(UI
         GPU
         IO
         stb
-        FreeTypeStatic
+        FreetypeStatic
 )

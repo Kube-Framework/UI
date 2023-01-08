@@ -421,7 +421,8 @@ namespace kF::UI
     {
         /** @brief Get an opaque type handle from a templated type */
         template<typename Type>
-        [[nodiscard]] static constexpr TypeHash Get(void) noexcept { return TypeHash { typeid(Type).hash_code() }; }
+        [[nodiscard]] static constexpr TypeHash Get(void) noexcept
+            { return TypeHash { typeid(std::remove_cvref_t<std::unwrap_reference<Type>>).hash_code() }; }
 
         std::size_t hash {};
 

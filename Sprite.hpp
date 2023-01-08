@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include <Kube/Core/Utils.hpp>
 
 namespace kF::UI

@@ -153,7 +153,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::resize(const Range count) noexcept
-    requires std::constructible_from<Type>
+    requires std::constructible_from<kF::UI::ListModel<Container, Allocator>::Type>
 {
     _container.resize(count);
     _eventDispatcher.dispatch(ListModelEvent::Resize {
@@ -163,7 +163,7 @@ inline void kF::UI::ListModel<Container, Allocator>::resize(const Range count) n
 
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::resize(const Range count, const Type &value) noexcept
-    requires std::copy_constructible<Type>
+    requires std::copy_constructible<kF::UI::ListModel<Container, Allocator>::Type>
 {
     _container.resize(count, value);
     _eventDispatcher.dispatch(ListModelEvent::Resize {

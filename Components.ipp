@@ -225,46 +225,42 @@ template<typename ...Functors>
     requires (sizeof...(Functors) > 0)
 inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors) noexcept
 {
+    constexpr auto ForwardTypes = [](const std::type_identity<Functors> ...functorTypes) noexcept -> DropTypes {
+        constexpr auto Forward = []<typename Functor>(const std::type_identity<Functor>) noexcept -> TypeHash {
+            using Decomposer = Core::FunctionDecomposerHelper<Functor>;
+            static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
+            return TypeHash::Get<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>();
+        };
+        return DropTypes { Forward(functorTypes)... };
+    };
+    constexpr auto ForwardFuncs = []<typename ...Functors_FixMSVCPlz>(Functors_FixMSVCPlz &&...functors) noexcept -> DropFunctors {
+        constexpr auto ForwardFunc = []<typename Functor>(Functor &&functor) noexcept -> DropFunctor {
+            using Decomposer = Core::FunctionDecomposerHelper<Functor>;
+            static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
+            static_assert(std::is_same_v<typename Decomposer::ReturnType, UI::EventFlags>, "Drop functor must return UI::EventFlags");
+            using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
+            return DropFunctor(
+                [functor = std::forward<Functor>(functor)](
+                    const void * const data,
+                    const DropEvent &dropEvent,
+                    const Area &area,
+                    const ECS::Entity entity,
+                    UISystem &uiSystem
+                ) noexcept -> EventFlags {
+                    auto &type = *const_cast<Type *>(reinterpret_cast<const Type *>(data));
+                    return Core::Invoke(functor, type, dropEvent, area, entity, uiSystem);
+                }
+            );
+        };
+        DropFunctors dropFunctors;
+        dropFunctors.reserve(sizeof...(Functors));
+        (dropFunctors.push(ForwardFunc(functors)), ...);
+        return dropFunctors;
+    };
+
     return DropEventArea {
-        [](const std::type_identity<Functors> ...functorTypes) noexcept -> DropTypes {
-            constexpr auto Forward = []<typename Functor>(const std::type_identity<Functor>) noexcept -> TypeHash {
-                using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
-                using Type = std::remove_cvref_t<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>;
-                return TypeHash::Get<Type>();
-            };
-            return DropTypes { Forward(functorTypes)... };
-        }(std::type_identity<Functors>()...),
-        [](Functors &&...functors) noexcept -> DropFunctors {
-            constexpr auto ForwardFunc = []<typename Functor>(Functor &&functor) noexcept -> DropFunctor {
-                using Decomposer = Core::FunctionDecomposerHelper<Functor>;
-                static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
-                static_assert(std::is_same_v<typename Decomposer::ReturnType, UI::EventFlags>, "Drop functor must return UI::EventFlags");
-                using Type = std::tuple_element_t<0, typename Decomposer::ArgsTuple>;
-                using FlatType = std::remove_cvref_t<Type>;
-                return DropFunctor(
-                    [functor = std::forward<Functor>(functor)](
-                        const void * const data,
-                        [[maybe_unused]] const DropEvent &dropEvent,
-                        [[maybe_unused]] const Area &area,
-                        [[maybe_unused]] const ECS::Entity entity,
-                        [[maybe_unused]] UISystem &uiSystem
-                    ) noexcept {
-                        auto &type = [data] -> auto & {
-                            if constexpr (std::is_const_v<Type>)
-                                return *reinterpret_cast<const FlatType *>(data);
-                            else
-                                return const_cast<FlatType &>(*reinterpret_cast<const FlatType *>(data));
-                        }();
-                        return Core::Invoke(functor, type, dropEvent, area, entity, uiSystem);
-                    }
-                );
-            };
-            DropFunctors dropFunctors;
-            dropFunctors.reserve(sizeof...(Functors));
-            (dropFunctors.push(ForwardFunc(functors)), ...);
-            return dropFunctors;
-        }(std::forward<Functors>(functors)...)
+        ForwardTypes(std::type_identity<Functors>()...),
+        ForwardFuncs(std::forward<Functors>(functors)...)
     };
 }
 
