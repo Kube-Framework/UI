@@ -39,7 +39,7 @@ TEST(SpriteManager, Basics)
                     .spriteIndex = sprite
                 });
             },
-            UI::Sprite(TestSpritePath)
+            UI::Sprite(uiSystem.spriteManager(), TestSpritePath)
         ),
         UI::Timer {
             .event = [&app] {

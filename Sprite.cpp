@@ -3,8 +3,8 @@
  * @ Description: Sprite
  */
 
-#include "App.hpp"
-#include "UISystem.hpp"
+#include "Sprite.hpp"
+#include "SpriteManager.hpp"
 
 using namespace kF;
 
@@ -14,8 +14,8 @@ UI::Sprite::~Sprite(void) noexcept
         _manager->decrementRefCount(_index);
 }
 
-UI::Sprite::Sprite(const std::string_view &path) noexcept
-    : Sprite(App::Get().uiSystem().spriteManager().add(path))
+UI::Sprite::Sprite(SpriteManager &manager, const std::string_view &path) noexcept
+    : Sprite(manager.add(path))
 {
 }
 

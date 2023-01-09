@@ -3,6 +3,8 @@
  * @ Description: Sprite manager
  */
 
+#include <chrono>
+
 #include <Kube/Core/Platform.hpp>
 
 #if KUBE_COMPILER_GCC
@@ -296,21 +298,28 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
     // Add remove events to frame caches
     for (auto &frameCache : _perFrameCache) {
         const auto it = frameCache.events.find([spriteIndex](const auto &event) { return event.spriteIndex == spriteIndex; });
-        if (it != frameCache.events.end()) [[unlikely]]
+        // If an 'add' event is present in the list we only need to remove it
+        if (it != frameCache.events.end()) {
+            kFAssert(it->type == Event::Type::Add, "UI::SpriteManager::decrementRefCount: Implementation error");
             frameCache.events.erase(it);
-        frameCache.events.push(Event {
-            .type = Event::Type::Remove,
-            .spriteIndex = spriteIndex
-        });
+        // Else we need to push a remove event
+        } else {
+            frameCache.events.push(Event {
+                .type = Event::Type::Remove,
+                .spriteIndex = spriteIndex
+            });
+        }
     }
 
+    // Add sprite to delayed remove list
     _spriteDelayedRemoves.push(SpriteDelayedRemove {
-        .spriteIndex = spriteIndex
+        .spriteIndex = spriteIndex,
+        .beginTimestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count()
     });
 
-// #if KUBE_DEBUG_BUILD
-//     kFInfo("[UI] Delete sprite required ", spriteIndex);
-// #endif
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Delete sprite required ", spriteIndex);
+#endif
 }
 
 void UI::SpriteManager::prepareFrameCache(void) noexcept
@@ -361,20 +370,21 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
 void UI::SpriteManager::updateDelayedRemoves(void) noexcept
 {
     const auto end = _spriteDelayedRemoves.end();
-    const auto it = std::remove_if(_spriteDelayedRemoves.begin(), end,
-        [this, frameCount = _perFrameCache.count()](auto &delayedRemove) {
-            if (++delayedRemove.elapsedFrames < frameCount) [[likely]]
+    const auto it = std::remove_if(
+        _spriteDelayedRemoves.begin(),
+        end,
+        [this, now = std::chrono::high_resolution_clock::now().time_since_epoch().count()](auto &delayedRemove) {
+            if (now - delayedRemove.beginTimestamp < RemoveDelay) [[likely]]
                 return false;
-            if (!_spriteCounters.at(delayedRemove.spriteIndex)) [[likely]] {
-                // Reset sprite name
-                _spriteNames.at(delayedRemove.spriteIndex) = 0u;
 
-                // Reset sprite cache
-                _spriteCaches.at(delayedRemove.spriteIndex) = SpriteCache {};
+            // Reset sprite name
+            _spriteNames.at(delayedRemove.spriteIndex) = 0u;
 
-                // Insert sprite index into free list
-                _spriteFreeList.push(delayedRemove.spriteIndex);
-            }
+            // Reset sprite cache
+            _spriteCaches.at(delayedRemove.spriteIndex) = SpriteCache {};
+
+            // Insert sprite index into free list
+            _spriteFreeList.push(delayedRemove.spriteIndex);
             return true;
         }
     );
@@ -382,7 +392,7 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
 #if KUBE_DEBUG_BUILD
     if (it != end) {
         bool first = true;
-        kFInfoRaw("[UI] Delete sprites {");
+        kFInfoRaw("[UI] Delete sprites { ");
         for (auto current = it; current != end; ++current) {
             if (!first)
                 kFInfoRaw(", ");
@@ -400,16 +410,19 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
 
 void UI::SpriteManager::cancelDelayedRemove(const SpriteIndex spriteIndex) noexcept
 {
+    // Erase delayed sprite remove
     const auto it = _spriteDelayedRemoves.find([spriteIndex](const auto &delayedRemove) { return delayedRemove.spriteIndex == spriteIndex; });
-
     kFAssert(it != _spriteDelayedRemoves.end(), "UI::SpriteManager::cancelDelayedRemove: Implementation error");
     _spriteDelayedRemoves.erase(it);
 
     for (auto &frameCache : _perFrameCache) {
         const auto end = frameCache.events.end();
         const auto it = frameCache.events.find([spriteIndex](const auto &event) { return event.spriteIndex == spriteIndex; });
+        // If a 'remove' event is present in the list we only need to remove it
         if (it != end) {
+            kFAssert(it->type == Event::Type::Remove, "UI::SpriteManager::cancelDelayedRemove: Implementation error");
             frameCache.events.erase(it, end);
+        // Else we need to push an add event
         } else {
             frameCache.events.push(Event {
                 .type = Event::Type::Add,
@@ -418,7 +431,7 @@ void UI::SpriteManager::cancelDelayedRemove(const SpriteIndex spriteIndex) noexc
         }
     }
 
-// #if KUBE_DEBUG_BUILD
-//     kFInfo("[UI] Delete sprite canceled ", spriteIndex);
-// #endif
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Delete sprite canceled ", spriteIndex);
+#endif
 }

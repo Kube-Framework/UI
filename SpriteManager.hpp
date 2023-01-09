@@ -17,6 +17,7 @@
 #include <Kube/GPU/Sampler.hpp>
 #include <Kube/GPU/Image.hpp>
 #include <Kube/GPU/ImageView.hpp>
+#include <Kube/GPU/PerFrameCache.hpp>
 
 #include "Base.hpp"
 #include "Sprite.hpp"
@@ -30,6 +31,9 @@ namespace kF::UI
 class alignas_double_cacheline kF::UI::SpriteManager : public GPU::GPUObject
 {
 public:
+    /** @brief Remove delay in nanoseconds */
+    static constexpr auto RemoveDelay = 5'000'000'000;
+
     /** @brief Default sprite index */
     static constexpr SpriteIndex DefaultSprite { 0u };
 
@@ -78,12 +82,13 @@ public:
     };
     static_assert_fit_half_cacheline(FrameCache);
 
-    struct alignas_eighth_cacheline SpriteDelayedRemove
+    /** @brief Store a sprite that must be removed with delay */
+    struct alignas_quarter_cacheline SpriteDelayedRemove
     {
         SpriteIndex spriteIndex {};
-        std::uint32_t elapsedFrames {};
+        std::int64_t beginTimestamp {};
     };
-    static_assert_fit_eighth_cacheline(SpriteDelayedRemove);
+    static_assert_fit_quarter_cacheline(SpriteDelayedRemove);
 
 
     /** @brief Destructor */
