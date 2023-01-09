@@ -512,14 +512,14 @@ void UI::Internal::LayoutBuilder::computeFlexLayoutChildrenLineMetrics(
     // Loop over the current line
     while (true) {
         const auto &childConstraints = _traverseContext->constraintsAt(*childIndexRange.from);
-        const auto childMin = GetX(childConstraints.minSize);
+        const auto childMin = std::max(GetX(childConstraints.minSize), 1.0f);
+        const auto childMax = Core::BranchlessIf(GetX(childConstraints.maxSize) == PixelInfinity, lineWidth, GetX(childConstraints.maxSize));
 
         // If we cannot fit this child anyway go to the next line (if no child are in this line we must position the item anyway)
-        if (childMin && childMin > lineRemain && lineRemain != lineWidth)
+        if (childMin > lineRemain - spacing && lineRemain != lineWidth)
             break;
 
         // Find child maximum size
-        const auto childMax = GetX(childConstraints.maxSize) == PixelInfinity ? lineWidth : GetX(childConstraints.maxSize);
 
         // Try to insert maximum children size and spacing
         if (const auto totalInsert = childMax + spacing; lineRemain > totalInsert) {

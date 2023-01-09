@@ -229,7 +229,6 @@ inline kF::UI::DropEventArea kF::UI::DropEventArea::Make(Functors &&...functors)
         constexpr auto Forward = []<typename Functor>(const std::type_identity<Functor>) noexcept -> TypeHash {
             using Decomposer = Core::FunctionDecomposerHelper<Functor>;
             static_assert(Decomposer::IndexSequence.size() > 0, "Drop functor must have at least the catched type as first argument");
-           kFInfo("!!! TYPE HASH: ", UI::TypeHash::Get<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>().hash);
             return TypeHash::Get<std::tuple_element_t<0, typename Decomposer::ArgsTuple>>();
         };
         return DropTypes { Forward(functorTypes)... };
