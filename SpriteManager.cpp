@@ -317,9 +317,9 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
         .beginTimestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count()
     });
 
-#if KUBE_DEBUG_BUILD
-    kFInfo("[UI] Delete sprite required ", spriteIndex);
-#endif
+// #if KUBE_DEBUG_BUILD
+//     kFInfo("[UI] Delete sprite required ", spriteIndex);
+// #endif
 }
 
 void UI::SpriteManager::prepareFrameCache(void) noexcept

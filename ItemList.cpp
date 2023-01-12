@@ -70,8 +70,10 @@ void UI::ItemList::onUpdate(const ListModelEvent::Update &data) noexcept
 
 void UI::ItemList::onResize(const ListModelEvent::Resize &data) noexcept
 {
-    onErase(ListModelEvent::Erase { 0, _modelSize });
-    onInsert(ListModelEvent::Insert { 0, data.count });
+    if (_modelSize)
+        onErase(ListModelEvent::Erase { 0, _modelSize });
+    if (data.count)
+        onInsert(ListModelEvent::Insert { 0, data.count });
 }
 
 void UI::ItemList::onMove(const ListModelEvent::Move &data) noexcept
