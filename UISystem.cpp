@@ -45,7 +45,8 @@ UI::UISystem::UISystem(void) noexcept
         _eventCache(EventCache {
             .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
             .wheelQueue = parent().getSystem<EventSystem>().addEventQueue<WheelEvent>(),
-            .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>()
+            .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>(),
+            .textQueue = parent().getSystem<EventSystem>().addEventQueue<TextEvent>()
         }),
         _renderer(*this)
 {
@@ -108,6 +109,14 @@ bool UI::UISystem::tick(void) noexcept
     validateFrame(currentFrame);
 
     return true;
+}
+
+void UI::UISystem::setKeyboardInputMode(const KeyboardInputMode mode) noexcept
+{
+    if (mode == KeyboardInputMode::Text)
+        SDL_StartTextInput();
+    else
+        SDL_StopTextInput();
 }
 
 void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropTrigger dropTrigger, DropCache::DataFunctor &&data, PainterArea &&painterArea) noexcept
@@ -203,6 +212,10 @@ void UI::UISystem::processEventHandlers(void) noexcept
     _eventCache.keyQueue->consume([this](const auto &range) {
         for (const auto &event : range)
             processKeyEventReceivers(event);
+    });
+    _eventCache.textQueue->consume([this](const auto &range) {
+        for (const auto &event : range)
+            processTextEventReceivers(event);
     });
 
     // If we drag while a mouse area is hovered, we must send leave event to avoid conflicts
@@ -414,6 +427,27 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     }
 
     table.traverse([this, &event](const ECS::Entity entity, KeyEventReceiver &component) {
+        const auto flags = component.event(event, entity, *this);
+        return !processEventFlags(flags);
+    });
+}
+
+void UI::UISystem::processTextEventReceivers(const TextEvent &event) noexcept
+{
+    auto &table = getTable<TextEventReceiver>();
+
+    // Send event to locked entity if any
+    if (_eventCache.textLock != ECS::NullEntity) {
+        // Process locked event now
+        auto &component = table.get(_eventCache.textLock);
+        const auto flags = component.event(event, _eventCache.textLock, *this);
+
+        // If locked event flags tells to stop, return now
+        if (processEventFlags(flags))
+            return;
+    }
+
+    table.traverse([this, &event](const ECS::Entity entity, TextEventReceiver &component) {
         const auto flags = component.event(event, entity, *this);
         return !processEventFlags(flags);
     });

@@ -23,6 +23,7 @@ bool UI::EventSystem::tick(void) noexcept
     _mouseEvents.clear();
     _wheelEvents.clear();
     _keyEvents.clear();
+    _textEvents.clear();
 
     // Collect all events
     collectEvents();
@@ -60,6 +61,9 @@ void UI::EventSystem::collectEvents(void) noexcept
 void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
 {
     switch (event.type) {
+    case SDL_QUIT:
+        parent().stop();
+        break;
     case SDL_WINDOWEVENT:
         switch (event.window.event) {
         case SDL_WINDOWEVENT_RESIZED:
@@ -76,6 +80,23 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
         default:
             break;
         }
+        break;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        _modifiers = static_cast<Modifier>(SDL_GetModState());
+        _keyEvents.push(KeyEvent {
+            .key = static_cast<Key>(event.key.keysym.sym),
+            .modifiers = _modifiers,
+            .state = static_cast<bool>(event.key.state),
+            .repeat = static_cast<bool>(event.key.repeat),
+            .timestamp = event.key.timestamp
+        });
+        break;
+    case SDL_TEXTINPUT:
+        _textEvents.push(TextEvent {
+            .text = std::string_view(reinterpret_cast<const char *>(event.edit.text)),
+            .timestamp = event.edit.timestamp
+        });
         break;
     case SDL_MOUSEMOTION:
     {
@@ -102,17 +123,6 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .timestamp = event.button.timestamp
         });
         break;
-    case SDL_KEYDOWN:
-    case SDL_KEYUP:
-        _modifiers = static_cast<Modifier>(SDL_GetModState());
-        _keyEvents.push(KeyEvent {
-            .key = static_cast<Key>(event.key.keysym.sym),
-            .modifiers = _modifiers,
-            .state = static_cast<bool>(event.key.state),
-            .repeat = static_cast<bool>(event.key.repeat),
-            .timestamp = event.key.timestamp
-        });
-        break;
     case SDL_MOUSEWHEEL:
         _wheelEvents.push(WheelEvent {
             .pos = _lastMousePosition,
@@ -120,9 +130,6 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .modifiers = _modifiers,
             .timestamp = event.wheel.timestamp
         });
-        break;
-    case SDL_QUIT:
-        parent().stop();
         break;
     default:
         break;
@@ -152,4 +159,5 @@ void kF::UI::EventSystem::dispatchEvents(void) noexcept
     dispatch(_mouseQueues, _mouseEvents);
     dispatch(_wheelQueues, _wheelEvents);
     dispatch(_keyQueues, _keyEvents);
+    dispatch(_textQueues, _textEvents);
 }

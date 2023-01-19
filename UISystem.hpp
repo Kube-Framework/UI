@@ -32,7 +32,15 @@ namespace kF::UI
     concept LockComponentRequirements = std::is_same_v<Component, kF::UI::MouseEventArea>
         || std::is_same_v<Component, kF::UI::WheelEventArea>
         || std::is_same_v<Component, kF::UI::DropEventArea>
-        || std::is_same_v<Component, kF::UI::KeyEventReceiver>;
+        || std::is_same_v<Component, kF::UI::KeyEventReceiver>
+        || std::is_same_v<Component, kF::UI::TextEventReceiver>;
+
+    /** @brief Keyboard input mode */
+    enum class KeyboardInputMode
+    {
+        Key,
+        Text
+    };
 }
 
 /** @brief UI renderer system */
@@ -54,12 +62,15 @@ class alignas_double_cacheline kF::UI::UISystem
         ECS::StableComponent<WheelEventArea>,
         ECS::StableComponent<DropEventArea>,
         ECS::StableComponent<KeyEventReceiver>,
+        ECS::StableComponent<TextEventReceiver>,
         // Time
         ECS::StableComponent<Timer>,
         ECS::StableComponent<Animator>
     >
 {
 public:
+    static_assert(std::is_same_v<UI::ComponentsTuple, UISystem::ComponentsTuple>, "UI::UISystem::Mismatching component tuple");
+
     /** @brief Entity list */
     using EntityCache = Core::SmallVector<ECS::Entity, (Core::CacheLineSize - Core::CacheLineQuarterSize) / sizeof(ECS::Entity), UIAllocator>;
     static_assert(std::is_same_v<UI::ComponentsTuple, ComponentsTuple>, "UI::UISystem: Mismatching component list");
@@ -103,11 +114,13 @@ public:
         EventQueuePtr<MouseEvent> mouseQueue {};
         EventQueuePtr<WheelEvent> wheelQueue {};
         EventQueuePtr<KeyEvent> keyQueue {};
+        EventQueuePtr<TextEvent> textQueue {};
         // Locks
         ECS::Entity mouseLock { ECS::NullEntity };
         ECS::Entity wheelLock { ECS::NullEntity };
         ECS::Entity dropLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
+        ECS::Entity textLock { ECS::NullEntity };
         // Drag & drop
         DropCache drop {};
         // Hover
@@ -186,6 +199,10 @@ public:
     /** @brief Unlock an event component */
     template<kF::UI::LockComponentRequirements Component>
     inline void unlockEvents(void) noexcept { lockEvents<Component>(ECS::NullEntity); }
+
+
+    /** @brief Set input mode of keyboard */
+    void setKeyboardInputMode(const KeyboardInputMode mode) noexcept;
 
 
     /** @brief Virtual tick callback */
@@ -284,6 +301,9 @@ private:
 
     /** @brief Process a single KeyEvent by traversing KeyEventReceiver instances */
     void processKeyEventReceivers(const KeyEvent &event) noexcept;
+
+    /** @brief Process a single TextEvent by traversing TextEventReceiver instances */
+    void processTextEventReceivers(const TextEvent &event) noexcept;
 
 
     /** @brief Process system time elapsed */

@@ -37,6 +37,9 @@ namespace kF::UI
         [[nodiscard]] bool operator==(const FontModel &other) const noexcept = default;
         [[nodiscard]] bool operator!=(const FontModel &other) const noexcept = default;
     };
+
+    /** @brief Default number of spaces per tab */
+    constexpr Pixel DefaultSpacesPerTab = 4.0f;
 }
 
 /** @brief Font class manager the lifecycle of a Font */
@@ -80,8 +83,15 @@ public:
     [[nodiscard]] inline FontIndex index(void) const noexcept { return _index; }
 
 
-    /** @brief Get font line height */
+    /** @brief Get space width of a font instance */
+    [[nodiscard]] Pixel spaceWidth(void) const noexcept;
+
+    /** @brief Get line height of a font instance */
     [[nodiscard]] Pixel lineHeight(void) const noexcept;
+
+
+    /** @brief Compute text metrics using internal font */
+    [[nodiscard]] Size computeTextMetrics(const std::string_view &text, const Pixel spacesPerTab = DefaultSpacesPerTab) const noexcept;
 
 private:
     FontManager *_manager {};

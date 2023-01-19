@@ -27,7 +27,7 @@ namespace kF::UI
         bool fit {}; // Text fit area
         bool elide {}; // Text eliding
         float rotationAngle {}; // Rotation in radians
-        Pixel tabSpaceCount { 4 }; // Spaces per tabulation
+        Pixel spacesPerTab { DefaultSpacesPerTab }; // Spaces per tabulation
     };
     static_assert_fit_cacheline(Text);
 

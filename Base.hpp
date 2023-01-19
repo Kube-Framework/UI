@@ -103,10 +103,12 @@ namespace kF::UI
     /** @brief 32bit RGBA color structure */
     struct alignas(std::uint32_t) Color
     {
-        std::uint8_t r;
-        std::uint8_t g;
-        std::uint8_t b;
-        std::uint8_t a;
+        using Unit = std::uint8_t;
+
+        Unit r;
+        Unit g;
+        Unit b;
+        Unit a;
 
 
         /** @brief Comparison operators */

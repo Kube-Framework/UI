@@ -17,7 +17,8 @@ namespace kF::UI
     template<typename EventType>
     concept EventRequirements = std::same_as<EventType, MouseEvent>
             || std::same_as<EventType, WheelEvent>
-            || std::same_as<EventType, KeyEvent>;
+            || std::same_as<EventType, KeyEvent>
+            || std::same_as<EventType, TextEvent>;
 
     template<kF::UI::EventRequirements EventType>
     class EventQueue;

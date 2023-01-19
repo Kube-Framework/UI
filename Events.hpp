@@ -8,15 +8,12 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_mouse.h>
 
+#include <Kube/Core/SmallString.hpp>
+
 #include "Base.hpp"
 
 namespace kF::UI
 {
-    struct MouseEvent;
-    struct WheelEvent;
-    struct DropEvent;
-    struct KeyEvent;
-
     /** @brief Mouse cursor */
     enum class Cursor : std::uint32_t
     {
@@ -311,68 +308,77 @@ namespace kF::UI
         AudioRewind = SDLK_AUDIOREWIND,
         AudioFastForward = SDLK_AUDIOFASTFORWARD
     };
+
+
+    /** @brief Describe a mouse event (single button action) */
+    struct alignas_half_cacheline MouseEvent
+    {
+        /** @brief Mouse event type */
+        enum class Type : std::uint8_t
+        {
+            Motion,
+            Enter,
+            Leave,
+            Press,
+            Release
+        };
+
+        Point pos {};
+        Point motion {};
+        Type type {};
+        Button button {};
+        Button activeButtons {};
+        Modifier modifiers {};
+        std::uint32_t timestamp {};
+    };
+    static_assert_fit_half_cacheline(MouseEvent);
+
+    /** @brief Describe a wheel event */
+    struct alignas_half_cacheline WheelEvent
+    {
+        Point pos {};
+        Point offset {};
+        Modifier modifiers {};
+        std::uint32_t timestamp {};
+    };
+    static_assert_fit_half_cacheline(WheelEvent);
+
+    /** @brief Describe a drop event */
+    struct alignas_half_cacheline DropEvent
+    {
+        /** @brief Type of drop event */
+        enum class Type
+        {
+            Begin,
+            End,
+            Enter,
+            Motion,
+            Leave,
+            Drop
+        };
+
+        Type type {};
+        Point pos {};
+        std::uint32_t timestamp {};
+    };
+    static_assert_fit_half_cacheline(DropEvent);
+
+    /** @brief Describe a key event (single key action) */
+    struct alignas_quarter_cacheline KeyEvent
+    {
+        Key key {};
+        Modifier modifiers {};
+        bool state {};
+        bool repeat {};
+        std::uint32_t timestamp {};
+    };
+    static_assert_fit_quarter_cacheline(KeyEvent);
+
+    /** @brief Describe a text event */
+    struct alignas_half_cacheline TextEvent
+    {
+        Core::SmallStringBase<char, 8, UIAllocator> text {};
+        std::uint32_t timestamp {};
+    };
+    static_assert_fit_half_cacheline(TextEvent);
 }
-
-/** @brief Describe a mouse event (single button action) */
-struct alignas_half_cacheline kF::UI::MouseEvent
-{
-    /** @brief Mouse event type */
-    enum class Type : std::uint8_t
-    {
-        Motion,
-        Enter,
-        Leave,
-        Press,
-        Release
-    };
-
-    Point pos {};
-    Point motion {};
-    Type type {};
-    Button button {};
-    Button activeButtons {};
-    Modifier modifiers {};
-    std::uint32_t timestamp {};
-};
-static_assert_fit_half_cacheline(kF::UI::MouseEvent);
-
-/** @brief Describe a wheel event */
-struct alignas_half_cacheline kF::UI::WheelEvent
-{
-    Point pos {};
-    Point offset {};
-    Modifier modifiers {};
-    std::uint32_t timestamp {};
-};
-static_assert_fit_half_cacheline(kF::UI::WheelEvent);
-
-/** @brief Describe a drop event */
-struct alignas_half_cacheline kF::UI::DropEvent
-{
-    /** @brief Type of drop event */
-    enum class Type
-    {
-        Begin,
-        End,
-        Enter,
-        Motion,
-        Leave,
-        Drop
-    };
-
-    Type type {};
-    Point pos {};
-    std::uint32_t timestamp {};
-};
-static_assert_fit_half_cacheline(kF::UI::DropEvent);
-
-/** @brief Describe a key event (single key action) */
-struct alignas_quarter_cacheline kF::UI::KeyEvent
-{
-    Key key {};
-    Modifier modifiers {};
-    bool state {};
-    bool repeat {};
-    std::uint32_t timestamp {};
-};
-static_assert_fit_quarter_cacheline(kF::UI::KeyEvent);

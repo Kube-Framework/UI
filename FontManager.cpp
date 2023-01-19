@@ -255,3 +255,32 @@ void UI::FontManager::decrementRefCount(const FontIndex fontIndex) noexcept
     // Insert font index into free list
     _fontFreeList.push(fontIndex);
 }
+
+UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab) noexcept
+{
+    constexpr auto UpdateMetrics = [](UI::Size &metrics, const UI::Point pen) {
+        metrics.width = std::max(metrics.width, pen.x);
+        metrics.height = std::max(metrics.height, pen.y);
+    };
+    const auto &glyphUVs = glyphUVsAt(fontIndex);
+    const auto &glyphIndexSet = glyphIndexSetAt(fontIndex);
+    const auto lineHeight = lineHeightAt(fontIndex);
+    const auto spaceWidth = spaceWidthAt(fontIndex);
+    Size metrics {};
+    Point pen {};
+
+    for (const auto it : text) {
+        if (!std::isspace(it)) {
+            pen.x += glyphUVs.at(glyphIndexSet.at(it)).size.width;
+        } else if (const bool isTab = it == '\t'; isTab | (it == ' ')) {
+            pen.x += spaceWidth * (1.0f + spacesPerTab * isTab);
+        } else {
+            pen.x = {};
+            pen.y += lineHeight;
+        }
+        UpdateMetrics(metrics, pen);
+    }
+    pen.y += lineHeight * !text.empty();
+    UpdateMetrics(metrics, pen);
+    return metrics;
+}

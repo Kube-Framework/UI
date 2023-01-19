@@ -28,6 +28,8 @@ inline kF::ECS::Entity &kF::UI::UISystem::lockedEntityImpl(void) noexcept
         return _eventCache.dropLock;
     else if constexpr (std::is_same_v<Component, kF::UI::KeyEventReceiver>)
         return _eventCache.keyLock;
+    else if constexpr (std::is_same_v<Component, kF::UI::TextEventReceiver>)
+        return _eventCache.textLock;
 }
 
 template<kF::UI::LockComponentRequirements Component>

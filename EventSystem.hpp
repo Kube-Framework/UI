@@ -57,9 +57,11 @@ private:
     Core::Vector<MouseEvent, EventAllocator> _mouseEvents {};
     Core::Vector<WheelEvent, EventAllocator> _wheelEvents {};
     Core::Vector<KeyEvent, EventAllocator> _keyEvents {};
+    Core::Vector<TextEvent, EventAllocator> _textEvents {};
     Core::Vector<EventQueuePtr<MouseEvent>, EventAllocator> _mouseQueues {};
     Core::Vector<EventQueuePtr<WheelEvent>, EventAllocator> _wheelQueues {};
     Core::Vector<EventQueuePtr<KeyEvent>, EventAllocator> _keyQueues {};
+    Core::Vector<EventQueuePtr<TextEvent>, EventAllocator> _textQueues {};
 };
 
 #include "EventSystem.ipp"

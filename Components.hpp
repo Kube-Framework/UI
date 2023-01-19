@@ -20,6 +20,7 @@ namespace kF::UI
     class WheelEvent;
     class DropEvent;
     class KeyEvent;
+    class TextEvent;
     class UISystem;
     enum class ComponentFlags : std::uint32_t;
 
@@ -390,6 +391,51 @@ namespace kF::UI
     static_assert_fit_half_cacheline(KeyEventReceiver);
 
 
+    /** @brief Text input handler */
+    struct alignas_half_cacheline TextEventReceiver
+    {
+        /** @brief TextEventArea event functor */
+        using Event = Core::Functor<EventFlags(const TextEvent &, const ECS::Entity, UISystem &), UIAllocator>;
+
+        Event event {};
+
+
+        /** @brief Bind a static text functor within a text event receiver
+         *  @note The functor must take 'const TextEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto Function, typename ...Args>
+        [[nodiscard]] static inline TextEventReceiver Make(Args &&...args) noexcept
+            { return TextEventReceiver(Internal::MakeEventAreaFunctor<Function, TextEventReceiver::Event>(std::forward<Args>(args)...)); }
+
+        /** @brief Bind a member text functor within a text event receiver
+         *  @note The functor must take 'const TextEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<auto MemberFunction, typename ClassType, typename ...Args>
+            requires std::is_member_function_pointer_v<decltype(MemberFunction)>
+        [[nodiscard]] static inline TextEventReceiver Make(ClassType &&instance, Args &&...args) noexcept
+            { return TextEventReceiver(Internal::MakeEventAreaFunctor<MemberFunction, TextEventReceiver::Event>(std::forward<ClassType>(instance), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a static text functor within a text event receiver
+         *  @note The functor must take 'const TextEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline TextEventReceiver Make(Functor &&functor, Args &&...args) noexcept
+            { return TextEventReceiver(Internal::MakeEventAreaFunctor<TextEventReceiver::Event, Functor>(std::forward<Functor>(functor), std::forward<Args>(args)...)); }
+
+        /** @brief Bind a text functor within a text event receiver
+         *  @note The functor must take 'const TextEvent &' as its first argument
+         *      Additional arguments (Args...) should match remaining functor's arguments
+         *      If an argument doesn't match, it must be a functor that returns the matching argument */
+        template<typename Functor, typename ...Args>
+        [[nodiscard]] static inline TextEventReceiver Make(Args &&...args) noexcept
+            { return TextEventReceiver(Internal::MakeEventAreaFunctor<TextEventReceiver::Event, Functor>(std::forward<Args>(args)...)); }
+    };
+    static_assert_fit_half_cacheline(TextEventReceiver);
+
+
     /** @brief Component flags */
     enum class ComponentFlags : std::uint32_t
     {
@@ -424,6 +470,7 @@ namespace kF::UI
         WheelEventArea,
         DropEventArea,
         KeyEventReceiver,
+        TextEventReceiver,
         Timer,
         Animator
     >;

@@ -103,6 +103,10 @@ public: // Unsafe functions reserved for internal usage
     [[nodiscard]] inline SpriteIndex spriteAt(const FontIndex fontIndex) const noexcept
         { return _fontCaches.at(fontIndex).sprite.index(); }
 
+
+    /** @brief Compute text metrics using a given font */
+    [[nodiscard]] UI::Size computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab = DefaultSpacesPerTab) noexcept;
+
 private:
     /** @brief Load a font from 'path' that is stored at 'fontIndex' */
     void load(const std::string_view &path, const FontIndex fontIndex) noexcept;

@@ -184,7 +184,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
 
     LineMetrics metrics;
     const auto spaceWidth = params.spaceWidth;
-    const auto tabMultiplier = params.text->tabSpaceCount - 1;
+    const auto tabMultiplier = params.text->spacesPerTab - 1;
     const auto textSize = params.text->area.size;
     const bool lastLine = (yOffset + params.lineHeight * 2)
             > (GetY(params.text->area.pos) + GetY(params.text->area.size));
@@ -265,7 +265,7 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
         (GetX(params.text->area.size) - metrics.totalGlyphSize) / metrics.spaceCount,
         params.spaceWidth
     );
-    const auto tabMultiplier = params.text->tabSpaceCount - 1;
+    const auto tabMultiplier = params.text->spacesPerTab - 1;
     Point pos;
     GetY(pos) = yOffset;
 
