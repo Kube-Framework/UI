@@ -139,12 +139,18 @@ public:
     /** @brief Set current mouse grab state */
     void setMouseGrab(const bool state) noexcept;
 
+    /** @brief Set mouse position inside window */
+    void setMousePosition(const UI::Point pos) noexcept;
+
 
     /** @brief Get keyboard grab state */
     [[nodiscard]] bool keyboardGrab(void) const noexcept;
 
     /** @brief Set current keyboard grab state */
     void setKeyboardGrab(const bool state) noexcept;
+
+    /** @brief Set input mode of keyboard */
+    void setKeyboardInputMode(const bool state) noexcept;
 
 
     /** @brief Run app in blocking mode */

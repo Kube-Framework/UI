@@ -201,10 +201,6 @@ public:
     inline void unlockEvents(void) noexcept { lockEvents<Component>(ECS::NullEntity); }
 
 
-    /** @brief Set input mode of keyboard */
-    void setKeyboardInputMode(const KeyboardInputMode mode) noexcept;
-
-
     /** @brief Virtual tick callback */
     [[nodiscard]] bool tick(void) noexcept override;
 

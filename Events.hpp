@@ -28,11 +28,16 @@ namespace kF::UI
         SizeNS = SDL_SYSTEM_CURSOR_SIZENS,
         SizeAll = SDL_SYSTEM_CURSOR_SIZEALL,
         No = SDL_SYSTEM_CURSOR_NO,
-        Hand = SDL_SYSTEM_CURSOR_HAND
+        Hand = SDL_SYSTEM_CURSOR_HAND,
+        Invisible,
+        Count
     };
 
+    /** @brief Number of system cursors */
+    constexpr auto SystemCursorCount = SDL_NUM_SYSTEM_CURSORS;
+
     /** @brief Number of cursors */
-    constexpr auto CursorCount = SDL_NUM_SYSTEM_CURSORS;
+    constexpr auto CursorCount = Cursor::Count;
 
     /** @brief Mouse button */
     enum class Button : std::uint8_t

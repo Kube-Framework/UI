@@ -200,9 +200,13 @@ UI::App::App(
     });
 
     // Instantiate system cursors
-    _backendCursors.resize(CursorCount);
-    for (auto i = 0u; i != CursorCount; ++i)
+    _backendCursors.resize(SystemCursorCount);
+    for (auto i = 0u; i != SystemCursorCount; ++i)
         _backendCursors.at(i) = ::SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    { // Invisible cursor
+        auto surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA8888);
+        _backendCursors.push(SDL_CreateColorCursor(surface, 0, 0));
+    }
 
     // Event pipeline
     _executor.addPipelineInline<EventPipeline>(
@@ -238,10 +242,10 @@ void UI::App::setWindowSize(const Size size) noexcept
 
 void UI::App::setCursor(const Cursor cursor) noexcept
 {
-    if (_cursor != cursor) {
-        _cursor = cursor;
-        SDL_SetCursor(reinterpret_cast<SDL_Cursor *>(_backendCursors.at(Core::ToUnderlying(cursor))));
-    }
+    if (_cursor == cursor)
+        return;
+    _cursor = cursor;
+    SDL_SetCursor(reinterpret_cast<SDL_Cursor *>(_backendCursors.at(Core::ToUnderlying(cursor))));
 }
 
 bool UI::App::relativeMouseMode(void) const noexcept
@@ -272,6 +276,19 @@ bool UI::App::keyboardGrab(void) const noexcept
 void UI::App::setKeyboardGrab(const bool state) noexcept
 {
     SDL_SetWindowKeyboardGrab(_backendInstance.window, static_cast<SDL_bool>(state));
+}
+
+void UI::App::setKeyboardInputMode(const bool state) noexcept
+{
+    if (state)
+        SDL_StartTextInput();
+    else
+        SDL_StopTextInput();
+}
+
+void UI::App::setMousePosition(const UI::Point pos) noexcept
+{
+    SDL_WarpMouseInWindow(_backendInstance.window, static_cast<int>(pos.x), static_cast<int>(pos.y));
 }
 
 bool UI::App::openUrl(const std::string_view &url) const noexcept

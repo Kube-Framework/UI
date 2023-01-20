@@ -67,6 +67,9 @@ UI::UISystem::UISystem(void) noexcept
     auto &dispatchTask = graph.add<&Renderer::dispatchInvalidFrame>(&_renderer);
     dispatchTask.after(computeTask);
     dispatchTask.after(transferTask);
+
+    // Relative mouse mode SDL2 bug
+    SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1", SDL_HINT_OVERRIDE);
 }
 
 bool UI::UISystem::tick(void) noexcept
@@ -109,14 +112,6 @@ bool UI::UISystem::tick(void) noexcept
     validateFrame(currentFrame);
 
     return true;
-}
-
-void UI::UISystem::setKeyboardInputMode(const KeyboardInputMode mode) noexcept
-{
-    if (mode == KeyboardInputMode::Text)
-        SDL_StartTextInput();
-    else
-        SDL_StopTextInput();
 }
 
 void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropTrigger dropTrigger, DropCache::DataFunctor &&data, PainterArea &&painterArea) noexcept
