@@ -168,6 +168,12 @@ public:
     /** @brief Fast non-empty check */
     [[nodiscard]] inline operator bool(void) const noexcept { return _container.operator bool(); }
 
+    /** @brief Base container */
+    [[nodiscard]] inline operator const Container &(void) const noexcept { return _container; }
+
+    /** @brief Base container */
+    [[nodiscard]] inline const Container &container(void) const noexcept { return _container; }
+
 
     /** @brief Begin / End helpers */
     [[nodiscard]] inline Iterator begin(void) noexcept { return _container.begin(); }
