@@ -289,9 +289,12 @@ void UI::UISystem::processMouseEventAreasMotion(const MouseEvent &event) noexcep
 void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcept
 {
     // Handle drop trigger
-    if (isDragging() && _eventCache.drop.dropTrigger.button == event.button
-            && ((_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Press)
-            || (!_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Release))) {
+    if (isDragging()) {
+        const bool isButton = _eventCache.drop.dropTrigger.button == event.button;
+        const bool isSameState = (_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Press)
+                | (!_eventCache.drop.dropTrigger.buttonState && event.type == MouseEvent::Type::Release);
+        if (!isButton | !isSameState)
+            return;
         // Send 'Drop' event
         processDropEventAreas(DropEvent {
             .type = DropEvent::Type::Drop,
