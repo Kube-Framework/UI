@@ -108,8 +108,8 @@ void main(void)
 
     // Set vertices
     Vertex vertex;
-    vertex.halfSize = instance.area.size / 2.0;
-    vertex.center = instance.area.pos + vertex.halfSize;
+    vertex.halfSize = (instance.area.size - 1.0) / 2.0;
+    vertex.center = instance.area.pos + instance.area.size / 2.0;
     vertex.radius = instance.radius;
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
