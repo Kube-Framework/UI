@@ -34,6 +34,10 @@ namespace kF::UI
 class alignas_quarter_cacheline kF::UI::Sprite
 {
 public:
+    /** @brief Remove delay in seconds */
+    static constexpr auto DefaultRemoveDelay = 0.0f;
+
+
     /** @brief Destructor */
     ~Sprite(void) noexcept;
 
@@ -45,7 +49,7 @@ public:
         : _manager(&manager), _index(index) {}
 
     /** @brief Path constructor */
-    Sprite(SpriteManager &manager, const std::string_view &path) noexcept;
+    Sprite(SpriteManager &manager, const std::string_view &path, const float removeDelaySeconds = DefaultRemoveDelay) noexcept;
 
     /** @brief Copy constructor */
     Sprite(const Sprite &other) noexcept;

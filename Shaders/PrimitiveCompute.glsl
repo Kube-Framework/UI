@@ -12,23 +12,6 @@ const uint FillModeCrop = 0;
 const uint FillModeFit = 1;
 const uint FillModeStretch = 2;
 
-// Vertex
-struct Vertex
-{
-    vec2 pos;
-    vec2 center;
-    vec2 halfSize;
-    vec4 radius;
-    vec2 uv;
-    uint spriteIndex;
-    uint color;
-    uint borderColor;
-    float borderWidth;
-    float edgeSoftness;
-    uint _padding;
-    vec2 rotationCosSin;
-};
-
 // Offset
 struct Offset
 {

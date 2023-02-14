@@ -9,7 +9,7 @@
 
 #include <Kube/GPU/Shader.hpp>
 
-#include "Primitive.hpp"
+#include "RendererBase.hpp"
 
 namespace kF::UI
 {
@@ -28,6 +28,12 @@ namespace kF::UI
     /** @brief Templated namespace allowing static primitive processors function calls */
     namespace PrimitiveProcessor
     {
+        /** @brief Query the primitive pipeline
+         *  @note You must specialize this function for each primitive processor */
+        template<kF::UI::PrimitiveKind Primitive>
+        [[nodiscard]] consteval PrimitiveName QueryGraphicPipeline(void) noexcept
+            { static_assert(std::is_same_v<Primitive, void>, "PrimitiveProcessor::QueryGraphicPipeline: Not implemented"); return PrimitiveName(); }
+
         /** @brief Query the primitive processor model
          *  @note You must specialize this function for each primitive processor */
         template<kF::UI::PrimitiveKind Primitive>
@@ -54,5 +60,17 @@ namespace kF::UI
             std::copy(primitiveBegin, primitiveEnd, reinterpret_cast<Primitive *>(instanceBegin));
             return Core::Distance<std::uint32_t>(primitiveBegin, primitiveEnd);
         }
+    }
+
+    // Utility functions of the primitive processor namespace
+    namespace PrimitiveProcessor
+    {
+        /** @brief Query the vertex size of a primitive */
+        template<kF::UI::PrimitiveKind Primitive>
+        [[nodiscard]] consteval std::uint32_t QueryVertexSize(void) noexcept { return sizeof(DeclareGraphicPipelineVertexType<QueryGraphicPipeline<Primitive>()>); }
+
+        /** @brief Query the vertex alignment of a primitive */
+        template<kF::UI::PrimitiveKind Primitive>
+        [[nodiscard]] consteval std::uint32_t QueryVertexAlignment(void) noexcept { return static_cast<std::uint32_t>(Core::CacheLineQuarterSize); }
     }
 }

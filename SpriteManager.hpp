@@ -31,9 +31,6 @@ namespace kF::UI
 class alignas_double_cacheline kF::UI::SpriteManager : public GPU::GPUObject
 {
 public:
-    /** @brief Remove delay in nanoseconds */
-    static constexpr auto RemoveDelay = 5'000'000'000;
-
     /** @brief Default sprite index */
     static constexpr SpriteIndex DefaultSprite { 0u };
 
@@ -86,7 +83,8 @@ public:
     struct alignas_quarter_cacheline SpriteDelayedRemove
     {
         SpriteIndex spriteIndex {};
-        std::int64_t beginTimestamp {};
+        GPU::FrameIndex frameCount {}; // Minimum frame count before release
+        std::int64_t beginTimestamp {}; // Minimum user time before release
     };
     static_assert_fit_quarter_cacheline(SpriteDelayedRemove);
 
@@ -104,12 +102,12 @@ public:
 
     /** @brief Add a sprite to the manager using its path if it doesn't exists
      *  @note If the sprite is already loaded this function does not duplicate its memory */
-    [[nodiscard]] Sprite add(const std::string_view &path) noexcept;
+    [[nodiscard]] Sprite add(const std::string_view &path, const float removeDelaySeconds = Sprite::DefaultRemoveDelay) noexcept;
 
 
     /** @brief Add a sprite to the manager using a fake path and RGBA 32bits color data
      *  @note The sprite instance is unique and cannot be copied nor queried */
-    [[nodiscard]] Sprite add(const SpriteBuffer &spriteBuffer) noexcept;
+    [[nodiscard]] Sprite add(const SpriteBuffer &spriteBuffer, const float removeDelaySeconds = Sprite::DefaultRemoveDelay) noexcept;
 
 
     /** @brief Get the size of a sprite */
@@ -119,7 +117,7 @@ public:
 
 public: // Unsafe functions reserved for internal usage
     /** @brief Increment the reference count of a sprite */
-    inline void incrementRefCount(const SpriteIndex spriteIndex) noexcept { ++_spriteCounters.at(spriteIndex); }
+    inline void incrementRefCount(const SpriteIndex spriteIndex) noexcept { ++_spriteCounters.at(spriteIndex).refCount; }
 
     /** @brief Remove a sprite from the manager
      *  @note If the sprite is still used elswhere, this function does not deallocate its memory */
@@ -137,8 +135,15 @@ public: // Unsafe functions reserved for internal usage
     void prepareFrameCache(void) noexcept;
 
 private:
+    /** @brief Sprite reference count */
+    struct SpriteCounter
+    {
+        std::uint32_t refCount {};
+        float removeDelaySeconds {};
+    };
+
     /** @brief Base implementation of the add function */
-    [[nodiscard]] SpriteIndex addImpl(const Core::HashedName spriteName) noexcept;
+    [[nodiscard]] SpriteIndex addImpl(const Core::HashedName spriteName, const float removeDelaySeconds) noexcept;
 
     /** @brief Load a sprite stored at 'spriteIndex' */
     void load(const SpriteIndex spriteIndex, const SpriteBuffer &spriteBuffer) noexcept;
@@ -153,7 +158,7 @@ private:
     // Cacheline 0
     Core::Vector<Core::HashedName, ResourceAllocator, SpriteIndex::IndexType> _spriteNames {};
     Core::FlatVector<SpriteCache, ResourceAllocator, SpriteIndex::IndexType> _spriteCaches {};
-    Core::FlatVector<std::uint32_t, ResourceAllocator, SpriteIndex::IndexType> _spriteCounters {};
+    Core::FlatVector<SpriteCounter, ResourceAllocator, SpriteIndex::IndexType> _spriteCounters {};
     Core::Vector<SpriteIndex, ResourceAllocator, SpriteIndex::IndexType> _spriteFreeList {};
     Core::Vector<SpriteDelayedRemove, ResourceAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1

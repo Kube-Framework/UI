@@ -5,9 +5,8 @@
 
 #pragma once
 
-#include <Kube/UI/Base.hpp>
-#include <Kube/UI/Font.hpp>
 #include <Kube/UI/PrimitiveProcessor.hpp>
+#include <Kube/UI/Font.hpp>
 
 namespace kF::UI
 {
@@ -33,6 +32,10 @@ namespace kF::UI
 
     namespace PrimitiveProcessor
     {
+        /** @brief Text processor query pipeline */
+        template<>
+        [[nodiscard]] consteval GraphicPipelineName QueryGraphicPipeline<Text>(void) noexcept { return FilledQuadGraphicPipeline; }
+
         /** @brief Text processor query model */
         template<>
         [[nodiscard]] PrimitiveProcessorModel QueryModel<Text>(void) noexcept;

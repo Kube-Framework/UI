@@ -93,7 +93,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
 
     // Add default sprite
     const Color defaultBufferData { 255, 80, 255, 255 };
-    const auto defaultSpriteIndex = addImpl(Core::HashedName {});
+    const auto defaultSpriteIndex = addImpl(Core::HashedName {}, 0.0f);
     kFEnsure(defaultSpriteIndex == DefaultSprite, "UI::SpriteManager: Implementation error");
     load(defaultSpriteIndex, SpriteBuffer {
         .data = &defaultBufferData,
@@ -101,7 +101,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
     });
 }
 
-UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
+UI::Sprite UI::SpriteManager::add(const std::string_view &path, const float removeDelaySeconds) noexcept
 {
     using namespace GPU;
 
@@ -111,7 +111,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
     const auto spriteName = Core::Hash(path);
     if (const auto it = _spriteNames.find(spriteName); it != _spriteNames.end()) [[likely]] {
         const auto spriteIndex = SpriteIndex { _spriteNames.indexOf(it) };
-        if (++_spriteCounters.at(spriteIndex) == 1) [[unlikely]]
+        if (++_spriteCounters.at(spriteIndex).refCount == 1) [[unlikely]]
             cancelDelayedRemove(spriteIndex);
         return Sprite(*this, spriteIndex);
     }
@@ -137,7 +137,7 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
 
     // Reserve sprite index
     kFEnsure(!path.empty(), "UI::SpriteManager::add: Path cannot be empty");
-    const auto spriteIndex = addImpl(spriteName);
+    const auto spriteIndex = addImpl(spriteName, removeDelaySeconds);
 
 
     // Build sprite cache at 'spriteIndex'
@@ -157,10 +157,10 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path) noexcept
     return Sprite(*this, spriteIndex);
 }
 
-UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer) noexcept
+UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer, const float removeDelaySeconds) noexcept
 {
     // Reserve sprite index
-    const auto spriteIndex = addImpl(Core::HashedName {});
+    const auto spriteIndex = addImpl(Core::HashedName {}, removeDelaySeconds);
 
     // Build sprite cache at 'spriteIndex'
     load(spriteIndex, spriteBuffer);
@@ -173,7 +173,7 @@ UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer) noexcept
     return Sprite(*this, spriteIndex);
 }
 
-UI::SpriteIndex UI::SpriteManager::addImpl(const Core::HashedName spriteName) noexcept
+UI::SpriteIndex UI::SpriteManager::addImpl(const Core::HashedName spriteName, const float removeDelaySeconds) noexcept
 {
     SpriteIndex spriteIndex {};
     if (!_spriteFreeList.empty()) {
@@ -187,7 +187,7 @@ UI::SpriteIndex UI::SpriteManager::addImpl(const Core::HashedName spriteName) no
     }
 
     // Set sprite reference count and name
-    _spriteCounters.at(spriteIndex) = 1u;
+    _spriteCounters.at(spriteIndex) = SpriteCounter { .refCount = 1u, .removeDelaySeconds = removeDelaySeconds };
     _spriteNames.at(spriteIndex) = spriteName;
     return spriteIndex;
 }
@@ -292,12 +292,13 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
 void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcept
 {
     // Check sprite reference counter
-    if (--_spriteCounters.at(spriteIndex)) [[likely]]
+    if (--_spriteCounters.at(spriteIndex).refCount) [[likely]]
         return;
 
     // Add sprite to delayed remove list
     _spriteDelayedRemoves.push(SpriteDelayedRemove {
         .spriteIndex = spriteIndex,
+        .frameCount = _perFrameCache.count() - 1u,
         .beginTimestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count()
     });
 
@@ -357,8 +358,10 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
     const auto it = std::remove_if(
         _spriteDelayedRemoves.begin(),
         end,
-        [this, now = std::chrono::high_resolution_clock::now().time_since_epoch().count()](const auto &delayedRemove) {
-            if (now - delayedRemove.beginTimestamp < RemoveDelay) [[likely]]
+        [this, now = std::chrono::high_resolution_clock::now().time_since_epoch().count()](auto &delayedRemove) {
+            delayedRemove.frameCount = Core::BranchlessIf(delayedRemove.frameCount, delayedRemove.frameCount - 1u, 0u);
+            const auto delay = std::int64_t(double(_spriteCounters.at(delayedRemove.spriteIndex).removeDelaySeconds) * 1'000'000'000.0);
+            if (delayedRemove.frameCount | ((now - delayedRemove.beginTimestamp) < delay)) [[likely]]
                 return false;
 
             // Send remove events to each frame

@@ -5,8 +5,8 @@
 layout(location = 0)    in vec2 vertPos;
 layout(location = 1)    in vec2 vertCenter;
 layout(location = 2)    in vec2 vertHalfSize;
-layout(location = 3)    in vec4 vertRadius;
-layout(location = 4)    in vec2 vertUV;
+layout(location = 3)    in vec2 vertUV;
+layout(location = 4)    in vec4 vertRadius;
 layout(location = 5)    in uint vertSpriteIndex;
 layout(location = 6)    in uint vertColor;
 layout(location = 7)    in uint vertBorderColor;

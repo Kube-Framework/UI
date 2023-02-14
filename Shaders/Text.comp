@@ -16,6 +16,7 @@ struct Instance
     float vertical;
 };
 
+#include "FilledQuadUtils.glsl"
 #include "PrimitiveCompute.glsl"
 
 layout (local_size_x = 1) in;

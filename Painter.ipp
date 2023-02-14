@@ -22,6 +22,14 @@ inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const 
         return ~0u;
     }();
 
+    // If primitive pipeline differs from previous, we have to insert a break
+    if (const auto pipelineName = PrimitiveProcessor::QueryGraphicPipeline<Primitive>(); _pipelines.empty() || _pipelines.back().name != pipelineName) {
+        _pipelines.push(PipelineCache {
+            .name = pipelineName,
+            .indexOffset = _offset.indexOffset
+        });
+    }
+
     // Get instance count
     const std::uint32_t instanceCount = PrimitiveProcessor::GetInstanceCount(primitiveBegin, primitiveEnd);
 
@@ -42,15 +50,22 @@ inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const 
         "UI::Painter::draw: 'PrimitiveProcessor::GetInstanceCount' returned ", instanceCount,
         " but 'PrimitiveProcessor::InsertInstances' returned ", insertedInstanceCount);
 
+    // Align offset to vertex according to std140
+    constexpr auto VertexSize = PrimitiveProcessor::QueryVertexSize<Primitive>();
+    constexpr auto VertexAlignment = PrimitiveProcessor::QueryVertexAlignment<Primitive>();
+    _offset.vertexOffset = Core::AlignOffset(_offset.vertexOffset, VertexAlignment);
+
     // Insert offsets
     const auto offsets = queue.offsets() + queue.size;
     for (auto index = 0u; index != insertedInstanceCount; ++index) {
         offsets[index] = InstanceOffset {
-            .vertexOffset = _offset.vertexOffset + index * queue.verticesPerInstance,
+            // Queue offsets are stored as index of vertices from graphical pipeline's
+            .vertexOffset = (_offset.vertexOffset / VertexSize) + index * queue.verticesPerInstance,
             .indexOffset = _offset.indexOffset + index * queue.indicesPerInstance
         };
     }
-    _offset.vertexOffset += insertedInstanceCount * queue.verticesPerInstance;
+    // Store vertex offset in bytes
+    _offset.vertexOffset += VertexSize * insertedInstanceCount * queue.verticesPerInstance;
     _offset.indexOffset += insertedInstanceCount * queue.indicesPerInstance;
 
     // Assign new queue size

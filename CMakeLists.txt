@@ -40,7 +40,6 @@ kube_add_library(UI
         PresentPipeline.hpp
         PresentSystem.cpp
         PresentSystem.hpp
-        Primitive.hpp
         PrimitiveProcessor.hpp
         RectangleProcessor.hpp
         RectangleProcessor.cpp

@@ -23,7 +23,7 @@ void UI::Painter::setClip(const Area &area) noexcept
     });
 }
 
-void UI::Painter::registerPrimitive(const Core::HashedName name, const PrimitiveProcessorModel &model) noexcept
+void UI::Painter::registerPrimitive(const PrimitiveName name, const PrimitiveProcessorModel &model) noexcept
 {
     // Ensure the primitive is not already registered
     for (const auto primitiveName : _names) {

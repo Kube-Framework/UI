@@ -7,13 +7,14 @@
 
 #include <Kube/Core/SmallVector.hpp>
 
-#include "Base.hpp"
 #include "PrimitiveProcessor.hpp"
 
 namespace kF::UI
 {
     class Painter;
+    class Renderer;
 }
+
 
 /** @brief Painter is responsible to manage primitive queues */
 class alignas_double_cacheline kF::UI::Painter
@@ -77,6 +78,17 @@ public:
     using Clips = Core::Vector<ClipCache, UIAllocator>;
 
 
+    /** @brief Pipeline cache */
+    struct alignas_half_cacheline PipelineCache
+    {
+        GraphicPipelineName name {};
+        std::uint32_t indexOffset {};
+    };
+
+    /** @brief Vector of pipelines */
+    using Pipelines = Core::Vector<PipelineCache, UIAllocator>;
+
+
     /** @brief Destructor */
     ~Painter(void) noexcept;
 
@@ -104,26 +116,32 @@ public:
     /** @brief Get current clip list of painter */
     [[nodiscard]] inline const Clips &clips(void) noexcept { return _clips; }
 
+    /** @brief Get current pipeline list of painter */
+    [[nodiscard]] inline const Pipelines &pipelines(void) noexcept { return _pipelines; }
 
-    /** @brief Get current vertex count of painter */
-    [[nodiscard]] inline std::uint32_t vertexCount(void) noexcept { return _offset.vertexOffset; }
+
+    /** @brief Get total vertex byte size of painter */
+    [[nodiscard]] inline std::uint32_t vertexByteCount(void) noexcept { return _offset.vertexOffset; }
 
     /** @brief Get current index count of painter */
     [[nodiscard]] inline std::uint32_t indexCount(void) noexcept { return _offset.indexOffset; }
 
 
-public: // Renderer reserved functions
-    /** @brief Register a primitive type inside the painter */
-    void registerPrimitive(const Core::HashedName name, const PrimitiveProcessorModel &model) noexcept;
-
     /** @brief Clear the painter caches */
     void clear(void) noexcept;
+
+
+private:
+    // Renderer can call 'registerPrimitive'
+    friend Renderer;
+
+    /** @brief Register a primitive type inside the painter */
+    void registerPrimitive(const PrimitiveName name, const PrimitiveProcessorModel &model) noexcept;
 
 
     /** @brief Get painter primitive queues */
     [[nodiscard]] inline const auto &queues(void) const noexcept { return _queues; }
 
-private:
     /** @brief Grow a queue */
     void growQueue(Queue &queue, const std::uint32_t minCapacity) noexcept;
 
@@ -134,10 +152,11 @@ private:
 
     // Cacheline 0
     Names _names {};
-    Queues _queues {};
+    Queues _queues {}; // Store vertex offsets as indexes
     // Cacheline 1
     Clips _clips {};
-    InstanceOffset _offset {};
+    Pipelines _pipelines {};
+    InstanceOffset _offset {}; // Stores vertex offsets in byte
 };
 static_assert_fit_double_cacheline(kF::UI::Painter);
 

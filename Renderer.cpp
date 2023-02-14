@@ -46,8 +46,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
                 }
             ),
             .computePipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }),
-            .graphicPipelineLayout = PipelineLayout::Make({ _uiSystem->spriteManager().descriptorSetLayout() }),
-            .graphicPipeline = createGraphicPipeline(cache.graphicPipelineLayout)
+            .graphicPipelineLayout = PipelineLayout::Make({ _uiSystem->spriteManager().descriptorSetLayout() })
         };
         return cache;
     }())
@@ -76,54 +75,48 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
 
     // Make sure that we set the current frame when acquired
     parent().viewSizeDispatcher().add([this] {
-        _cache.graphicPipeline = createGraphicPipeline(_cache.graphicPipelineLayout);
+        for (auto index = 0u, count = _cache.graphicPipelines.size(); index != count; ++index)
+            _cache.graphicPipelines.at(index).instance = createGraphicPipeline(_cache.graphicPipelineLayout, _cache.graphicPipelineModels.at(index));
+    });
+
+    // Register default pipeline
+    using FilledQuadVertex = DeclareGraphicPipelineVertexType<FilledQuadGraphicPipeline>;
+    registerGraphicPipeline(GraphicPipelineRendererModel {
+        .name = FilledQuadGraphicPipeline,
+        .vertexShader = ":/UI/Shaders/Primitive.vert.spv",
+        .fragmentShader = ":/UI/Shaders/Primitive.frag.spv",
+        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(FilledQuadVertex), VertexInputRate::Vertex),
+        .vertexInputAttributes = {
+            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertPos)),
+            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertCenter)),
+            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertHalfSize)),
+            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertUV)),
+            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32B32A32_SFLOAT,    offsetof(FilledQuadVertex, vertRadius)),
+            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertSpriteIndex)),
+            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertColor)),
+            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertBorderColor)),
+            GPU::VertexInputAttribute(0, 8,  GPU::Format::R32_SFLOAT,             offsetof(FilledQuadVertex, vertBorderWidth)),
+            GPU::VertexInputAttribute(0, 9,  GPU::Format::R32_SFLOAT,             offsetof(FilledQuadVertex, vertEdgeSoftness)),
+            GPU::VertexInputAttribute(0, 10, GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertRotationCosSin))
+        },
+        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill, CullModeFlags::Back, FrontFace::Clockwise)
     });
 }
 
-void UI::Renderer::setClearColor(const Color &color) noexcept
+void UI::Renderer::registerGraphicPipeline(const GraphicPipelineRendererModel &model) noexcept
 {
-    _clearColorValue = GPU::ClearColorValue {
-        static_cast<float>(color.r) / static_cast<float>(UINT8_MAX),
-        static_cast<float>(color.g) / static_cast<float>(UINT8_MAX),
-        static_cast<float>(color.b) / static_cast<float>(UINT8_MAX),
-        static_cast<float>(color.a) / static_cast<float>(UINT8_MAX)
-    };
+    kFEnsure(_cache.graphicPipelines.find([name = model.name](const auto &pair) { return pair.name == name; }) == _cache.graphicPipelines.end(),
+        "UI::Renderer::registerGraphicPipeline: Graphic pipeline already registered");
+    _cache.graphicPipelines.push(GraphicPipelinePair {
+        .name = model.name,
+        .instance = createGraphicPipeline(_cache.graphicPipelineLayout, model)
+    });
+    _cache.graphicPipelineModels.push(model);
 }
 
-void UI::Renderer::registerPrimitive(const Core::HashedName name, const QueryModelSignature queryModel) noexcept
+GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandle pipelineLayout, const GraphicPipelineRendererModel &model) const noexcept
 {
-    using namespace GPU;
-
-    // Push constant specialization
-    const std::uint32_t maxSpriteCount = _uiSystem->spriteManager().maxSpriteCount();
-    const SpecializationMapEntry computeSpecializationMapEntry(0u, 0u, sizeof(std::uint32_t));
-    const SpecializationInfo computeSpecializationInfo(
-        &computeSpecializationMapEntry, &computeSpecializationMapEntry + 1,
-        &maxSpriteCount, &maxSpriteCount + 1
-    );
-
-    // Create primitive cache
-    PrimitiveCache cache {
-        .model = queryModel(),
-        .computePipeline = Pipeline(ComputePipelineModel(
-            PipelineCreateFlags::DispatchBase,
-            ShaderStageModel(ShaderStageFlags::Compute, cache.model.computeShader, &computeSpecializationInfo),
-            _cache.computePipelineLayout
-        ))
-    };
-
-    // Register primitive inside painter
-    _painter.registerPrimitive(name, cache.model);
-
-    // Register primitive inside renderer
-    _primitiveCaches.push(std::move(cache));
-}
-
-GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandle pipelineLayout) const noexcept
-{
-    constexpr std::string_view PrimitiveVertexShader = ":/UI/Shaders/Primitive.vert.spv";
-    constexpr std::string_view PrimitiveFragmentShader = ":/UI/Shaders/Primitive.frag.spv";
-
     using namespace GPU;
 
     const auto extent = Parent().swapchain().extent();
@@ -133,27 +126,14 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
         &framgentSpecializationMapEntry, &framgentSpecializationMapEntry + 1,
         &maxSpriteCount, &maxSpriteCount + 1
     );
-    const Shader vertexShader(IO::File(PrimitiveVertexShader).queryResource(), PrimitiveVertexShader);
-    const Shader fragmentShader(IO::File(PrimitiveFragmentShader).queryResource(), PrimitiveFragmentShader);
+    const Shader vertexShader(IO::File(model.vertexShader).queryResource(), model.vertexShader);
+    const Shader fragmentShader(IO::File(model.fragmentShader).queryResource(), model.fragmentShader);
     const ShaderStageModel shaderStageModels[] {
         ShaderStageModel(ShaderStageFlags::Vertex, vertexShader),
         ShaderStageModel(ShaderStageFlags::Fragment, fragmentShader, &fragmentSpecializationInfo)
     };
     const VertexInputBinding vertexInputBindings[] {
-        VertexInputBinding(0, sizeof(PrimitiveVertex), VertexInputRate::Vertex),
-    };
-    const VertexInputAttribute vertexInputAttributes[] {
-        VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,          offsetof(PrimitiveVertex, vertPos)),
-        VertexInputAttribute(0, 1,  Format::R32G32_SFLOAT,          offsetof(PrimitiveVertex, vertCenter)),
-        VertexInputAttribute(0, 2,  Format::R32G32_SFLOAT,          offsetof(PrimitiveVertex, vertHalfSize)),
-        VertexInputAttribute(0, 3,  Format::R32G32B32A32_SFLOAT,    offsetof(PrimitiveVertex, vertRadius)),
-        VertexInputAttribute(0, 4,  Format::R32G32_SFLOAT,          offsetof(PrimitiveVertex, vertUV)),
-        VertexInputAttribute(0, 5,  Format::R32_UINT,               offsetof(PrimitiveVertex, vertSpriteIndex)),
-        VertexInputAttribute(0, 6,  Format::R32_UINT,               offsetof(PrimitiveVertex, vertColor)),
-        VertexInputAttribute(0, 7,  Format::R32_UINT,               offsetof(PrimitiveVertex, vertBorderColor)),
-        VertexInputAttribute(0, 8,  Format::R32_SFLOAT,             offsetof(PrimitiveVertex, vertBorderWidth)),
-        VertexInputAttribute(0, 9,  Format::R32_SFLOAT,             offsetof(PrimitiveVertex, vertEdgeSoftness)),
-        VertexInputAttribute(0, 10, Format::R32G32_SFLOAT,          offsetof(PrimitiveVertex, vertRotationCosSin))
+        model.vertexInputBinding
     };
     const Viewport viewport {
         .x = 0.0f,
@@ -182,12 +162,12 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
             std::begin(shaderStageModels), std::end(shaderStageModels),
             VertexInputModel(
                 std::begin(vertexInputBindings), std::end(vertexInputBindings),
-                std::begin(vertexInputAttributes), std::end(vertexInputAttributes)
+                std::begin(model.vertexInputAttributes), std::end(model.vertexInputAttributes)
             ),
-            InputAssemblyModel(PrimitiveTopology::TriangleList),
+            model.inputAssemblyModel,
             TessellationModel(),
             ViewportModel(&viewport, &viewport + 1, &scissor, &scissor + 1),
-            RasterizationModel(PolygonMode::Fill, CullModeFlags::Back, FrontFace::Clockwise),
+            model.rasterizationModel,
             MultisampleModel(),
             DepthStencilModel(),
             ColorBlendModel(std::begin(colorBlendAttachments), std::end(colorBlendAttachments)),
@@ -199,12 +179,46 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
     );
 }
 
+void UI::Renderer::registerPrimitive(const PrimitiveName name, const GraphicPipelineName graphicPipelineName, const QueryModelSignature queryModel) noexcept
+{
+    using namespace GPU;
+
+    // Ensure primtive's graphic pipeline is registered
+    kFEnsure(_cache.graphicPipelines.find([name = graphicPipelineName](const auto &pair) { return pair.name == name; }) != _cache.graphicPipelines.end(),
+        "UI::Renderer::registerPrimitive: Primitive's graphic pipeline is not registered");
+
+    // Push constant specialization
+    const std::uint32_t maxSpriteCount = _uiSystem->spriteManager().maxSpriteCount();
+    const SpecializationMapEntry computeSpecializationMapEntry(0u, 0u, sizeof(std::uint32_t));
+    const SpecializationInfo computeSpecializationInfo(
+        &computeSpecializationMapEntry, &computeSpecializationMapEntry + 1,
+        &maxSpriteCount, &maxSpriteCount + 1
+    );
+
+    // Create primitive cache
+    PrimitiveCache cache {
+        .model = queryModel(),
+        .computePipeline = Pipeline(ComputePipelineModel(
+            PipelineCreateFlags::DispatchBase,
+            ShaderStageModel(ShaderStageFlags::Compute, cache.model.computeShader, &computeSpecializationInfo),
+            _cache.computePipelineLayout
+        )),
+        .name = name
+    };
+
+    // Register primitive inside painter
+    _painter.registerPrimitive(name, cache.model);
+
+    // Register primitive inside renderer
+    _primitiveCaches.push(std::move(cache));
+}
+
 bool UI::Renderer::prepare(void) noexcept
 {
     using namespace GPU;
 
     // If the painter has no vertex, cancel rendering preparation
-    if (!_painter.vertexCount())
+    if (!_painter.vertexByteCount())
         return false;
 
     // Compute all sections' sizes
@@ -213,7 +227,7 @@ bool UI::Renderer::prepare(void) noexcept
     );
     const auto instancesSectionSize = computeDynamicOffsets();
     const auto verticesSectionSize = Core::AlignOffset(
-        static_cast<std::uint32_t>(sizeof(PrimitiveVertex)) * _painter.vertexCount(), _cache.minAlignment
+        static_cast<std::uint32_t>(sizeof(DeclareGraphicPipelineVertexType<FilledQuadGraphicPipeline>)) * _painter.vertexByteCount(), _cache.minAlignment
     );
     const auto indicesSectionSize = Core::AlignOffset(
         static_cast<std::uint32_t>(sizeof(PrimitiveIndex)) * _painter.indexCount(), _cache.minAlignment
@@ -497,13 +511,20 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         gpu.framebufferManager().currentFramebuffer(RenderPassIndex),
         Rect2D { .offset = VkOffset2D {}, .extent = extent },
         {
-            ClearValue { _clearColorValue }
+            ClearValue {
+                .color = GPU::ClearColorValue {
+                    static_cast<float>(_clearColor.r) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
+                    static_cast<float>(_clearColor.g) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
+                    static_cast<float>(_clearColor.b) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
+                    static_cast<float>(_clearColor.a) / static_cast<float>(std::numeric_limits<std::uint8_t>::max())
+                }
+            }
         },
         SubpassContents::Inline
     );
 
     // Prepare pipeline
-    recorder.bindPipeline(PipelineBindPoint::Graphics, _cache.graphicPipeline);
+    recorder.bindPipeline(PipelineBindPoint::Graphics, _cache.graphicPipelines.at(0).instance);
     recorder.bindVertexBuffer(0, frameCache.buffers.deviceBuffer, frameCache.buffers.verticesOffset);
     recorder.bindIndexBuffer(frameCache.buffers.deviceBuffer, IndexType::Uint32, frameCache.buffers.indicesOffset);
     recorder.bindDescriptorSet(
@@ -511,7 +532,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         0, _uiSystem->spriteManager().descriptorSet()
     );
 
-    // Utility to conve<rt from clip Area to scissor Rect2D
+    // Utility to convert from clip Area to scissor Rect2D
     const auto toScissor = [extent](const auto &area) {
         if (area == DefaultClip)
             return Rect2D { Offset2D(), extent };

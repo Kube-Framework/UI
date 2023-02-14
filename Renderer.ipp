@@ -8,5 +8,5 @@
 template<kF::UI::PrimitiveKind Primitive>
 inline void kF::UI::Renderer::registerPrimitive(void) noexcept
 {
-    registerPrimitive(Primitive::Hash, &PrimitiveProcessor::QueryModel<Primitive>);
+    registerPrimitive(Primitive::Hash, PrimitiveProcessor::QueryGraphicPipeline<Primitive>(), &PrimitiveProcessor::QueryModel<Primitive>);
 }

@@ -24,6 +24,7 @@ struct Instance
     float rotationAngle;
 };
 
+#include "FilledQuadUtils.glsl"
 #include "PrimitiveCompute.glsl"
 
 // Quad
