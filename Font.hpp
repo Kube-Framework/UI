@@ -56,13 +56,6 @@ public:
     inline Font(FontManager &manager, const FontIndex index) noexcept
         : _manager(&manager), _index(index) {}
 
-    /** @brief Global manager constructor */
-    Font(const std::string_view &path, const FontModel &fontModel) noexcept;
-
-    /** @brief Global manager constructor with only font size parameter */
-    inline Font(const std::string_view &path, const FontSize fontSize) noexcept
-        : Font(path, FontModel { fontSize }) {}
-
     /** @brief Copy constructor */
     Font(const Font &other) noexcept;
 

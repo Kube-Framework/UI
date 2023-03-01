@@ -44,9 +44,6 @@ public:
     inline Sprite(SpriteManager &manager, const SpriteIndex index) noexcept
         : _manager(&manager), _index(index) {}
 
-    /** @brief Path constructor */
-    Sprite(SpriteManager &manager, const std::string_view &path) noexcept;
-
     /** @brief Copy constructor */
     Sprite(const Sprite &other) noexcept;
 

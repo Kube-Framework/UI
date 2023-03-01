@@ -14,11 +14,6 @@ UI::Sprite::~Sprite(void) noexcept
         _manager->decrementRefCount(_index);
 }
 
-UI::Sprite::Sprite(SpriteManager &manager, const std::string_view &path) noexcept
-    : Sprite(manager.add(path))
-{
-}
-
 UI::Sprite::Sprite(const Sprite &other) noexcept
     : _manager(other._manager), _index(other._index)
 {
