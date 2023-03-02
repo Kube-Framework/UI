@@ -166,4 +166,4 @@ private:
     [[nodiscard]] static EventFlags MergeFlags(const Flags ...flags) noexcept;
 };
 
-#include "MouseFilter.hpp"
+#include "MouseFilter.ipp"
