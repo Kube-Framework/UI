@@ -36,6 +36,7 @@ kube_add_library(UI
         LayoutBuilder.hpp
         ListModel.hpp
         ListModel.ipp
+        MouseFilter.cpp
         MouseFilter.hpp
         MouseFilter.ipp
         Painter.cpp
