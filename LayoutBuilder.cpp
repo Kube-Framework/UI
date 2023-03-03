@@ -98,6 +98,19 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
             constraints = Constraints::Make(Fill(), Fill());
         } else [[unlikely]] {
             constraints = _uiSystem->get<Constraints>(entity);
+            kFAssert(
+                ((constraints.maxSize.width != constraints.maxSize.height) | (constraints.maxSize.width != PixelIdentity))
+                & ((constraints.minSize.width != constraints.minSize.height) | (constraints.minSize.width != PixelIdentity)),
+                "UI::LayoutBuilder::traverseConstraints: An item constraints cannot be identity for each axis (for both min and max size)"
+            );
+            constexpr auto DetectFixedIdentity = [](auto &min, auto &max, const auto oppositeMin, const auto oppositeMax) {
+                if (min == PixelIdentity)
+                    min = oppositeMin;
+                if ((max == PixelIdentity) & (oppositeMax != PixelInfinity) & (oppositeMax != PixelHug))
+                    max = oppositeMax;
+            };
+            DetectFixedIdentity(constraints.minSize.width, constraints.maxSize.width, constraints.minSize.height, constraints.maxSize.height);
+            DetectFixedIdentity(constraints.minSize.height, constraints.maxSize.height, constraints.minSize.width, constraints.maxSize.width);
         }
 
         // If the node has at least one child, compute its size accordingly to its children
@@ -105,7 +118,8 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
             // Update self constraints depending on children constraints
             if (!Core::HasFlags(node.componentFlags, ComponentFlags::Layout)) [[likely]] {
                 computeChildrenHugConstraints<Accumulate::No, Accumulate::No>(
-                    constraints, Pixel {}, constraints.maxSize.width == PixelHug, constraints.maxSize.height == PixelHug);
+                    constraints, Pixel {}, constraints.maxSize.width == PixelHug, constraints.maxSize.height == PixelHug
+                );
             } else [[unlikely]] {
                 buildLayoutConstraints(constraints);
             }
@@ -270,8 +284,8 @@ void UI::Internal::LayoutBuilder::traverseAreas(void) noexcept
     // Set self depth
     _traverseContext->depth().depth = _maxDepth++;
 
-    Area lastClip{DefaultClip};
-    bool clip{false};
+    Area lastClip { DefaultClip };
+    bool clip {};
     const auto &node = _traverseContext->node();
     auto &area = _traverseContext->area();
 
@@ -344,18 +358,20 @@ void UI::Internal::LayoutBuilder::computeChildrenArea(const Area &contextArea, c
     for (const auto childEntityIndex : _traverseContext->counter()) {
         const auto &constraints = _traverseContext->constraintsAt(childEntityIndex);
         auto &area = _traverseContext->areaAt(childEntityIndex);
+        const bool identityWidth = constraints.maxSize.width == PixelIdentity;
+        const bool identityHeight = constraints.maxSize.height == PixelIdentity;
 
         // Compute size
-        area.size.width = Internal::ComputeSize<BoundType::Unknown>(
-            contextArea.size.width,
-            constraints.minSize.width,
-            constraints.maxSize.width
-        );
-        area.size.height = Internal::ComputeSize<BoundType::Unknown>(
-            contextArea.size.height,
-            constraints.minSize.height,
-            constraints.maxSize.height
-        );
+        area.size = Size {
+            Internal::ComputeSize<BoundType::Unknown>(contextArea.size.width, constraints.minSize.width, constraints.maxSize.width),
+            Internal::ComputeSize<BoundType::Unknown>(contextArea.size.height, constraints.minSize.height, constraints.maxSize.height)
+        };
+
+        // Apply identity
+        if (identityWidth)
+            area.size.width = area.size.height;
+        else if (identityHeight)
+            area.size.height = area.size.width;
 
         // Compute pos
         area = Area::ApplyAnchor(contextArea, area.size, anchor);
@@ -441,9 +457,9 @@ UI::Pixel kF::UI::Internal::ComputeSize([[maybe_unused]] const Pixel parent, [[m
     };
 
     if constexpr (Bound == BoundType::Unknown) {
-        if (max == PixelInfinity) [[likely]]
+        if (max == PixelInfinity)
             return ComputeInfinite(parent, min);
-        else [[unlikely]]
+        else
             return ComputeFinite(min, max);
     } else {
         if constexpr (Bound == BoundType::Infinite)

@@ -86,6 +86,9 @@ namespace kF::UI
     /** @brief Pixel hug */
     constexpr Pixel PixelHug = -std::numeric_limits<Pixel>::infinity();
 
+    /** @brief Pixel identity */
+    constexpr Pixel PixelIdentity = std::numeric_limits<Pixel>::max();
+
 
     /** @brief Dot per inches */
     struct DPI
@@ -316,13 +319,17 @@ namespace kF::UI
         Pixel max {};
     };
 
+    /** @brief Constraints identity specifier (copies opposite axis) */
+    struct Identity {};
+
     /** @brief Requirements of a constraint specifier */
     template<typename Type>
     concept ConstraintSpecifierRequirements = std::same_as<Type, Fill>
             || std::same_as<Type, Hug>
             || std::same_as<Type, Fixed>
             || std::same_as<Type, Strict>
-            || std::same_as<Type, Range>;
+            || std::same_as<Type, Range>
+            || std::same_as<Type, Identity>;
 
     /** @brief Constraints */
     struct alignas_quarter_cacheline Constraints
