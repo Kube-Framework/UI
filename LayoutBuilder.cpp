@@ -126,9 +126,9 @@ void UI::Internal::LayoutBuilder::traverseConstraints(void) noexcept
         }
 
         // Ensure constraints is in range
-        if (constraints.minSize.width > constraints.maxSize.width)
+        if ((constraints.minSize.width > constraints.maxSize.width) & (constraints.maxSize.width != PixelIdentity))
             constraints.maxSize.width = constraints.minSize.width;
-        if (constraints.minSize.height > constraints.maxSize.height)
+        if ((constraints.minSize.height > constraints.maxSize.height) & (constraints.maxSize.height != PixelIdentity))
             constraints.maxSize.height = constraints.minSize.height;
 
         // Ensure node has parent, else stop traversal
@@ -358,8 +358,6 @@ void UI::Internal::LayoutBuilder::computeChildrenArea(const Area &contextArea, c
     for (const auto childEntityIndex : _traverseContext->counter()) {
         const auto &constraints = _traverseContext->constraintsAt(childEntityIndex);
         auto &area = _traverseContext->areaAt(childEntityIndex);
-        const bool identityWidth = constraints.maxSize.width == PixelIdentity;
-        const bool identityHeight = constraints.maxSize.height == PixelIdentity;
 
         // Compute size
         area.size = Size {
@@ -368,9 +366,9 @@ void UI::Internal::LayoutBuilder::computeChildrenArea(const Area &contextArea, c
         };
 
         // Apply identity
-        if (identityWidth)
+        if (constraints.maxSize.width == PixelIdentity)
             area.size.width = area.size.height;
-        else if (identityHeight)
+        else if (constraints.maxSize.height == PixelIdentity)
             area.size.height = area.size.width;
 
         // Compute pos
@@ -397,10 +395,14 @@ void UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextA
         GetY(area.size) = Internal::ComputeSize<BoundType::Unknown>(GetY(contextArea.size), GetY(constraints.minSize), GetY(constraints.maxSize));
 
         // Distributed axis
-        if (GetX(constraints.maxSize) == PixelInfinity) [[likely]] {
+        if (GetX(constraints.maxSize) == PixelInfinity) {
             ++flexCount;
-        } else [[unlikely]] {
-            GetX(area.size) = Internal::ComputeSize<BoundType::Fixed>(GetX(contextArea.size), GetX(constraints.minSize), GetX(constraints.maxSize));
+        } else {
+            // Apply identity
+            if (GetX(constraints.maxSize) != PixelIdentity)
+                GetX(area.size) = Internal::ComputeSize<BoundType::Fixed>(GetX(contextArea.size), GetX(constraints.minSize), GetX(constraints.maxSize));
+            else
+                GetX(area.size) = GetY(area.size);
             freeSpace -= GetX(area.size);
         }
     }
@@ -430,8 +432,12 @@ void UI::Internal::LayoutBuilder::computeLayoutChildrenArea(const Area &contextA
         if (GetX(constraints.maxSize) == PixelInfinity) [[likely]]
             GetX(area.size) = flexSize;
 
+        // Apply identity
+        if (GetY(constraints.maxSize) == PixelIdentity)
+            GetY(area.size) = GetX(area.size);
+
         { // Compute child position
-            Area transformedArea{contextArea};
+            Area transformedArea { contextArea };
             GetX(transformedArea.size) = GetX(area.size);
             GetX(transformedArea.pos) = GetX(offset);
             GetY(transformedArea.pos) = GetY(offset);
@@ -461,12 +467,10 @@ UI::Pixel kF::UI::Internal::ComputeSize([[maybe_unused]] const Pixel parent, [[m
             return ComputeInfinite(parent, min);
         else
             return ComputeFinite(min, max);
-    } else {
-        if constexpr (Bound == BoundType::Infinite)
-            return ComputeInfinite(parent, min);
-        else
-            return ComputeFinite(min, max);
-    }
+    } else if constexpr (Bound == BoundType::Infinite)
+        return ComputeInfinite(parent, min);
+    else
+        return ComputeFinite(min, max);
 }
 
 template <kF::UI::Internal::Axis DistributionAxis, auto GetX, auto GetY>

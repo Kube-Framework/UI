@@ -87,7 +87,13 @@ namespace kF::UI
     constexpr Pixel PixelHug = -std::numeric_limits<Pixel>::infinity();
 
     /** @brief Pixel identity */
-    constexpr Pixel PixelIdentity = std::numeric_limits<Pixel>::max();
+    constexpr Pixel PixelIdentity = -(std::numeric_limits<Pixel>::max() / 10.0f);
+
+    static_assert(
+        PixelInfinity != PixelHug
+        && PixelInfinity != PixelIdentity
+        && PixelHug != PixelIdentity
+    );
 
 
     /** @brief Dot per inches */
