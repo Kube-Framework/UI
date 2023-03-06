@@ -9,6 +9,8 @@
 
 #include <Kube/Core/Utils.hpp>
 
+#include "Base.hpp"
+
 namespace kF::UI
 {
     class Sprite;
@@ -65,6 +67,9 @@ public:
     /** @brief Get index */
     [[nodiscard]] inline SpriteIndex index(void) const noexcept { return _index; }
 
+
+    /** @brief Get the size of sprite */
+    [[nodiscard]] Size spriteSize(void) const noexcept;
 
 private:
     SpriteManager *_manager {};

@@ -29,3 +29,8 @@ UI::Sprite &UI::Sprite::operator=(const Sprite &other) noexcept
     _manager->incrementRefCount(_index);
     return *this;
 }
+
+UI::Size UI::Sprite::spriteSize(void) const noexcept
+{
+    return _manager->spriteSizeAt(_index);
+}
