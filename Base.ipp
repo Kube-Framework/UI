@@ -415,14 +415,14 @@ template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::Constra
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {
     static_assert(
-        !std::is_same_v<Identity, WidthSpecifier> || !std::is_same_v<Identity, HeightSpecifier>,
-        "UI::Constraints::Make: Cannot take two Identity specifiers"
+        !std::is_same_v<Mirror, WidthSpecifier> || !std::is_same_v<Mirror, HeightSpecifier>,
+        "UI::Constraints::Make: Cannot take two Mirror specifiers"
     );
 
     constexpr auto ApplySpecifier = []<typename Specifier>([[maybe_unused]] const Specifier specifier, [[maybe_unused]] Pixel &min, [[maybe_unused]] Pixel &max) {
         if constexpr (std::is_same_v<Specifier, Fill>) {
             min = specifier.min;
-            max = PixelInfinity;
+            max = PixelFill;
         } else if constexpr (std::is_same_v<Specifier, Hug>) {
             min = specifier.min;
             max = PixelHug;
@@ -434,9 +434,9 @@ constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier wid
         } else if constexpr (std::is_same_v<Specifier, Range>) {
             min = specifier.min;
             max = specifier.max;
-        } else if constexpr (std::is_same_v<Specifier, Identity>) {
-            min = PixelIdentity;
-            max = PixelIdentity;
+        } else if constexpr (std::is_same_v<Specifier, Mirror>) {
+            min = specifier.min;
+            max = PixelMirror;
         }
     };
 

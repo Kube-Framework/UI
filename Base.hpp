@@ -83,16 +83,25 @@ namespace kF::UI
     /** @brief Pixel infinity */
     constexpr Pixel PixelInfinity = std::numeric_limits<Pixel>::infinity();
 
-    /** @brief Pixel hug */
-    constexpr Pixel PixelHug = -std::numeric_limits<Pixel>::infinity();
+    /** @brief Pixel fill */
+    constexpr Pixel PixelFill = std::numeric_limits<Pixel>::lowest();
 
-    /** @brief Pixel identity */
-    constexpr Pixel PixelIdentity = -(std::numeric_limits<Pixel>::max() / 10.0f);
+    /** @brief Pixel hug */
+    constexpr Pixel PixelHug = std::numeric_limits<Pixel>::lowest() / 10.0f;
+
+    /** @brief Pixel mirror */
+    constexpr Pixel PixelMirror = std::numeric_limits<Pixel>::lowest() / 100.0f;
+
+    /** @brief Check if a pixel constraint is fixed, which mean it isn't Fill, Hug nor Mirror */
+    [[nodiscard]] constexpr bool IsFixedConstraint(const Pixel pixel) noexcept { return pixel > PixelMirror; }
 
     static_assert(
-        PixelInfinity != PixelHug
-        && PixelInfinity != PixelIdentity
-        && PixelHug != PixelIdentity
+        !IsFixedConstraint(PixelFill)
+        && !IsFixedConstraint(PixelHug)
+        && !IsFixedConstraint(PixelMirror)
+        && IsFixedConstraint(0.0f)
+        && IsFixedConstraint(PixelInfinity),
+        "kF::UI:Base: Implementation error"
     );
 
 
@@ -325,8 +334,11 @@ namespace kF::UI
         Pixel max {};
     };
 
-    /** @brief Constraints identity specifier (copies opposite axis) */
-    struct Identity {};
+    /** @brief Constraints mirror specifier (copies opposite axis) */
+    struct Mirror
+    {
+        Pixel min {};
+    };
 
     /** @brief Requirements of a constraint specifier */
     template<typename Type>
@@ -335,7 +347,7 @@ namespace kF::UI
             || std::same_as<Type, Fixed>
             || std::same_as<Type, Strict>
             || std::same_as<Type, Range>
-            || std::same_as<Type, Identity>;
+            || std::same_as<Type, Mirror>;
 
     /** @brief Constraints */
     struct alignas_quarter_cacheline Constraints

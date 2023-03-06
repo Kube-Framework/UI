@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "Components.hpp"
+#include "TraverseContext.hpp"
 
 namespace kF::UI
 {
@@ -15,18 +15,6 @@ namespace kF::UI
     {
         class LayoutBuilder;
         class TraverseContext;
-
-        /** @brief Accumulate template option */
-        enum class Accumulate { No, Yes };
-
-        /** @brief Axis template option */
-        enum class Axis { Horizontal, Vertical };
-
-        /** @brief Bound template option */
-        enum class BoundType { Unknown, Fixed, Infinite };
-
-        /** @brief Types of flex flow */
-        enum class FlexFlow { Horizontal, Vertical };
     }
 }
 
@@ -34,70 +22,40 @@ namespace kF::UI
 class kF::UI::Internal::LayoutBuilder
 {
 public:
-    /** @brief Alias to entity index range */
-    using EntityIndexRange = Core::IteratorRange<const ECS::EntityIndex *>;
-
-
     /** @brief Destructor */
     inline ~LayoutBuilder(void) noexcept = default;
 
     /** @brief Constructor */
     inline LayoutBuilder(UISystem &uiSystem, TraverseContext &traverseContext) noexcept
-        : _uiSystem(&uiSystem), _traverseContext(&traverseContext) {}
+        : _uiSystem(uiSystem), _traverseContext(traverseContext) {}
 
 
     /** @brief Build item layouts of UISystem
      *  @return Maximum depth */
     [[nodiscard]] DepthUnit build(void) noexcept;
 
-
 private:
-    /** @brief Process item constraints in recursive bottom to top order */
-    void traverseConstraints(void) noexcept;
+    /** @brief Discover and resolve constraints from the current traverse context entity to the bottom of item tree
+     *  @note An entity must be setup using TraverseContext::setupEntity
+     *  Some complex constraints can fail to resolve, resolveSizes will resolve them later with more context */
+    void discoverConstraints(void) noexcept;
 
-    /** @brief Get the counter insert index of a current entity according to its parent children and the already inserted children in counter */
-    [[nodiscard]] std::uint32_t getCounterInsertIndex(const TreeNode &parentNode) noexcept;
+    /** @brief Resolve constraints from the current traverse context entity to the bottom of item tree
+     *  @note An entity must be setup using TraverseContext::setupEntity */
+    void resolveConstraints(const TraverseContext::ResolveData &parentData) noexcept;
 
-    /** @brief Process constraints of a layout item */
-    void buildLayoutConstraints(Constraints &constraints) noexcept;
+    /** @brief Query size from the current traverse context entity
+     *  @note An entity must be setup using TraverseContext::setupEntity
+     *  This function may take further recursion if the node constraints are still undefined */
+    [[nodiscard]] Size querySize(const Size &parentSize) noexcept;
 
-    /** @brief Compute 'constraints' using children constraints */
-    template<Accumulate AccumulateX, Accumulate AccumulateY>
-    void computeChildrenHugConstraints(Constraints &constraints, const Pixel spacing, const bool hugWidth, const bool hugHeight) noexcept;
-
-    /** @brief Compute flex 'constraints' using children constraints */
-    template<Axis DistributionAxis, auto GetX, auto GetY>
-    void computeFlexChildrenHugConstraints(Constraints &constraints, const Layout &layout, const bool hugWidth, const bool hugHeight) noexcept;
-
-
-    /** @brief Process item areas in recursive top to bottom order */
-    void traverseAreas(void) noexcept;
-
-    /** @brief Process area of a layout item children */
-    void buildLayoutArea(const Area &contextArea) noexcept;
-
-    /** @brief Compute every children area within the given context area */
-    void computeChildrenArea(const Area &contextArea, const Anchor anchor) noexcept;
-
-    /** @brief Compute every children area within the given context area, distributing over axis */
-    template<Axis DistributionAxis, auto GetX, auto GetY>
-    void computeLayoutChildrenArea(const Area &contextArea, const Layout &layout, const EntityIndexRange &childEntityRange) noexcept;
-
-    /** @brief Compute every children area within the given context area, distributing over axis */
-    template<Axis DistributionAxis, auto GetX, auto GetY>
-    void computeFlexLayoutChildrenArea(const Area &contextArea, const Layout &layout) noexcept;
-
-    /** @brief Compute a flex layout line */
-    template<auto GetX, auto GetY>
-    void computeFlexLayoutChildrenLineMetrics(
-            EntityIndexRange &childIndexRange, const Pixel spacing, const Pixel lineWidth, Pixel &lineHeight, Pixel &lineRemain) noexcept;
+    /** @brief Resolve areas from the current traverse context entity to the bottom of item tree
+     *  @note An entity must be setup using TraverseContext::setupEntity */
+    void resolveAreas(const TraverseContext::ResolveData &parentData) noexcept;
 
 
-    /** @brief Apply transform to item area */
-    void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;
-
-
-    UISystem *_uiSystem {};
-    TraverseContext *_traverseContext {};
+    UISystem &_uiSystem;
+    TraverseContext &_traverseContext;
     DepthUnit _maxDepth {};
+    Layout _defaultLayout {};
 };
