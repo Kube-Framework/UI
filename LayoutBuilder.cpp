@@ -49,7 +49,6 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
     const auto rootEntityIndex = _traverseContext.entityIndexOf(nodeTable.get(rootEntity));
 
     {// Resolve simple constraints during first pass
-        kFInfo("!!! discoverConstraints");
         _traverseContext.setupEntity(rootEntity, rootEntityIndex);
         discoverConstraints();
     }
@@ -64,19 +63,15 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
     };
 
     { // Resolve complex constraints into fixed sizes during second pass
-        kFInfo("!!! resolveSizes");
         _traverseContext.setupEntity(rootEntity, rootEntityIndex);
         resolveConstraints(windowResolveData);
     }
 
     { // Resolve areas during third pass
-        kFInfo("!!! resolveAreas");
         _traverseContext.areaAt(rootEntityIndex) = Area { .size = windowSize };
         _traverseContext.setupEntity(rootEntity, rootEntityIndex);
         resolveAreas(windowResolveData);
     }
-
-    kFInfo();
 
     return _maxDepth;
 }
@@ -96,7 +91,6 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
             *data.constraints = Constraints::Make(Fill(), Fill());
         else [[unlikely]]
             *data.constraints = _uiSystem.get<Constraints>(_traverseContext.entity());
-        kFInfo("Discover] IN\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", *data.constraints);
 
         // Resolve mirror constraints that have a fixed opposite
         constexpr auto ResolveStrictMirror = [](auto &constraint, const auto oppositeConstraint) {
@@ -210,14 +204,11 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
         data.fillCount.height,
         data.unresolvedCount.height
     );
-    kFInfo("Discover] OUT\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", *data.constraints);
 }
 
 void UI::Internal::LayoutBuilder::resolveConstraints(const TraverseContext::ResolveData &parentData) noexcept
 {
     TraverseContext::ResolveData &data = _traverseContext.resolveData();
-
-    kFInfo("Resolve] IN\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", *data.constraints, "\tFillSize ", parentData.fillSize);
 
     // Query context item size and use it as max constraints
     data.constraints->maxSize = querySize(parentData.fillSize);
@@ -242,8 +233,6 @@ void UI::Internal::LayoutBuilder::resolveConstraints(const TraverseContext::Reso
         data.fillCount.height
     );
 
-    kFInfo("Resolve] OUT\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", *data.constraints, "\t=> FillSize ", data.fillSize);
-
     // Resolve children constraints
     for (const auto childEntityIndex : data.children) {
         // Top-bottom recursion
@@ -257,8 +246,6 @@ UI::Size UI::Internal::LayoutBuilder::querySize(const Size &parentFillSize) noex
 {
     TraverseContext::ResolveData &data = _traverseContext.resolveData();
     Size output { data.constraints->maxSize };
-
-    kFInfo("Query] IN\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", output, " ParentFillSize ", parentFillSize);
 
     // Resolve fill constraints
     constexpr auto ResolveFill = [](
@@ -402,7 +389,6 @@ UI::Size UI::Internal::LayoutBuilder::querySize(const Size &parentFillSize) noex
         );
     }
 
-    kFInfo("Query] OUT\t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Constraint ", output, " ParentFillSize ", parentFillSize);
     return output;
 }
 
@@ -452,8 +438,6 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
             area = Area::ApplyAnchor(area, contentSize, anchor);
             return area;
         }();
-
-        kFInfo("Areas] \t", _traverseContext.entityAt(_traverseContext.entityIndexOf(*data.node)), " Area ", area);
 
         // Determine start offset
         Point offset = area.pos;
