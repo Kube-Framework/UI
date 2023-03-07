@@ -399,6 +399,9 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
     // Set self depth
     _traverseContext.depth().depth = _maxDepth++;
 
+    // Apply item transform
+    applyTransform(_traverseContext.entityIndexOf(*data.node), _traverseContext.area());
+
     { // Resolve children areas
         // Query total fixed size
         data.totalFixed = {};
@@ -464,6 +467,23 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
         }
     }
 
+    // Process clip if necessary
+    Area lastClip { DefaultClip };
+    bool clip {};
+    {
+        const auto &clipTable = _uiSystem.getTable<Clip>();
+        const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
+        if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
+            const auto currentClip = _traverseContext.currentClip();
+            if (lastClip.contains(currentClip)) [[likely]] {
+                lastClip = currentClip;
+                clip = true;
+                const auto clipArea = Area::ApplyPadding(_traverseContext.area(), clipTable.atIndex(clipIndex).padding);
+                _traverseContext.setClip(clipArea, _maxDepth);
+            }
+        }
+    }
+
     // Top-bottom recursion
     for (const auto childEntityIndex : data.children) {
         const auto childEntity = _traverseContext.entityAt(childEntityIndex);
@@ -471,8 +491,9 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
         resolveAreas(data);
     }
 
-    // Apply item transform
-    applyTransform(_traverseContext.entityIndexOf(*data.node), _traverseContext.area());
+    // Restore previous clip
+    if (clip) [[unlikely]]
+        _traverseContext.setClip(lastClip, _maxDepth);
 }
 
 void UI::Internal::LayoutBuilder::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept
