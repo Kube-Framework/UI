@@ -40,6 +40,7 @@ private:
      *  Some complex constraints can fail to resolve, resolveSizes will resolve them later with more context */
     void discoverConstraints(void) noexcept;
 
+
     /** @brief Resolve constraints from the current traverse context entity to the bottom of item tree
      *  @note An entity must be setup using TraverseContext::setupEntity */
     void resolveConstraints(const TraverseContext::ResolveData &parentData) noexcept;
@@ -49,9 +50,14 @@ private:
      *  This function may take further recursion if the node constraints are still undefined */
     [[nodiscard]] Size querySize(const Size &parentSize) noexcept;
 
+
     /** @brief Resolve areas from the current traverse context entity to the bottom of item tree
      *  @note An entity must be setup using TraverseContext::setupEntity */
     void resolveAreas(const TraverseContext::ResolveData &parentData) noexcept;
+
+
+    /** @brief Apply transform to item area */
+    void applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept;
 
 
     UISystem &_uiSystem;

@@ -486,4 +486,32 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
         _traverseContext.setupEntity(childEntity, childEntityIndex);
         resolveAreas(data);
     }
+
+    // Apply item transform
+    applyTransform(_traverseContext.entityIndexOf(*data.node), _traverseContext.area());
+}
+
+void UI::Internal::LayoutBuilder::applyTransform(const ECS::EntityIndex entityIndex, Area &area) noexcept
+{
+    // Ensure entity has a transform component
+    if (!Core::HasFlags(_traverseContext.nodeAt(entityIndex).componentFlags, ComponentFlags::Transform)) [[likely]]
+        return;
+
+    // Apply child scale transformation
+    const auto entity = _uiSystem.getTable<TreeNode>().entities().at(entityIndex);
+    auto &transform = _uiSystem.get<Transform>(entity);
+
+    // Update transform
+    if (transform.event) [[unlikely]]
+        transform.event(transform, area);
+
+    const auto scaledSize = Size {
+        transform.minSize.width + (area.size.width - transform.minSize.width) * transform.scale.width,
+        transform.minSize.height + (area.size.height - transform.minSize.height) * transform.scale.height
+    };
+    area.pos = Point {
+        area.pos.x + transform.offset.x + area.size.width * transform.origin.x - scaledSize.width * transform.origin.x,
+        area.pos.y + transform.offset.y + area.size.height * transform.origin.y - scaledSize.height * transform.origin.y
+    };
+    area.size = scaledSize;
 }
