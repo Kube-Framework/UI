@@ -288,7 +288,6 @@ void UI::UISystem::processMouseEventAreasMotion(const MouseEvent &event) noexcep
 
 void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcept
 {
-    kFInfo("Mouse event: ", static_cast<int>(event.button), " | ", static_cast<int>(event.activeButtons));
     // Handle drop trigger
     if (isDragging()) {
         const bool isButton = _eventCache.drop.dropTrigger.button == event.button;
