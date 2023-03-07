@@ -9,7 +9,10 @@ template<typename ...Args>
     requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &>
         || std::is_convertible_v<Args, const kF::UI::MouseFilter::Pen &>
         || std::is_convertible_v<Args, const kF::UI::MouseFilter::Hover &>
-        || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>) && ...)
+        || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>
+        || std::is_convertible_v<Args, const kF::UI::MouseFilter::DisableCursorChange &>
+        || std::is_convertible_v<Args, const kF::UI::MouseFilter::PropagateUnusedEvents &>
+    ) && ...)
 inline kF::UI::EventFlags kF::UI::MouseFilter::operator()(
     const MouseEvent &event,
     const Area &area,
@@ -18,43 +21,17 @@ inline kF::UI::EventFlags kF::UI::MouseFilter::operator()(
     const Args &...args
 ) const noexcept
 {
-    constexpr bool PropagateMotion = (std::is_same_v<Args, Hover> || ...);
+    constexpr bool Propagate = ((std::is_same_v<Args, Hover> || std::is_same_v<Args, PropagateUnusedEvents>) || ...);
+    constexpr bool AllowCursor = (!std::is_same_v<Args, DisableCursorChange> && ...);
 
-    onBeforeEvent(event);
+    if constexpr (AllowCursor)
+        onBeforeEvent(event);
     bool lock {};
-    auto flags = MergeFlags(onEvent(event, area, entity, uiSystem, args, lock, PropagateMotion)...);
+    auto flags = MergeFlags(onEvent(event, area, entity, uiSystem, args, lock, Propagate)...);
     onAfterEvent(entity, uiSystem, lock);
 
     // Add invalidate on enter / leave when 'Hover' is not declared
-    if constexpr (!PropagateMotion) {
-        if (event.type == MouseEvent::Type::Enter || event.type == MouseEvent::Type::Leave)
-            flags = Core::MakeFlags(flags, EventFlags::Invalidate);
-    }
-    return flags;
-}
-
-template<typename ...Args>
-    requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &>
-        || std::is_convertible_v<Args, const kF::UI::MouseFilter::Pen &>
-        || std::is_convertible_v<Args, const kF::UI::MouseFilter::Hover &>
-        || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>) && ...)
-inline kF::UI::EventFlags kF::UI::MouseFilter::operator()(
-    const MouseEvent &event,
-    const Area &area,
-    const ECS::Entity entity,
-    UISystem &uiSystem,
-    const DisableCursorChange &,
-    const Args &...args
-) const noexcept
-{
-    constexpr bool PropagateMotion = (std::is_same_v<Args, Hover> || ...);
-
-    bool lock {};
-    auto flags = MergeFlags(onEvent(event, area, entity, uiSystem, args, lock, PropagateMotion)...);
-    onAfterEvent(entity, uiSystem, lock);
-
-    // Add invalidate on enter / leave when 'Hover' is not declared
-    if constexpr (!PropagateMotion) {
+    if constexpr (!Propagate) {
         if (event.type == MouseEvent::Type::Enter || event.type == MouseEvent::Type::Leave)
             flags = Core::MakeFlags(flags, EventFlags::Invalidate);
     }

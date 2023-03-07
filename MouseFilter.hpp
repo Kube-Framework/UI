@@ -14,8 +14,7 @@ namespace kF::UI
 }
 
 /** @brief Utility structure used to implement common mouse events easily
- *  @note Use the nested structures to custom the filter behavior (Click, Pen, Hover, Drag).
- *  If you don't want automatic cursor shape change, place DisableCursorChange before any nested structure.
+ *  @note Use the nested structures to custom the filter behavior (Click, Pen, Hover, Drag, DisableCursorChange & PropagateUnusedEvents).
  *  @example Simple action when a click has been released inside the item area:
  *  ```c++
  *  item.attach(
@@ -40,7 +39,6 @@ struct kF::UI::MouseFilter
 
     /** @brief Test callback */
     using TestCallback = Core::Functor<bool(const MouseEvent &event, const Area &area), UIAllocator>;
-
 
     /** @brief Click event (pressed / released) */
     struct Click
@@ -77,34 +75,24 @@ struct kF::UI::MouseFilter
     /** @brief Prevent any automatic cursor change */
     struct DisableCursorChange {};
 
+    /** @brief Will propagate every unused events */
+    struct PropagateUnusedEvents {};
 
-    /** @brief Filter a incoming event using list of nested structures (Click, Pen, Hover, Drag) */
+
+    /** @brief Filter a incoming event using list of nested structures (Click, Pen, Hover, Drag, DisableCursorChange, PropagateUnusedEvents) */
     template<typename ...Args>
         requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &>
             || std::is_convertible_v<Args, const kF::UI::MouseFilter::Pen &>
             || std::is_convertible_v<Args, const kF::UI::MouseFilter::Hover &>
-            || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>) && ...)
+            || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>
+            || std::is_convertible_v<Args, const kF::UI::MouseFilter::DisableCursorChange &>
+            || std::is_convertible_v<Args, const kF::UI::MouseFilter::PropagateUnusedEvents &>
+        ) && ...)
     [[nodiscard]] EventFlags operator()(
         const MouseEvent &event,
         const Area &area,
         const ECS::Entity entity,
         UISystem &uiSystem,
-        const Args &...args
-    ) const noexcept;
-
-    /** @brief Filter a incoming event using list of nested structures (Click, Pen, Hover, Drag)
-     *  @note Disable cursor changes */
-    template<typename ...Args>
-        requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &>
-            || std::is_convertible_v<Args, const kF::UI::MouseFilter::Pen &>
-            || std::is_convertible_v<Args, const kF::UI::MouseFilter::Hover &>
-            || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>) && ...)
-    [[nodiscard]] EventFlags operator()(
-        const MouseEvent &event,
-        const Area &area,
-        const ECS::Entity entity,
-        UISystem &uiSystem,
-        const DisableCursorChange &,
         const Args &...args
     ) const noexcept;
 
@@ -124,7 +112,7 @@ private:
         UISystem &uiSystem,
         const Click &click,
         bool &lock,
-        const bool propagateMotion
+        const bool propagate
     ) const noexcept;
 
     /** @brief Handle pen event */
@@ -135,7 +123,7 @@ private:
         UISystem &uiSystem,
         const Pen &pen,
         bool &lock,
-        const bool propagateMotion
+        const bool propagate
     ) const noexcept;
 
     /** @brief Handle motion event */
@@ -146,7 +134,7 @@ private:
         UISystem &uiSystem,
         const Hover &hover,
         bool &lock,
-        const bool propagateMotion
+        const bool propagate
     ) const noexcept;
 
     /** @brief Handle drag event */
@@ -157,8 +145,32 @@ private:
         UISystem &uiSystem,
         const Drag &drag,
         bool &lock,
-        const bool propagateMotion
+        const bool propagate
     ) const noexcept;
+
+    /** @brief Handle disable cursor change */
+    [[nodiscard]] inline EventFlags onEvent(
+        const MouseEvent &,
+        const Area &,
+        const ECS::Entity,
+        UISystem &,
+        const DisableCursorChange &,
+        bool &,
+        const bool
+    ) const noexcept
+        { return EventFlags::Propagate; }
+
+    /** @brief Handle propagate unused events */
+    [[nodiscard]] inline EventFlags onEvent(
+        const MouseEvent &,
+        const Area &,
+        const ECS::Entity,
+        UISystem &,
+        const PropagateUnusedEvents &,
+        bool &,
+        const bool
+    ) const noexcept
+        { return EventFlags::Propagate; }
 
     /** @brief Merge flags */
     template<typename ...Flags>

@@ -38,15 +38,10 @@ UI::EventFlags UI::MouseFilter::onEvent(
     UISystem &,
     const Click &click,
     bool &,
-    const bool propagateMotion
+    const bool propagate
 ) const noexcept
 {
     switch (event.type) {
-    case MouseEvent::Type::Motion:
-        return propagateMotion ? EventFlags::Propagate : EventFlags::Stop;
-    case MouseEvent::Type::Enter:
-    case MouseEvent::Type::Leave:
-        return propagateMotion ? EventFlags::InvalidateAndPropagate : EventFlags::Invalidate;
     case MouseEvent::Type::Press:
         if (event.button == click.button) {
             if (click.pressed)
@@ -61,8 +56,10 @@ UI::EventFlags UI::MouseFilter::onEvent(
             return EventFlags::Invalidate;
         }
         break;
+    default:
+        break;
     }
-    return EventFlags::Stop;
+    return propagate ? EventFlags::Propagate : EventFlags::Stop;
 }
 
 UI::EventFlags UI::MouseFilter::onEvent(
@@ -72,7 +69,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
     UISystem &uiSystem,
     const Pen &pen,
     bool &lock,
-    const bool propagateMotion
+    const bool propagate
 ) const noexcept
 {
     switch (event.type) {
@@ -81,12 +78,9 @@ UI::EventFlags UI::MouseFilter::onEvent(
             if (pen.motion)
                 pen.motion(event, area);
             lock = true;
-            return propagateMotion ? EventFlags::InvalidateAndPropagate : EventFlags::Invalidate;
+            return propagate ? EventFlags::InvalidateAndPropagate : EventFlags::Invalidate;
         }
         break;
-    case MouseEvent::Type::Enter:
-    case MouseEvent::Type::Leave:
-        return propagateMotion ? EventFlags::Propagate : EventFlags::Stop;
     case MouseEvent::Type::Press:
         if (event.button == pen.button) {
             if (pen.pressed)
@@ -106,7 +100,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
     default:
         break;
     }
-    return EventFlags::Stop;
+    return propagate ? EventFlags::Propagate : EventFlags::Stop;
 }
 
 UI::EventFlags UI::MouseFilter::onEvent(
@@ -116,19 +110,26 @@ UI::EventFlags UI::MouseFilter::onEvent(
     UISystem &,
     const Hover &hover,
     bool &,
-    const bool
+    const bool propagate
 ) const noexcept
 {
     switch (event.type) {
     case MouseEvent::Type::Motion:
-        return hover.hover ? hover.hover(event, area) : EventFlags::Stop;
+        if (hover.hover)
+            return hover.hover(event, area);
+        break;
     case MouseEvent::Type::Enter:
-        return hover.hoverChanged ? hover.hoverChanged(true) : EventFlags::Stop;
+        if (hover.hoverChanged)
+            return hover.hoverChanged(true);
+        break;
     case MouseEvent::Type::Leave:
-        return hover.hoverChanged ? hover.hoverChanged(false) : EventFlags::Stop;
+        if (hover.hoverChanged)
+            return hover.hoverChanged(false);
+        break;
     default:
-        return EventFlags::Stop;
+        break;
     }
+    return propagate ? EventFlags::Propagate : EventFlags::Stop;
 }
 
 UI::EventFlags UI::MouseFilter::onEvent(
@@ -138,7 +139,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
     UISystem &uiSystem,
     const Drag &drag,
     bool &lock,
-    const bool propagateMotion
+    const bool propagate
 ) const noexcept
 {
     switch (event.type) {
@@ -150,9 +151,6 @@ UI::EventFlags UI::MouseFilter::onEvent(
             return EventFlags::Invalidate;
         }
         break;
-    case MouseEvent::Type::Enter:
-    case MouseEvent::Type::Leave:
-        return propagateMotion ? EventFlags::Propagate : EventFlags::Stop;
     case MouseEvent::Type::Press:
         if (event.button == drag.button) {
             lock = !drag.testHit || drag.testHit(event, area);
@@ -162,5 +160,5 @@ UI::EventFlags UI::MouseFilter::onEvent(
     default:
         break;
     }
-    return EventFlags::Stop;
+    return propagate ? EventFlags::Propagate : EventFlags::Stop;
 }
