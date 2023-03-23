@@ -460,6 +460,32 @@ namespace kF::UI
     static_assert_fit_eighth_cacheline(TypeHash);
 
 
+    /** @brief Index of a font */
+    struct FontIndex
+    {
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+    };
+
+
+    /** @brief Index of a sprite */
+    struct SpriteIndex
+    {
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+    };
+
+
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
     constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
     {

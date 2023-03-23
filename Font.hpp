@@ -16,18 +16,6 @@ namespace kF::UI
     /** @brief Unit of font size */
     using FontSize = std::uint32_t;
 
-    /** @brief Index of a font */
-    struct FontIndex
-    {
-        /** @brief Type of index */
-        using IndexType = std::uint32_t;
-
-        IndexType value {};
-
-        /** @brief Implicit conversion to value */
-        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
-    };
-
     /** @brief Describes a font */
     struct FontModel
     {
