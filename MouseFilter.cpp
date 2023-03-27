@@ -90,7 +90,9 @@ UI::EventFlags UI::MouseFilter::onEvent(
         }
         break;
     case MouseEvent::Type::Release:
-        if (event.button == pen.button) {
+        if ((event.button == pen.button)
+                & ((pen.modifierWhiteList == UI::Modifier {}) | Core::HasAnyFlags(event.modifiers, pen.modifierWhiteList))
+                & !Core::HasAnyFlags(event.modifiers, pen.modifierBlackList)) {
             if (pen.released)
                 pen.released(event, area);
             lock = true;

@@ -52,6 +52,8 @@ struct kF::UI::MouseFilter
     struct Pen
     {
         Button button { Button::Left };
+        Modifier modifierWhiteList {};
+        Modifier modifierBlackList {};
         Callback pressed {};
         Callback released {};
         Callback motion {};
