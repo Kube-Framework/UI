@@ -9,6 +9,17 @@
 
 using namespace kF;
 
+namespace kF::UI
+{
+    /** @brief Try to match event */
+    static inline bool MatchEvent(const MouseEvent &event, const Button button, const Modifier modifierWhiteList, const Modifier modifierBlackList) noexcept
+    {
+        return (event.button == button)
+                & ((modifierWhiteList == UI::Modifier {}) | Core::HasAnyFlags(event.modifiers, modifierWhiteList))
+                & !Core::HasAnyFlags(event.modifiers, modifierBlackList);
+    }
+}
+
 void UI::MouseFilter::onBeforeEvent(const MouseEvent &event) const noexcept
 {
     switch (event.type) {
@@ -43,7 +54,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
 {
     switch (event.type) {
     case MouseEvent::Type::Press:
-        if (event.button == click.button) {
+        if (MatchEvent(event, click.button, click.modifierWhiteList, click.modifierBlackList)) {
             if (click.pressed)
                 click.pressed(event, area);
             return EventFlags::Invalidate;
@@ -82,7 +93,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
         }
         break;
     case MouseEvent::Type::Press:
-        if (event.button == pen.button) {
+        if (MatchEvent(event, pen.button, pen.modifierWhiteList, pen.modifierBlackList)) {
             if (pen.pressed)
                 pen.pressed(event, area);
             lock = true;
@@ -90,9 +101,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
         }
         break;
     case MouseEvent::Type::Release:
-        if ((event.button == pen.button)
-                & ((pen.modifierWhiteList == UI::Modifier {}) | Core::HasAnyFlags(event.modifiers, pen.modifierWhiteList))
-                & !Core::HasAnyFlags(event.modifiers, pen.modifierBlackList)) {
+        if (event.button == pen.button) {
             if (pen.released)
                 pen.released(event, area);
             lock = true;
@@ -154,7 +163,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
         }
         break;
     case MouseEvent::Type::Press:
-        if (event.button == drag.button) {
+        if (MatchEvent(event, drag.button, drag.modifierWhiteList, drag.modifierBlackList)) {
             lock = !drag.testHit || drag.testHit(event, area);
             return EventFlags::Invalidate;
         }

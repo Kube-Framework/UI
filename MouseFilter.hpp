@@ -44,6 +44,8 @@ struct kF::UI::MouseFilter
     struct Click
     {
         Button button { Button::Left };
+        Modifier modifierWhiteList {};
+        Modifier modifierBlackList {};
         Callback pressed {};
         Callback released {};
     };
@@ -70,6 +72,8 @@ struct kF::UI::MouseFilter
     struct Drag
     {
         Button button { Button::Left };
+        Modifier modifierWhiteList {};
+        Modifier modifierBlackList {};
         Callback drag {};
         TestCallback testHit {};
     };
