@@ -70,7 +70,7 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
     { // Resolve areas during third pass
         _traverseContext.areaAt(rootEntityIndex) = Area { .size = windowSize };
         _traverseContext.setupEntity(rootEntity, rootEntityIndex);
-        resolveAreas(windowResolveData);
+        resolveAreas();
     }
 
     return _maxDepth;
@@ -392,7 +392,7 @@ UI::Size UI::Internal::LayoutBuilder::querySize(const Size &parentFillSize) noex
     return output;
 }
 
-void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveData &parentData) noexcept
+void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
 {
     TraverseContext::ResolveData &data = _traverseContext.resolveData();
 
@@ -488,7 +488,7 @@ void UI::Internal::LayoutBuilder::resolveAreas(const TraverseContext::ResolveDat
     for (const auto childEntityIndex : data.children) {
         const auto childEntity = _traverseContext.entityAt(childEntityIndex);
         _traverseContext.setupEntity(childEntity, childEntityIndex);
-        resolveAreas(data);
+        resolveAreas();
     }
 
     // Restore previous clip

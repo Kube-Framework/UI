@@ -53,7 +53,7 @@ private:
 
     /** @brief Resolve areas from the current traverse context entity to the bottom of item tree
      *  @note An entity must be setup using TraverseContext::setupEntity */
-    void resolveAreas(const TraverseContext::ResolveData &parentData) noexcept;
+    void resolveAreas(void) noexcept;
 
 
     /** @brief Apply transform to item area */

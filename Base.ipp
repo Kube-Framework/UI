@@ -411,6 +411,22 @@ constexpr kF::UI::Area kF::UI::Area::ApplyAnchor(const Area &area, const Size ch
     return child;
 }
 
+template<auto GetX, auto GetY, typename Range, typename Callback>
+    requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+constexpr void kF::UI::Area::DistributeRowImpl(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
+{
+    UI::Area child(parent);
+    const auto childCountF = Pixel(childCount);
+    GetX(child.size) = (GetX(child.size) - spacing * (childCountF - 1.0f)) / childCountF;
+    for (auto childIndex = 0u; childIndex != childCount; ++childIndex) {
+        if constexpr (std::invocable<Callback, Range, const kF::UI::Area &>)
+            callback(childIndex, child);
+        else
+            callback(child);
+        GetX(child.pos) += GetX(child.size);
+    }
+}
+
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {

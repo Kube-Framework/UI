@@ -214,6 +214,23 @@ namespace kF::UI
         friend std::ostream &operator<<(std::ostream &lhs, const Size &rhs) noexcept;
     };
 
+    /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
+    constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
+            return data.x;
+        else
+            return data.width;
+    };
+
+    /** @brief Helper that interacts with a Point or a Size to retreive its Y axis component */
+    constexpr auto GetYAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
+            return data.y;
+        else
+            return data.height;
+    };
 
     /** @brief Area */
     struct alignas_quarter_cacheline Area
@@ -297,9 +314,27 @@ namespace kF::UI
         /** @brief Apply anchor to a position a parent's child area from its size */
         [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
 
+        /** @brief Distribute an area as a row */
+        template<typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeRow(const std::uint32_t childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
+            { return DistributeRowImpl<GetXAxis, GetYAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
+
+        /** @brief Distribute an area as a column */
+        template<typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeColumn(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
+            { return DistributeRowImpl<GetYAxis, GetXAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
+
 
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Area &rhs) noexcept;
+
+    private:
+        /** @brief Distribute an area */
+        template<auto GetX, auto GetY, typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeRowImpl(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept;
     };
 
 
@@ -460,27 +495,34 @@ namespace kF::UI
     static_assert_fit_eighth_cacheline(TypeHash);
 
 
-    /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
-    constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    /** @brief Index of a font */
+    struct FontIndex
     {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
-            return data.x;
-        else
-            return data.width;
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
     };
 
-    /** @brief Helper that interacts with a Point or a Size to retreive its Y axis component */
-    constexpr auto GetYAxis = []<typename Type>(Type &&data) noexcept -> auto &
-    {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
-            return data.y;
-        else
-            return data.height;
-    };
 
+    /** @brief Index of a sprite */
+    struct SpriteIndex
+    {
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+    };
 
     namespace Internal
     {
+
         /** @brief Forward an argument either by forwarding or by invoking a functor */
         template<typename Arg>
         [[nodiscard]] constexpr decltype(auto) ForwardArg(Arg &&arg) noexcept
