@@ -56,15 +56,15 @@ public:
 
     /** @brief Get the parent Item as ItemType */
     template<typename ItemType = Item>
-        requires std::derived_from<ItemType, Item>
-    [[nodiscard]] inline ItemType &parent(void) const noexcept { return *reinterpret_cast<ItemType *>(_parent); }
+        requires std::derived_from<ItemType, kF::UI::Item>
+    [[nodiscard]] ItemType &parent(void) const noexcept;
 
     /** @brief Get the list of children */
     [[nodiscard]] inline const Children &children(void) const noexcept { return _children; }
 
     /** @brief Get child at index */
     template<typename ItemType = Item>
-        requires std::derived_from<ItemType, Item>
+        requires std::derived_from<ItemType, kF::UI::Item>
     [[nodiscard]] inline ItemType &childAt(const std::uint32_t index) noexcept
         { return const_cast<ItemType &>(std::as_const(*this).childAt<ItemType>(index)); }
     template<typename ItemType = Item>
@@ -188,6 +188,15 @@ private:
 };
 static_assert_fit_cacheline(kF::UI::Item);
 
+
+template<typename ItemType>
+    requires std::derived_from<ItemType, kF::UI::Item>
+inline ItemType &kF::UI::Item::parent(void) const noexcept
+{
+    kFAssert(dynamic_cast<ItemType *>(_parent) != nullptr,
+        "UI::Item::parent<ParentType>: ParentType is not the type of this' parent");
+    return *reinterpret_cast<ItemType *>(_parent);
+}
 
 template<typename ItemType>
     requires std::derived_from<ItemType, kF::UI::Item>
