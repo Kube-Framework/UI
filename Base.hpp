@@ -290,6 +290,22 @@ namespace kF::UI
         [[nodiscard]] constexpr Point center(void) const noexcept
             { return Point(centerX(), centerY()); }
 
+        /** @brief Get center left position */
+        [[nodiscard]] constexpr Point centerLeft(void) const noexcept
+            { return Point(left(), centerY()); }
+
+        /** @brief Get center right position */
+        [[nodiscard]] constexpr Point centerRight(void) const noexcept
+            { return Point(right(), centerY()); }
+
+        /** @brief Get center top position */
+        [[nodiscard]] constexpr Point centerTop(void) const noexcept
+            { return Point(centerX(), top()); }
+
+        /** @brief Get center bottom position */
+        [[nodiscard]] constexpr Point centerBottom(void) const noexcept
+            { return Point(centerX(), bottom()); }
+
 
         /** @brief Check if a point overlap with area */
         [[nodiscard]] constexpr bool contains(const Point point) const noexcept;
@@ -314,27 +330,44 @@ namespace kF::UI
         /** @brief Apply anchor to a position a parent's child area from its size */
         [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
 
-        /** @brief Distribute an area as a row */
+        /** @brief Distribute an area as a row using one callback for each item */
         template<typename Range, typename Callback>
             requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
         static constexpr void DistributeRow(const std::uint32_t childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
             { return DistributeRowImpl<GetXAxis, GetYAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
 
-        /** @brief Distribute an area as a column */
+        /** @brief Distribute an area as a column using one callback for each item */
         template<typename Range, typename Callback>
             requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
         static constexpr void DistributeColumn(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
             { return DistributeRowImpl<GetYAxis, GetXAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
+
+        /** @brief Distribute an area as a row using one callback per item */
+        template<typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeRow(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept
+            { return DistributeRowImpl<GetXAxis, GetYAxis>(parent, spacing, std::forward<Callbacks>(callbacks)...); }
+
+        /** @brief Distribute an area as a row using one callback per item */
+        template<typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeColumn(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept
+            { return DistributeRowImpl<GetYAxis, GetXAxis>(parent, spacing, std::forward<Callbacks>(callbacks)...); }
 
 
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Area &rhs) noexcept;
 
     private:
-        /** @brief Distribute an area */
+        /** @brief Distribute an area using one callback for each item */
         template<auto GetX, auto GetY, typename Range, typename Callback>
             requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
         static constexpr void DistributeRowImpl(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept;
+
+        /** @brief Distribute an area using one callback per item */
+        template<auto GetX, auto GetY, typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeRowImpl(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept;
     };
 
 

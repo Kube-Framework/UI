@@ -427,6 +427,16 @@ constexpr void kF::UI::Area::DistributeRowImpl(const Range childCount, const Are
     }
 }
 
+template<auto GetX, auto GetY, typename ...Callbacks>
+    requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+constexpr void kF::UI::Area::DistributeRowImpl(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept
+{
+    UI::Area child(parent);
+    const auto childCountF = Pixel(sizeof...(callbacks));
+    GetX(child.size) = (GetX(child.size) - spacing * (childCountF - 1.0f)) / childCountF;
+    ((callbacks(child), GetX(child.pos) += GetX(child.size)), ...);
+}
+
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>
 constexpr kF::UI::Constraints kF::UI::Constraints::Make(const WidthSpecifier widthSpecifier, const HeightSpecifier heightSpecifier) noexcept
 {
