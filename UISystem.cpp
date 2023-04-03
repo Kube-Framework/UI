@@ -613,11 +613,14 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
     const auto discardHoveredEntities = [this, &event, &hoveredEntities, &onLeave, &hoverStack] {
         // Discard any entity not on the hover stack
         const auto it = std::remove_if(hoveredEntities.begin(), hoveredEntities.end(),
-            [this, &event, &onLeave, &hoverStack](const ECS::Entity hoveredEntity) {
+            [this, &event, &onLeave, &hoverStack, &table = getTable<Component>()](const ECS::Entity hoveredEntity) {
                 const auto it = hoverStack.find(hoveredEntity);
                 if (it != hoverStack.end())
                     return false;
-                auto &component = get<Component>(hoveredEntity);
+                const auto unstableIndex = table.getUnstableIndex(hoveredEntity);
+                if (unstableIndex == ECS::NullEntityIndex)
+                    return true;
+                auto &component = table.atIndex(unstableIndex);
                 const auto &clippedArea = getClippedArea(hoveredEntity, get<Area>(hoveredEntity));
                 const auto flags = onLeave(event, component, clippedArea, hoveredEntity);
                 if (Core::HasFlags(flags, EventFlags::Invalidate))
