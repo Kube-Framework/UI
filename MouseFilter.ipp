@@ -25,7 +25,7 @@ inline kF::UI::EventFlags kF::UI::MouseFilter::operator()(
     constexpr bool AllowCursor = (!std::is_same_v<Args, DisableCursorChange> && ...);
 
     if constexpr (AllowCursor)
-        onBeforeEvent(event);
+        onBeforeEvent(event, uiSystem);
     bool lock {};
     auto flags = MergeFlags(onEvent(event, area, entity, uiSystem, args, lock, Propagate)...);
     onAfterEvent(entity, uiSystem, lock);

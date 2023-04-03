@@ -20,14 +20,14 @@ namespace kF::UI
     }
 }
 
-void UI::MouseFilter::onBeforeEvent(const MouseEvent &event) const noexcept
+void UI::MouseFilter::onBeforeEvent(const MouseEvent &event, UISystem &uiSystem) const noexcept
 {
     switch (event.type) {
     case MouseEvent::Type::Enter:
-        App::Get().setCursor(Cursor::Hand);
+        uiSystem.setCursor(Cursor::Hand);
         break;
     case MouseEvent::Type::Leave:
-        App::Get().setCursor(Cursor::Arrow);
+        uiSystem.setCursor(Cursor::Arrow);
         break;
     default:
         break;
@@ -128,14 +128,12 @@ UI::EventFlags UI::MouseFilter::onEvent(
     case MouseEvent::Type::Motion:
         if (hover.hover)
             return hover.hover(event, area);
-        break;
+        else
+            return UI::EventFlags::Stop;
     case MouseEvent::Type::Enter:
-        if (hover.hoverChanged)
-            return hover.hoverChanged(true);
-        break;
     case MouseEvent::Type::Leave:
         if (hover.hoverChanged)
-            return hover.hoverChanged(false);
+            return hover.hoverChanged(event.type == MouseEvent::Type::Enter);
         break;
     default:
         break;

@@ -104,7 +104,7 @@ struct kF::UI::MouseFilter
 
 private:
     /** @brief To call before onEvent */
-    void onBeforeEvent(const MouseEvent &event) const noexcept;
+    void onBeforeEvent(const MouseEvent &event, UISystem &uiSystem) const noexcept;
 
     /** @brief To call after onEvent */
     void onAfterEvent(const ECS::Entity entity, UISystem &uiSystem, const bool lock) const noexcept;

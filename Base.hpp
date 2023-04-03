@@ -566,6 +566,9 @@ namespace kF::UI
                 return std::forward<Arg>(arg);
         };
     }
+
+    /** @brief Open browser at url */
+    bool OpenUrl(const std::string_view &url) noexcept;
 }
 
 #include "Base.ipp"

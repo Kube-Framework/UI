@@ -35,12 +35,17 @@ UI::UISystem::~UISystem(void) noexcept
 {
     // Release tree before managers
     _cache.root.release();
+
+    // Release system cursors
+    for (const auto backendCursor : _cursorCache.cursors)
+        ::SDL_FreeCursor(backendCursor);
 }
 
-UI::UISystem::UISystem(void) noexcept
+UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     :   _cache(Cache {
             .windowSize = GetWindowSize(),
-            .windowDPI = GetWindowDPI()
+            .windowDPI = GetWindowDPI(),
+            .window = window
         }),
         _eventCache(EventCache {
             .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
@@ -70,6 +75,15 @@ UI::UISystem::UISystem(void) noexcept
 
     // Relative mouse mode SDL2 bug
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1", SDL_HINT_OVERRIDE);
+
+    // Instantiate system cursors
+    _cursorCache.cursors.resize(SystemCursorCount);
+    for (auto i = 0u; i != SystemCursorCount; ++i)
+        _cursorCache.cursors.at(i) = ::SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(i));
+    { // Invisible cursor
+        auto surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA8888);
+        _cursorCache.cursors.push(SDL_CreateColorCursor(surface, 0, 0));
+    }
 }
 
 bool UI::UISystem::tick(void) noexcept
@@ -669,4 +683,55 @@ inline bool UI::UISystem::processEventFlags(const EventFlags flags) noexcept
 
     // Return true on stop
     return !Core::HasFlags(flags, EventFlags::Propagate);
+}
+
+void UI::UISystem::setCursor(const Cursor cursor) noexcept
+{
+    if (_cursorCache.cursor == cursor)
+        return;
+    _cursorCache.cursor = cursor;
+    SDL_SetCursor(reinterpret_cast<SDL_Cursor *>(_cursorCache.cursors.at(Core::ToUnderlying(cursor))));
+}
+
+bool UI::UISystem::relativeMouseMode(void) const noexcept
+{
+    return SDL_GetRelativeMouseMode();
+}
+
+void UI::UISystem::setRelativeMouseMode(const bool state) noexcept
+{
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state));
+}
+
+bool UI::UISystem::mouseGrab(void) const noexcept
+{
+    return SDL_GetWindowMouseGrab(_cache.window);
+}
+
+void UI::UISystem::setMouseGrab(const bool state) noexcept
+{
+    SDL_SetWindowMouseGrab(_cache.window, static_cast<SDL_bool>(state));
+}
+
+bool UI::UISystem::keyboardGrab(void) const noexcept
+{
+    return SDL_GetWindowKeyboardGrab(_cache.window);
+}
+
+void UI::UISystem::setKeyboardGrab(const bool state) noexcept
+{
+    SDL_SetWindowKeyboardGrab(_cache.window, static_cast<SDL_bool>(state));
+}
+
+void UI::UISystem::setKeyboardInputMode(const bool state) noexcept
+{
+    if (state)
+        SDL_StartTextInput();
+    else
+        SDL_StopTextInput();
+}
+
+void UI::UISystem::setMousePosition(const UI::Point pos) noexcept
+{
+    SDL_WarpMouseInWindow(_cache.window, static_cast<int>(pos.x), static_cast<int>(pos.y));
 }

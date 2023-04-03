@@ -91,6 +91,8 @@ public:
         bool invalidateTree { true };
         // Time
         std::int64_t lastTick {};
+        // Window
+        GPU::BackendWindow *window {};
     };
     static_assert_fit_cacheline(Cache);
 
@@ -130,12 +132,20 @@ public:
     static_assert_alignof_double_cacheline(EventCache);
     static_assert_sizeof(EventCache, Core::CacheLineDoubleSize * 3);
 
+    /** @brief Cache of cursor */
+    struct alignas_half_cacheline CursorCache
+    {
+        Core::Vector<SDL_Cursor *, UIAllocator> cursors {};
+        Cursor cursor {};
+    };
+    static_assert_fit_half_cacheline(CursorCache);
+
 
     /** @brief Virtual destructor */
     ~UISystem(void) noexcept override;
 
     /** @brief Constructor */
-    UISystem(void) noexcept;
+    UISystem(GPU::BackendWindow * const window) noexcept;
 
 
     /** @brief Get window size */
@@ -143,6 +153,40 @@ public:
 
     /** @brief Get window DPI */
     [[nodiscard]] DPI windowDPI(void) const noexcept { return _cache.windowDPI; }
+
+
+    /** @brief Get current cursor */
+    [[nodiscard]] Cursor cursor(void) const noexcept { return _cursorCache.cursor; }
+
+    /** @brief Set current mouse cursor */
+    void setCursor(const Cursor cursor) noexcept;
+
+
+    /** @brief Get relative mouse mode state */
+    [[nodiscard]] bool relativeMouseMode(void) const noexcept;
+
+    /** @brief Set relative mouse mode state */
+    void setRelativeMouseMode(const bool state) noexcept;
+
+
+    /** @brief Get mouse grab state */
+    [[nodiscard]] bool mouseGrab(void) const noexcept;
+
+    /** @brief Set current mouse grab state */
+    void setMouseGrab(const bool state) noexcept;
+
+    /** @brief Set mouse position inside window */
+    void setMousePosition(const UI::Point pos) noexcept;
+
+
+    /** @brief Get keyboard grab state */
+    [[nodiscard]] bool keyboardGrab(void) const noexcept;
+
+    /** @brief Set current keyboard grab state */
+    void setKeyboardGrab(const bool state) noexcept;
+
+    /** @brief Set input mode of keyboard */
+    void setKeyboardInputMode(const bool state) noexcept;
 
 
     /** @brief Get scene max depth */
@@ -344,7 +388,6 @@ private:
     /** @brief Query current window DPI */
     [[nodiscard]] static DPI GetWindowDPI(void) noexcept;
 
-
     // Cacheline N -> N + 1
     Internal::TraverseContext _traverseContext {};
     // Cacheline N + 2 -> N + 3
@@ -357,9 +400,11 @@ private:
     EventCache _eventCache {};
     // Cacheline N + 11 -> N + 14
     Renderer _renderer;
+    // Cursors
+    CursorCache _cursorCache {};
 };
 static_assert_alignof_double_cacheline(kF::UI::UISystem);
-static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 16);
+static_assert_sizeof(kF::UI::UISystem, kF::Core::CacheLineDoubleSize * 17);
 
 #include "Item.ipp"
 #include "UISystem.ipp"
