@@ -70,6 +70,7 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     });
     auto &transferTask = graph.add<&Renderer::transferPrimitives>(&_renderer);
     auto &dispatchTask = graph.add<&Renderer::dispatchInvalidFrame>(&_renderer);
+    graph.add<&UISystem::dispatchDelayedEvents>(this);
     dispatchTask.after(computeTask);
     dispatchTask.after(transferTask);
 
@@ -683,6 +684,13 @@ inline bool UI::UISystem::processEventFlags(const EventFlags flags) noexcept
 
     // Return true on stop
     return !Core::HasFlags(flags, EventFlags::Propagate);
+}
+
+void UI::UISystem::dispatchDelayedEvents(void) noexcept
+{
+    for (auto &event : _eventCache.delayedEvents)
+        event();
+    _eventCache.delayedEvents.clear();
 }
 
 void UI::UISystem::setCursor(const Cursor cursor) noexcept

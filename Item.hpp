@@ -151,6 +151,11 @@ public:
     [[nodiscard]] inline const Component &get(void) const noexcept;
 
 
+    /** @brief Delay a callback to the end of current tick */
+    template<typename Callback>
+    void delayToTickEnd(Callback &&callback) noexcept;
+
+
     /** @brief Unsafe entity getter
      *  @note You must not use this entity index to attach or dettach any components ! */
     [[nodiscard]] static inline ECS::Entity GetEntity(const Item &item) noexcept { return item._entity; }

@@ -6,7 +6,8 @@
 #include "MouseFilter.hpp"
 
 template<typename ...Args>
-    requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &>
+    requires ((std::is_convertible_v<Args, const kF::UI::MouseFilter::Click &
+    >
         || std::is_convertible_v<Args, const kF::UI::MouseFilter::Pen &>
         || std::is_convertible_v<Args, const kF::UI::MouseFilter::Hover &>
         || std::is_convertible_v<Args, const kF::UI::MouseFilter::Drag &>

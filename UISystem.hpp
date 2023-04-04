@@ -109,6 +109,12 @@ public:
     };
     static_assert_fit_double_cacheline(DropCache);
 
+    /** @brief Delayed event */
+    using DelayedEvent = Core::Functor<void(void), UIAllocator>;
+
+    /** @brief List of delayed events */
+    using DelayedEvents = Core::Vector<DelayedEvent, UIAllocator>;
+
     /** @brief Event cache */
     struct alignas_double_cacheline EventCache
     {
@@ -123,6 +129,8 @@ public:
         ECS::Entity dropLock { ECS::NullEntity };
         ECS::Entity keyLock { ECS::NullEntity };
         ECS::Entity textLock { ECS::NullEntity };
+        // Delayed events
+        DelayedEvents delayedEvents {};
         // Drag & drop
         DropCache drop {};
         // Hover
@@ -253,6 +261,10 @@ public:
     template<kF::UI::PrimitiveKind Primitive>
     inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
 
+    /** @brief Delay a callback to the end of current tick */
+    inline void delayToTickEnd(DelayedEvent &&callback) noexcept
+        { _eventCache.delayedEvents.push(std::move(callback)); }
+
 private:
     // Item is a friend to prevent unsafe API access
     friend Item;
@@ -358,6 +370,10 @@ private:
 
     /** @brief Process all PainterArea instances */
     void processPainterAreas(void) noexcept;
+
+
+    /** @brief Dispatch delayed events */
+    void dispatchDelayedEvents(void) noexcept;
 
 
     /** @brief Traverse a table requiring clipped area */
