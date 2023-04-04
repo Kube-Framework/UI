@@ -42,18 +42,18 @@ UI::UISystem::~UISystem(void) noexcept
 }
 
 UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
-    :   _cache(Cache {
-            .windowSize = GetWindowSize(),
-            .windowDPI = GetWindowDPI(),
-            .window = window
-        }),
-        _eventCache(EventCache {
-            .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
-            .wheelQueue = parent().getSystem<EventSystem>().addEventQueue<WheelEvent>(),
-            .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>(),
-            .textQueue = parent().getSystem<EventSystem>().addEventQueue<TextEvent>()
-        }),
-        _renderer(*this)
+    : _cache(Cache {
+        .windowSize = GetWindowSize(),
+        .windowDPI = GetWindowDPI(),
+        .window = window
+    })
+    , _eventCache(EventCache {
+        .mouseQueue = parent().getSystem<EventSystem>().addEventQueue<MouseEvent>(),
+        .wheelQueue = parent().getSystem<EventSystem>().addEventQueue<WheelEvent>(),
+        .keyQueue = parent().getSystem<EventSystem>().addEventQueue<KeyEvent>(),
+        .textQueue = parent().getSystem<EventSystem>().addEventQueue<TextEvent>()
+    })
+    , _renderer(*this)
 {
     // Observe view size
     GPU::GPUObject::Parent().viewSizeDispatcher().add([this] {
