@@ -119,49 +119,11 @@ public:
     void setWindowSize(const Size size) noexcept;
 
 
-    /** @brief Get current cursor */
-    [[nodiscard]] Cursor cursor(void) const noexcept { return _cursor; }
-
-    /** @brief Set current mouse cursor */
-    void setCursor(const Cursor cursor) noexcept;
-
-
-    /** @brief Get relative mouse mode state */
-    [[nodiscard]] bool relativeMouseMode(void) const noexcept;
-
-    /** @brief Set relative mouse mode state */
-    void setRelativeMouseMode(const bool state) noexcept;
-
-
-    /** @brief Get mouse grab state */
-    [[nodiscard]] bool mouseGrab(void) const noexcept;
-
-    /** @brief Set current mouse grab state */
-    void setMouseGrab(const bool state) noexcept;
-
-    /** @brief Set mouse position inside window */
-    void setMousePosition(const UI::Point pos) noexcept;
-
-
-    /** @brief Get keyboard grab state */
-    [[nodiscard]] bool keyboardGrab(void) const noexcept;
-
-    /** @brief Set current keyboard grab state */
-    void setKeyboardGrab(const bool state) noexcept;
-
-    /** @brief Set input mode of keyboard */
-    void setKeyboardInputMode(const bool state) noexcept;
-
-
     /** @brief Run app in blocking mode */
     void run(void) noexcept;
 
     /** @brief Stop app */
     void stop(void) noexcept;
-
-
-    /** @brief Open an url with default browser */
-    bool openUrl(const std::string_view &url) const noexcept;
 
 private:
     /** @brief Backend Instance */
@@ -191,10 +153,8 @@ private:
     BackendInstance _backendInstance;
     GPU::GPU::GlobalInstance _gpu;
     std::int64_t _frameTickRate { DefaultFrameTickRate };
-    UISystem *_uiSystem { nullptr };
+    UISystem *_uiSystem {};
     IO::ResourceManager _resourceManager {};
-    Core::Vector<SDL_Cursor *> _backendCursors {};
-    Cursor _cursor {};
 
     // Cacheline 2 -> ...
     ECS::Executor _executor;

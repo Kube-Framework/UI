@@ -4,14 +4,22 @@
  */
 
 #include <ostream>
+#include <SDL2/SDL.h>
 
 #include "Base.hpp"
+
+using namespace kF;
+
+bool UI::OpenUrl(const std::string_view &url) noexcept
+{
+    return SDL_OpenURL(url.data()) == 0;
+}
 
 namespace kF::UI
 {
     std::ostream &operator<<(std::ostream &lhs, const kF::UI::Color &rhs) noexcept
     {
-        return lhs << "(r: " << rhs.r << ", g: " << rhs.g << ", b: " << rhs.b << ", a: " << rhs.a << ')';
+        return lhs << "(r: " << std::uint32_t(rhs.r) << ", g: " << std::uint32_t(rhs.g) << ", b: " << std::uint32_t(rhs.b) << ", a: " << std::uint32_t(rhs.a) << ')';
     }
 
     std::ostream &operator<<(std::ostream &lhs, const kF::UI::Point &rhs) noexcept

@@ -93,6 +93,12 @@ inline const Component &kF::UI::Item::get(void) const noexcept
     return uiSystem().get<Component>(_entity);
 }
 
+template<typename Callback>
+inline void kF::UI::Item::delayToTickEnd(Callback &&callback) noexcept
+{
+    uiSystem().delayToTickEnd(std::forward<Callback>(callback));
+}
+
 template<typename ...Components>
 inline void kF::UI::Item::markComponents(void) noexcept
 {

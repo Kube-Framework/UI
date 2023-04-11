@@ -14,11 +14,6 @@ UI::Font::~Font(void) noexcept
         _manager->decrementRefCount(_index);
 }
 
-UI::Font::Font(const std::string_view &path, const FontModel &fontModel) noexcept
-    : Font(App::Get().uiSystem().fontManager().add(path, fontModel))
-{
-}
-
 UI::Font::Font(const Font &other) noexcept
     : _manager(other._manager), _index(other._index)
 {

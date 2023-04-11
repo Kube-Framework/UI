@@ -13,6 +13,11 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
     // Query delegate's first argument
     using ItemType = ItemListDelegateType<Delegate>;
 
+    static_assert(
+        (std::is_copy_constructible_v<std::remove_cvref_t<Args>> && ...),
+        "UI::ItemList::setup: Arguments passed must be copy-constructible, use std::reference_wrapper if you need a reference"
+    );
+
     // Setup delegate
     _delegate = [delegate = std::forward<Delegate>(delegate), ...args = std::forward<Args>(args)](ItemList &parent, const void * const opaqueModel, const std::uint32_t index) {
         // Query model data

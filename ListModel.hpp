@@ -376,11 +376,11 @@ public:
     /** @brief Find an element with functor with reverse order */
     template<typename Functor>
         requires std::invocable<Functor, Type &>
-    [[nodiscard]] inline Iterator rfind(Functor &&functor) noexcept
+    [[nodiscard]] inline ReverseIterator rfind(Functor &&functor) noexcept
         { return _container.rfind(std::forward<Functor>(functor)); }
     template<typename Functor>
         requires std::invocable<Functor, const Type &>
-    [[nodiscard]] inline ConstIterator rfind(Functor &&functor) const noexcept
+    [[nodiscard]] inline ConstReverseIterator rfind(Functor &&functor) const noexcept
         { return _container.rfind(std::forward<Functor>(functor)); }
 
     /** @brief Find an element with functor with reverse order, using reversed begin iterator */

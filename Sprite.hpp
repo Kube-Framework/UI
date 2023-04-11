@@ -9,22 +9,12 @@
 
 #include <Kube/Core/Utils.hpp>
 
+#include "Base.hpp"
+
 namespace kF::UI
 {
     class Sprite;
     class SpriteManager;
-
-    /** @brief Index of a sprite */
-    struct SpriteIndex
-    {
-        /** @brief Type of index */
-        using IndexType = std::uint32_t;
-
-        IndexType value {};
-
-        /** @brief Implicit conversion to value */
-        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
-    };
 
     /** @brief Null sprite */
     constexpr SpriteIndex NullSpriteIndex { .value = ~static_cast<SpriteIndex::IndexType>(0) };
@@ -72,6 +62,9 @@ public:
     /** @brief Get index */
     [[nodiscard]] inline SpriteIndex index(void) const noexcept { return _index; }
 
+
+    /** @brief Get the size of sprite */
+    [[nodiscard]] Size spriteSize(void) const noexcept;
 
 private:
     SpriteManager *_manager {};

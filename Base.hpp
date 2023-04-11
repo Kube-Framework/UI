@@ -83,8 +83,26 @@ namespace kF::UI
     /** @brief Pixel infinity */
     constexpr Pixel PixelInfinity = std::numeric_limits<Pixel>::infinity();
 
+    /** @brief Pixel fill */
+    constexpr Pixel PixelFill = std::numeric_limits<Pixel>::lowest();
+
     /** @brief Pixel hug */
-    constexpr Pixel PixelHug = -std::numeric_limits<Pixel>::infinity();
+    constexpr Pixel PixelHug = std::numeric_limits<Pixel>::lowest() / 10.0f;
+
+    /** @brief Pixel mirror */
+    constexpr Pixel PixelMirror = std::numeric_limits<Pixel>::lowest() / 100.0f;
+
+    /** @brief Check if a pixel constraint is fixed, which mean it isn't Fill, Hug nor Mirror */
+    [[nodiscard]] constexpr bool IsFixedConstraint(const Pixel pixel) noexcept { return pixel > PixelMirror; }
+
+    static_assert(
+        !IsFixedConstraint(PixelFill)
+        && !IsFixedConstraint(PixelHug)
+        && !IsFixedConstraint(PixelMirror)
+        && IsFixedConstraint(0.0f)
+        && IsFixedConstraint(PixelInfinity),
+        "kF::UI:Base: Implementation error"
+    );
 
 
     /** @brief Dot per inches */
@@ -196,6 +214,23 @@ namespace kF::UI
         friend std::ostream &operator<<(std::ostream &lhs, const Size &rhs) noexcept;
     };
 
+    /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
+    constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
+            return data.x;
+        else
+            return data.width;
+    };
+
+    /** @brief Helper that interacts with a Point or a Size to retreive its Y axis component */
+    constexpr auto GetYAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    {
+        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
+            return data.y;
+        else
+            return data.height;
+    };
 
     /** @brief Area */
     struct alignas_quarter_cacheline Area
@@ -255,6 +290,22 @@ namespace kF::UI
         [[nodiscard]] constexpr Point center(void) const noexcept
             { return Point(centerX(), centerY()); }
 
+        /** @brief Get center left position */
+        [[nodiscard]] constexpr Point centerLeft(void) const noexcept
+            { return Point(left(), centerY()); }
+
+        /** @brief Get center right position */
+        [[nodiscard]] constexpr Point centerRight(void) const noexcept
+            { return Point(right(), centerY()); }
+
+        /** @brief Get center top position */
+        [[nodiscard]] constexpr Point centerTop(void) const noexcept
+            { return Point(centerX(), top()); }
+
+        /** @brief Get center bottom position */
+        [[nodiscard]] constexpr Point centerBottom(void) const noexcept
+            { return Point(centerX(), bottom()); }
+
 
         /** @brief Check if a point overlap with area */
         [[nodiscard]] constexpr bool contains(const Point point) const noexcept;
@@ -279,9 +330,44 @@ namespace kF::UI
         /** @brief Apply anchor to a position a parent's child area from its size */
         [[nodiscard]] static constexpr Area ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept;
 
+        /** @brief Distribute an area as a row using one callback for each item */
+        template<typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeRow(const std::uint32_t childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
+            { return DistributeRowImpl<GetXAxis, GetYAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
+
+        /** @brief Distribute an area as a column using one callback for each item */
+        template<typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeColumn(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept
+            { return DistributeRowImpl<GetYAxis, GetXAxis>(childCount, parent, spacing, std::forward<Callback>(callback)); }
+
+        /** @brief Distribute an area as a row using one callback per item */
+        template<typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeRow(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept
+            { return DistributeRowImpl<GetXAxis, GetYAxis>(parent, spacing, std::forward<Callbacks>(callbacks)...); }
+
+        /** @brief Distribute an area as a row using one callback per item */
+        template<typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeColumn(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept
+            { return DistributeRowImpl<GetYAxis, GetXAxis>(parent, spacing, std::forward<Callbacks>(callbacks)...); }
+
 
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Area &rhs) noexcept;
+
+    private:
+        /** @brief Distribute an area using one callback for each item */
+        template<auto GetX, auto GetY, typename Range, typename Callback>
+            requires (std::invocable<Callback, const kF::UI::Area &> || std::invocable<Callback, Range, const kF::UI::Area &>)
+        static constexpr void DistributeRowImpl(const Range childCount, const Area &parent, const Pixel spacing, Callback &&callback) noexcept;
+
+        /** @brief Distribute an area using one callback per item */
+        template<auto GetX, auto GetY, typename ...Callbacks>
+            requires (std::invocable<Callbacks, const kF::UI::Area &> && ...)
+        static constexpr void DistributeRowImpl(const Area &parent, const Pixel spacing, Callbacks &&...callbacks) noexcept;
     };
 
 
@@ -316,13 +402,20 @@ namespace kF::UI
         Pixel max {};
     };
 
+    /** @brief Constraints mirror specifier (copies opposite axis) */
+    struct Mirror
+    {
+        Pixel min {};
+    };
+
     /** @brief Requirements of a constraint specifier */
     template<typename Type>
     concept ConstraintSpecifierRequirements = std::same_as<Type, Fill>
             || std::same_as<Type, Hug>
             || std::same_as<Type, Fixed>
             || std::same_as<Type, Strict>
-            || std::same_as<Type, Range>;
+            || std::same_as<Type, Range>
+            || std::same_as<Type, Mirror>;
 
     /** @brief Constraints */
     struct alignas_quarter_cacheline Constraints
@@ -435,27 +528,34 @@ namespace kF::UI
     static_assert_fit_eighth_cacheline(TypeHash);
 
 
-    /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
-    constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
+    /** @brief Index of a font */
+    struct FontIndex
     {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
-            return data.x;
-        else
-            return data.width;
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
     };
 
-    /** @brief Helper that interacts with a Point or a Size to retreive its Y axis component */
-    constexpr auto GetYAxis = []<typename Type>(Type &&data) noexcept -> auto &
-    {
-        if constexpr (std::is_same_v<Point, std::remove_cvref_t<Type>>)
-            return data.y;
-        else
-            return data.height;
-    };
 
+    /** @brief Index of a sprite */
+    struct SpriteIndex
+    {
+        /** @brief Type of index */
+        using IndexType = std::uint32_t;
+
+        IndexType value {};
+
+        /** @brief Implicit conversion to value */
+        [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+    };
 
     namespace Internal
     {
+
         /** @brief Forward an argument either by forwarding or by invoking a functor */
         template<typename Arg>
         [[nodiscard]] constexpr decltype(auto) ForwardArg(Arg &&arg) noexcept
@@ -466,6 +566,9 @@ namespace kF::UI
                 return std::forward<Arg>(arg);
         };
     }
+
+    /** @brief Open browser at url */
+    bool OpenUrl(const std::string_view &url) noexcept;
 }
 
 #include "Base.ipp"
