@@ -148,7 +148,7 @@ void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropT
     _eventCache.drop.data = std::move(data);
     _eventCache.drop.painterArea = std::move(painterArea);
 
-    // Trigger begin event of every DropEventArea matching typeHash
+    // Trigger begin event of every DropEventArea matching type hash
     int x, y;
     SDL_GetMouseState(&x, &y);
     processDropEventAreas(DropEvent {
@@ -156,6 +156,24 @@ void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropT
         .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
         .timestamp = SDL_GetTicks()
     });
+}
+
+void UI::UISystem::cancelDrag(void) noexcept
+{
+    // Trigger end event of every DropEventArea matching type hash
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    processDropEventAreas(DropEvent {
+        .type = DropEvent::Type::End,
+        .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
+        .timestamp = SDL_GetTicks()
+    });
+
+    // Reset drop cache
+    _eventCache.dropLock = ECS::NullEntity;
+    _eventCache.drop = {};
+    _eventCache.dropHoveredEntities.clear();
+    invalidate();
 }
 
 void UI::UISystem::sortTables(void) noexcept
@@ -327,17 +345,7 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
             .pos = event.pos,
             .timestamp = event.timestamp
         });
-        // Send 'End' event
-        processDropEventAreas(DropEvent {
-            .type = DropEvent::Type::End,
-            .pos = event.pos,
-            .timestamp = event.timestamp
-        });
-        // Reset drop cache
-        _eventCache.dropLock = ECS::NullEntity;
-        _eventCache.drop = {};
-        _eventCache.dropHoveredEntities.clear();
-        invalidate();
+        cancelDrag();
         return;
     }
 

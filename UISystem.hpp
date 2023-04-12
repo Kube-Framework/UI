@@ -231,6 +231,9 @@ public:
     /** @brief Check if UISystem is currently dragging something */
     [[nodiscard]] inline bool isDragging(void) const noexcept { return _eventCache.drop.typeHash != TypeHash {}; }
 
+    /** @brief Cancel a drag */
+    void cancelDrag(void) noexcept;
+
     /** @brief Invalidate UI scene */
     void invalidate(void) noexcept;
 
