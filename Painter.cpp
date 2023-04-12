@@ -41,11 +41,14 @@ void UI::Painter::registerPrimitive(const PrimitiveName name, const PrimitivePro
 
 void UI::Painter::clear(void) noexcept
 {
-    // Reset vertex & index offsets
-    _offset = InstanceOffset {};
-
     // Reset clips
     _clips.clear();
+
+    // Reset pipelines
+    _pipelines.clear();
+
+    // Reset vertex & index offsets
+    _offset = InstanceOffset {};
 
     // Set each queue size to 0 as any primitive is ensured to be trivial
     for (auto &queue : _queues)

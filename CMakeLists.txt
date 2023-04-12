@@ -13,6 +13,8 @@ kube_add_library(UI
         Components.cpp
         Components.hpp
         Components.ipp
+        CurveProcessor.cpp
+        CurveProcessor.hpp
         EventQueue.hpp
         EventQueue.ipp
         Events.hpp
@@ -66,8 +68,11 @@ kube_add_library(UI
         UISystem.ipp
 
     SHADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Primitive.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Primitive.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Curve.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad.vert
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.vert
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.frag
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Rectangle.comp
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Text.comp
 

@@ -13,7 +13,8 @@ namespace kF::UI
     /** @brief Number of elide dots */
     constexpr std::uint32_t ElideDotCount = 2;
 
-    /** @brief Text primitive */
+    /** @brief Text primitive
+     *  @warning Must be compliant with std140 */
     struct alignas_cacheline Text : public PrimitiveTag<"Text">
     {
         Area area {}; // Text area

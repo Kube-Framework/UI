@@ -10,7 +10,8 @@
 
 namespace kF::UI
 {
-    /** @brief Rectangle primitive */
+    /** @brief Rectangle primitive
+     *  @warning Must be compliant with std140 */
     struct alignas_cacheline Rectangle : public PrimitiveTag<"Rectangle">
     {
         Area area {}; // Rectangle area

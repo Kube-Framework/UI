@@ -79,29 +79,9 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
             _cache.graphicPipelines.at(index).instance = createGraphicPipeline(_cache.graphicPipelineLayout, _cache.graphicPipelineModels.at(index));
     });
 
-    // Register default pipeline
-    using FilledQuadVertex = DeclareGraphicPipelineVertexType<FilledQuadGraphicPipeline>;
-    registerGraphicPipeline(GraphicPipelineRendererModel {
-        .name = FilledQuadGraphicPipeline,
-        .vertexShader = ":/UI/Shaders/Primitive.vert.spv",
-        .fragmentShader = ":/UI/Shaders/Primitive.frag.spv",
-        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(FilledQuadVertex), VertexInputRate::Vertex),
-        .vertexInputAttributes = {
-            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertPos)),
-            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertCenter)),
-            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertHalfSize)),
-            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertUV)),
-            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32B32A32_SFLOAT,    offsetof(FilledQuadVertex, vertRadius)),
-            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertSpriteIndex)),
-            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertColor)),
-            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_UINT,               offsetof(FilledQuadVertex, vertBorderColor)),
-            GPU::VertexInputAttribute(0, 8,  GPU::Format::R32_SFLOAT,             offsetof(FilledQuadVertex, vertBorderWidth)),
-            GPU::VertexInputAttribute(0, 9,  GPU::Format::R32_SFLOAT,             offsetof(FilledQuadVertex, vertEdgeSoftness)),
-            GPU::VertexInputAttribute(0, 10, GPU::Format::R32G32_SFLOAT,          offsetof(FilledQuadVertex, vertRotationCosSin))
-        },
-        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
-        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill, CullModeFlags::Back, FrontFace::Clockwise)
-    });
+    // Register custom pipelines
+    registerFilledQuadPipeline();
+    registerQuadraticBezierPipeline();
 }
 
 void UI::Renderer::registerGraphicPipeline(const GraphicPipelineRendererModel &model) noexcept
@@ -222,14 +202,14 @@ bool UI::Renderer::prepare(void) noexcept
         return false;
 
     // Compute all sections' sizes
-    const auto contextSectionSize = Core::AlignOffset(
+    const auto contextSectionSize = Core::AlignPowerOf2(
         static_cast<std::uint32_t>(sizeof(PrimitiveContext)), _cache.minAlignment
     );
     const auto instancesSectionSize = computeDynamicOffsets();
-    const auto verticesSectionSize = Core::AlignOffset(
+    const auto verticesSectionSize = Core::AlignPowerOf2(
         static_cast<std::uint32_t>(sizeof(DeclareGraphicPipelineVertexType<FilledQuadGraphicPipeline>)) * _painter.vertexByteCount(), _cache.minAlignment
     );
-    const auto indicesSectionSize = Core::AlignOffset(
+    const auto indicesSectionSize = Core::AlignPowerOf2(
         static_cast<std::uint32_t>(sizeof(PrimitiveIndex)) * _painter.indexCount(), _cache.minAlignment
     );
     FrameCache &frameCache = _perFrameCache.current();
@@ -317,10 +297,10 @@ std::uint32_t UI::Renderer::computeDynamicOffsets(void) noexcept
         primitiveCache.instancesDynamicOffset = dynamicOffset;
 
         // Determine the dynamic offsets of offset section
-        primitiveCache.offsetsDynamicOffset = Core::AlignOffset(
+        primitiveCache.offsetsDynamicOffset = Core::AlignPowerOf2(
             primitiveCache.instancesDynamicOffset + queue.instancesByteSize(), alignment
         );
-        dynamicOffset = Core::AlignOffset(
+        dynamicOffset = Core::AlignPowerOf2(
             primitiveCache.offsetsDynamicOffset + queue.offsetsByteSize(), alignment
         );
     }
@@ -523,15 +503,6 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         SubpassContents::Inline
     );
 
-    // Prepare pipeline
-    recorder.bindPipeline(PipelineBindPoint::Graphics, _cache.graphicPipelines.at(0).instance);
-    recorder.bindVertexBuffer(0, frameCache.buffers.deviceBuffer, frameCache.buffers.verticesOffset);
-    recorder.bindIndexBuffer(frameCache.buffers.deviceBuffer, IndexType::Uint32, frameCache.buffers.indicesOffset);
-    recorder.bindDescriptorSet(
-        PipelineBindPoint::Graphics, _cache.graphicPipelineLayout,
-        0, _uiSystem->spriteManager().descriptorSet()
-    );
-
     // Utility to convert from clip Area to scissor Rect2D
     const auto toScissor = [extent](const auto &area) {
         if (area == DefaultClip)
@@ -544,37 +515,103 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         }
     };
 
-    // Reset scissor
-    recorder.setScissor(toScissor(DefaultClip));
-
     // Loop over each clip and draw all vertices between them
-    const auto indexCount = _painter.indexCount();
     auto clip = _painter.clips().begin();
     const auto clipEnd = _painter.clips().end();
+    auto pipeline = _painter.pipelines().begin();
+    const auto pipelineEnd = _painter.pipelines().end();
+    const auto indexCount = _painter.indexCount();
     std::uint32_t indexOffset {};
-    const auto drawSection = [](const auto &recorder, const auto indexOffset, const auto drawCount) {
-        if (drawCount) [[likely]]
-            recorder.drawIndexed(drawCount, 1, indexOffset);
-    };
+    auto lastScissor = toScissor(DefaultClip);
 
-    while (true) {
-        // Clip list not exhausted
-        if (clip != clipEnd) [[likely]] {
-            // Draw from current offset to clip offset
-            drawSection(recorder, indexOffset, clip->indexOffset - indexOffset);
-            // Set next offset and scissor
-            indexOffset = clip->indexOffset;
-            const auto scissor = toScissor(clip->area);
-            recorder.setScissor(scissor);
-            ++clip;
-        // Clip list exhausted
-        } else {
-            // Draw from current offset to the end
-            drawSection(recorder, indexOffset, indexCount - indexOffset);
-            break;
+    for (; pipeline != pipelineEnd; ++pipeline) {
+        { // Prepare pipeline
+            const auto targetPipeline = _cache.graphicPipelines.find([name = pipeline->name](const auto &pair) { return pair.name == name; });
+            recorder.bindPipeline(PipelineBindPoint::Graphics, targetPipeline->instance);
+            recorder.bindVertexBuffer(0, frameCache.buffers.deviceBuffer, frameCache.buffers.verticesOffset);
+            recorder.bindIndexBuffer(frameCache.buffers.deviceBuffer, IndexType::Uint32, frameCache.buffers.indicesOffset);
+            recorder.bindDescriptorSet(
+                PipelineBindPoint::Graphics, _cache.graphicPipelineLayout,
+                0, _uiSystem->spriteManager().descriptorSet()
+            );
+            recorder.setScissor(lastScissor);
+        }
+        // Exhaust pipeline
+        const auto nextPipeline = pipeline + 1;
+        const auto nextPipelineOffset = nextPipeline != pipelineEnd ? nextPipeline->indexOffset : indexCount;
+        while (indexOffset != nextPipelineOffset) {
+            const bool nextClipAvailable = clip != clipEnd;
+            const auto pipelineMaxDrawCount = nextPipelineOffset - indexOffset;
+            // If clip list is exhausted, draw from current offset to pipeline end, else draw to next clip
+            const auto drawCount
+                = nextClipAvailable
+                ? std::min(clip->indexOffset - indexOffset, pipelineMaxDrawCount)
+                : pipelineMaxDrawCount;
+            // Draw and increment offset
+            if (drawCount) [[likely]] {
+                recorder.drawIndexed(drawCount, 1, indexOffset);
+                indexOffset += drawCount;
+            }
+            // Set next scissor clip
+            if (nextClipAvailable) [[likely]] {
+                recorder.setScissor(toScissor(clip->area));
+                ++clip;
+            }
         }
     }
 
     // End render pass
     recorder.endRenderPass();
+}
+
+void UI::Renderer::registerFilledQuadPipeline(void) noexcept
+{
+    using namespace GPU;
+    using Vertex = DeclareGraphicPipelineVertexType<FilledQuadGraphicPipeline>;
+
+    registerGraphicPipeline(GraphicPipelineRendererModel {
+        .name = FilledQuadGraphicPipeline,
+        .vertexShader = ":/UI/Shaders/FilledQuad.vert.spv",
+        .fragmentShader = ":/UI/Shaders/FilledQuad.frag.spv",
+        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputAttributes = {
+            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
+            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertCenter)),
+            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertHalfSize)),
+            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertUV)),
+            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32B32A32_SFLOAT,    offsetof(Vertex, vertRadius)),
+            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertSpriteIndex)),
+            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
+            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_UINT,               offsetof(Vertex, vertBorderColor)),
+            GPU::VertexInputAttribute(0, 8,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertBorderWidth)),
+            GPU::VertexInputAttribute(0, 9,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness)),
+            GPU::VertexInputAttribute(0, 10, GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationCosSin))
+        },
+        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill, CullModeFlags::Back, FrontFace::Clockwise)
+    });
+}
+
+void UI::Renderer::registerQuadraticBezierPipeline(void) noexcept
+{
+    using namespace GPU;
+    using Vertex = DeclareGraphicPipelineVertexType<QuadraticBezierGraphicPipeline>;
+
+    registerGraphicPipeline(GraphicPipelineRendererModel {
+        .name = QuadraticBezierGraphicPipeline,
+        .vertexShader = ":/UI/Shaders/QuadraticBezier.vert.spv",
+        .fragmentShader = ":/UI/Shaders/QuadraticBezier.frag.spv",
+        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputAttributes = {
+            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
+            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertLeft)),
+            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertRight)),
+            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertControl)),
+            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
+            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
+            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
+        },
+        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill, CullModeFlags::Back, FrontFace::Clockwise)
+    });
 }

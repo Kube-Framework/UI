@@ -60,4 +60,20 @@ namespace kF::UI
         std::uint32_t padding;
         Point vertRotationCosSin;
     };
+
+    /** @brief Bezier pipeline name */
+    constexpr GraphicPipelineName QuadraticBezierGraphicPipeline = Core::Hash("QuadraticBezier");
+
+    /** @brief Declare bezier graphic pipeline vertex */
+    template<>
+    struct alignas_quarter_cacheline DeclareGraphicPipelineVertexType<QuadraticBezierGraphicPipeline>
+    {
+        Point vertPos;
+        Point vertLeft;
+        Point vertRight;
+        Point vertControl;
+        Color vertColor;
+        Pixel vertThickness;
+        Pixel vertEdgeSoftness;
+    };
 }

@@ -208,9 +208,7 @@ UI::App::App(
     // Present pipeline
     _executor.addPipeline<PresentPipeline>(
         DefaultFrameRate,
-        [](void) -> bool {
-            return GPU::GPUObject::Parent().commandDispatcher().tryAcquireNextFrame();
-        }
+        [](void) -> bool { return GPU::GPUObject::Parent().commandDispatcher().tryAcquireNextFrame(); }
     );
     _executor.addSystem<PresentSystem>();
     _uiSystem = &_executor.addSystem<UISystem, ECS::RunBefore<PresentSystem>>(_backendInstance.window);

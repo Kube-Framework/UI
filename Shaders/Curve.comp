@@ -1,0 +1,61 @@
+#version 450
+
+#extension GL_EXT_debug_printf : enable
+#extension GL_GOOGLE_include_directive : enable
+
+// Rectangle instance
+struct Instance
+{
+    vec2 left; // Curve left point
+    vec2 right; // Curve right point
+    vec2 control; // Curve control point
+    uint color; // Fill color
+    float thickness; // Width of the line
+    float edgeSoftness; // Edge softness in pixels
+    uint _padding;
+};
+
+#include "QuadraticBezierUtils.glsl"
+#include "PrimitiveCompute.glsl"
+
+layout (local_size_x = 1) in;
+
+vec2 moveAway(const vec2 point, const vec2 offset, const float moveAwayDistance)
+{
+    return point + moveAwayDistance * offset / length(offset);
+}
+
+void main(void)
+{
+    const uint instanceIndex = gl_GlobalInvocationID.x;
+    const Offset offset = offsets.data[instanceIndex];
+    const Instance instance = instances.data[instanceIndex];
+    const vec2 midPoint = (instance.left + instance.right + instance.control) / 3.0;
+    const float moveAwayDistance = instance.thickness + instance.edgeSoftness;
+
+    debugPrintfEXT("> Instance %u: left (%v2f) right: (%v2f) control: (%v2f) color: (%u) thickness: (%f) edgeSoftness: (%f) vertexOffset: verticesOffset %u indexOffset: %u\n",
+        instanceIndex, instance.left, instance.right, instance.control, instance.color, instance.thickness, instance.edgeSoftness, offset.vertexOffset, offset.indexOffset);
+
+    // Set vertices
+    Vertex vertex;
+    vertex.left = instance.left;
+    vertex.right = instance.right;
+    vertex.control = instance.control;
+    vertex.color = instance.color;
+    vertex.thickness = instance.thickness;
+    vertex.edgeSoftness = instance.edgeSoftness;
+    //   Left
+    vertex.pos = toRelative(moveAway(instance.left, instance.left - instance.right + instance.left - instance.control, moveAwayDistance));
+    vertices.data[offset.vertexOffset + 0] = vertex;
+    //   Control
+    vertex.pos = toRelative(moveAway(instance.control, instance.control - instance.left + instance.control - instance.right, moveAwayDistance));
+    vertices.data[offset.vertexOffset + 1] = vertex;
+    //   Right
+    vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
+    vertices.data[offset.vertexOffset + 2] = vertex;
+
+    // Set indices
+    indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
+    indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
+    indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
+}

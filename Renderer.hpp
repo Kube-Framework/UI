@@ -207,6 +207,14 @@ private:
     void recordComputeCommand(const GPU::CommandRecorder &recorder) noexcept;
 
 
+    /** @brief Register Filled Quad graphic pipeline */
+    void registerFilledQuadPipeline(void) noexcept;
+
+    /** @brief Register Quadratic Bezier graphic pipeline */
+    void registerQuadraticBezierPipeline(void) noexcept;
+
+
+
     // Cacheline 0 & 1
     Painter _painter {};
     // Cacheline 2

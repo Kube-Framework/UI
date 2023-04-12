@@ -79,7 +79,7 @@ public:
 
 
     /** @brief Pipeline cache */
-    struct alignas_half_cacheline PipelineCache
+    struct PipelineCache
     {
         GraphicPipelineName name {};
         std::uint32_t indexOffset {};

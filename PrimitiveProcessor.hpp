@@ -67,10 +67,13 @@ namespace kF::UI
     {
         /** @brief Query the vertex size of a primitive */
         template<kF::UI::PrimitiveKind Primitive>
-        [[nodiscard]] consteval std::uint32_t QueryVertexSize(void) noexcept { return sizeof(DeclareGraphicPipelineVertexType<QueryGraphicPipeline<Primitive>()>); }
+        [[nodiscard]] consteval std::uint32_t QueryVertexSize(void) noexcept
+            { return sizeof(DeclareGraphicPipelineVertexType<QueryGraphicPipeline<Primitive>()>); }
 
-        /** @brief Query the vertex alignment of a primitive */
+        /** @brief Query the vertex alignment of a primitive
+         *  @note Note that vertices must be aligned to their size so they can be indexed */
         template<kF::UI::PrimitiveKind Primitive>
-        [[nodiscard]] consteval std::uint32_t QueryVertexAlignment(void) noexcept { return static_cast<std::uint32_t>(Core::CacheLineQuarterSize); }
+        [[nodiscard]] consteval std::uint32_t QueryVertexAlignment(void) noexcept
+            { return std::uint32_t(std::max(sizeof(DeclareGraphicPipelineVertexType<QueryGraphicPipeline<Primitive>()>), Core::CacheLineQuarterSize)); }
     }
 }

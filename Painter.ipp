@@ -10,6 +10,9 @@
 template<kF::UI::PrimitiveKind Primitive>
 inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const Primitive * const primitiveEnd) noexcept
 {
+    constexpr auto VertexSize = PrimitiveProcessor::QueryVertexSize<Primitive>();
+    constexpr auto VertexAlignment = PrimitiveProcessor::QueryVertexAlignment<Primitive>();
+
     // Find primitive index
     const std::uint32_t primitiveIndex = [this] {
         for (std::uint32_t index { 0u }; const auto name : _names) {
@@ -26,8 +29,10 @@ inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const 
     if (const auto pipelineName = PrimitiveProcessor::QueryGraphicPipeline<Primitive>(); _pipelines.empty() || _pipelines.back().name != pipelineName) {
         _pipelines.push(PipelineCache {
             .name = pipelineName,
-            .indexOffset = _offset.indexOffset
+            .indexOffset = _offset.indexOffset,
         });
+        // Align offset to vertex according to std140
+        _offset.vertexOffset = Core::AlignNonPowerOf2(_offset.vertexOffset, VertexAlignment);
     }
 
     // Get instance count
@@ -49,11 +54,6 @@ inline void kF::UI::Painter::draw(const Primitive * const primitiveBegin, const 
     kFAssert(instanceCount >= insertedInstanceCount,
         "UI::Painter::draw: 'PrimitiveProcessor::GetInstanceCount' returned ", instanceCount,
         " but 'PrimitiveProcessor::InsertInstances' returned ", insertedInstanceCount);
-
-    // Align offset to vertex according to std140
-    constexpr auto VertexSize = PrimitiveProcessor::QueryVertexSize<Primitive>();
-    constexpr auto VertexAlignment = PrimitiveProcessor::QueryVertexAlignment<Primitive>();
-    _offset.vertexOffset = Core::AlignOffset(_offset.vertexOffset, VertexAlignment);
 
     // Insert offsets
     const auto offsets = queue.offsets() + queue.size;

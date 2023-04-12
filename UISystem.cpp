@@ -13,6 +13,10 @@
 #include "UISystem.hpp"
 #include "LayoutBuilder.hpp"
 
+#include "CurveProcessor.hpp"
+#include "RectangleProcessor.hpp"
+#include "TextProcessor.hpp"
+
 using namespace kF;
 
 UI::Size UI::UISystem::GetWindowSize(void) noexcept
@@ -40,6 +44,8 @@ UI::UISystem::~UISystem(void) noexcept
     for (const auto backendCursor : _cursorCache.cursors)
         ::SDL_FreeCursor(backendCursor);
 }
+
+static decltype(std::chrono::high_resolution_clock::now()) LastTime {};
 
 UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     : _cache(Cache {
@@ -85,6 +91,11 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
         auto surface = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA8888);
         _cursorCache.cursors.push(SDL_CreateColorCursor(surface, 0, 0));
     }
+
+    // Register primitives
+    registerPrimitive<Rectangle>();
+    registerPrimitive<Text>();
+    registerPrimitive<Curve>();
 }
 
 bool UI::UISystem::tick(void) noexcept
