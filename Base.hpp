@@ -163,19 +163,6 @@ namespace kF::UI
         [[nodiscard]] constexpr Size toSize(void) const noexcept;
 
 
-        /** @brief Get absolute point */
-        [[nodiscard]] static inline Point Abs(const Point value) noexcept
-            { return Point { std::abs(value.x), std::abs(value.y) }; }
-
-        /** @brief Get min x and y from two points */
-        [[nodiscard]] static inline Point Min(const Point lhs, const Point rhs) noexcept
-            { return Point { std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y) }; }
-
-        /** @brief Get max x and y from two points */
-        [[nodiscard]] static inline Point Max(const Point lhs, const Point rhs) noexcept
-            { return Point { std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y) }; }
-
-
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Point &rhs) noexcept;
     };
@@ -197,22 +184,13 @@ namespace kF::UI
         [[nodiscard]] constexpr Point toPoint(void) const noexcept;
 
 
-        /** @brief Get absolute size */
-        [[nodiscard]] static inline Size Abs(const Size value) noexcept
-            { return Size { std::abs(value.width), std::abs(value.height) }; }
-
-        /** @brief Get min width and height from two sizes */
-        [[nodiscard]] static inline Size Min(const Size lhs, const Size rhs) noexcept
-            { return Size { std::min(lhs.width, rhs.width), std::min(lhs.height, rhs.height) }; }
-
-        /** @brief Get max width and height from two sizes */
-        [[nodiscard]] static inline Size Max(const Size lhs, const Size rhs) noexcept
-            { return Size { std::max(lhs.width, rhs.width), std::max(lhs.height, rhs.height) }; }
-
-
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Size &rhs) noexcept;
     };
+
+    /** @brief Either a point or a size */
+    template<typename Type>
+    concept PointOrSize = std::is_same_v<Type, Point> || std::is_same_v<Type, Size>;
 
     /** @brief Helper that interacts with a Point or a Size to retreive its X axis component */
     constexpr auto GetXAxis = []<typename Type>(Type &&data) noexcept -> auto &
@@ -242,6 +220,15 @@ namespace kF::UI
         /** @brief Comparison operators */
         [[nodiscard]] constexpr bool operator==(const Area &other) const noexcept = default;
         [[nodiscard]] constexpr bool operator!=(const Area &other) const noexcept = default;
+
+
+        /** @brief Get width */
+        [[nodiscard]] constexpr Pixel width(void) const noexcept
+            { return size.width; }
+
+        /** @brief Get height */
+        [[nodiscard]] constexpr Pixel height(void) const noexcept
+            { return size.height; }
 
 
         /** @brief Get left coordinate */
@@ -569,6 +556,36 @@ namespace kF::UI
 
     /** @brief Open browser at url */
     bool OpenUrl(const std::string_view &url) noexcept;
+}
+
+namespace std
+{
+    /** @brief Extend standard min to work with point & size */
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::min(const Type &lhs, const Type &rhs) noexcept
+        { return Type { std::min(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), std::min(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::min(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
+        { return Type { std::min(lhs, kF::UI::GetXAxis(rhs)), std::min(lhs, kF::UI::GetYAxis(rhs)) }; }
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::min(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
+        { return Type { std::min(kF::UI::GetXAxis(lhs), rhs), std::min(kF::UI::GetYAxis(lhs), rhs) }; }
+
+    /** @brief Extend standard max to work with point & size */
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::max(const Type &lhs, const Type &rhs) noexcept
+        { return Type { std::max(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), std::max(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::max(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
+        { return Type { std::max(lhs, kF::UI::GetXAxis(rhs)), std::max(lhs, kF::UI::GetYAxis(rhs)) }; }
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::max(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
+        { return Type { std::max(kF::UI::GetXAxis(lhs), rhs), std::max(kF::UI::GetYAxis(lhs), rhs) }; }
+
+    /** @brief Extend standard abs to work with point & size */
+    template<kF::UI::PointOrSize Type>
+    [[nodiscard]] constexpr Type std::abs(const Type &value, const Type &rhs) noexcept
+        { return Type { std::abs(kF::UI::GetXAxis(value)), std::abs(kF::UI::GetYAxis(value)) }; }
 }
 
 #include "Base.ipp"

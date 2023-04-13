@@ -1,14 +1,22 @@
 #version 450
 
-#extension GL_EXT_debug_printf : enable
+// #extension GL_EXT_debug_printf : enable
 #extension GL_GOOGLE_include_directive : enable
+
+// Area
+struct Area
+{
+    vec2 pos;
+    vec2 size;
+};
 
 // Rectangle instance
 struct Instance
 {
+    Area area; // Frame area
     vec2 left; // Curve left point
-    vec2 right; // Curve right point
     vec2 control; // Curve control point
+    vec2 right; // Curve right point
     uint color; // Fill color
     float thickness; // Width of the line
     float edgeSoftness; // Edge softness in pixels
@@ -20,10 +28,10 @@ struct Instance
 
 layout (local_size_x = 1) in;
 
-vec2 moveAway(const vec2 point, const vec2 offset, const float moveAwayDistance)
-{
-    return point + moveAwayDistance * offset / length(offset);
-}
+// vec2 moveAway(const vec2 point, const vec2 offset, const float moveAwayDistance)
+// {
+//     return point + moveAwayDistance * offset / length(offset);
+// }
 
 void main(void)
 {
@@ -31,31 +39,43 @@ void main(void)
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
     const vec2 midPoint = (instance.left + instance.right + instance.control) / 3.0;
-    const float moveAwayDistance = instance.thickness + instance.edgeSoftness;
+    // const float moveAwayDistance = instance.thickness + instance.edgeSoftness * 2.0;
 
-    debugPrintfEXT("> Instance %u: left (%v2f) right: (%v2f) control: (%v2f) color: (%u) thickness: (%f) edgeSoftness: (%f) vertexOffset: verticesOffset %u indexOffset: %u\n",
-        instanceIndex, instance.left, instance.right, instance.control, instance.color, instance.thickness, instance.edgeSoftness, offset.vertexOffset, offset.indexOffset);
+    // debugPrintfEXT("> Instance %u: left (%v2f) right: (%v2f) control: (%v2f) color: (%u) thickness: (%f) edgeSoftness: (%f) vertexOffset: verticesOffset %u indexOffset: %u\n",
+    //     instanceIndex, instance.left, instance.right, instance.control, instance.color, instance.thickness, instance.edgeSoftness, offset.vertexOffset, offset.indexOffset);
 
     // Set vertices
     Vertex vertex;
     vertex.left = instance.left;
-    vertex.right = instance.right;
     vertex.control = instance.control;
+    vertex.right = instance.right;
     vertex.color = instance.color;
     vertex.thickness = instance.thickness;
     vertex.edgeSoftness = instance.edgeSoftness;
-    //   Left
-    vertex.pos = toRelative(moveAway(instance.left, instance.left - instance.right + instance.left - instance.control, moveAwayDistance));
+    //   TopLeft
+    vertex.pos = toRelative(instance.area.pos);
+    // vertex.pos = toRelative(moveAway(instance.left, instance.left - instance.right + instance.left - instance.control, moveAwayDistance));
     vertices.data[offset.vertexOffset + 0] = vertex;
-    //   Control
-    vertex.pos = toRelative(moveAway(instance.control, instance.control - instance.left + instance.control - instance.right, moveAwayDistance));
+    //   TopRight
+    vertex.pos = toRelative(instance.area.pos + vec2(instance.area.size.x, 0.0));
+    // vertex.pos = toRelative(moveAway(instance.control, instance.control - instance.left + instance.control - instance.right, moveAwayDistance));
     vertices.data[offset.vertexOffset + 1] = vertex;
-    //   Right
-    vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
+    //   BottomRight
+    vertex.pos = toRelative(instance.area.pos + instance.area.size);
+    // vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
     vertices.data[offset.vertexOffset + 2] = vertex;
+    //   BottomLeft
+    vertex.pos = toRelative(instance.area.pos + vec2(0.0, instance.area.size.y));
+    // vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
+    vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices
+    //   TopLeft Triangle
     indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
     indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
     indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
+    //   BottomRight Triangle
+    indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
+    indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
+    indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;
 }

@@ -136,11 +136,11 @@ void main(void)
     vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices
-    //   TopRight Triangle
+    //   TopLeft Triangle
     indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
     indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
     indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
-    //   BottomLeft Triangle
+    //   BottomRight Triangle
     indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
     indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
     indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;

@@ -17,7 +17,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Curve>(void) 
         .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Curve),
         .instanceAlignment = alignof(Curve),
-        .verticesPerInstance = 3,
-        .indicesPerInstance = 3
+        .verticesPerInstance = 4,
+        .indicesPerInstance = 6
     };
 }
