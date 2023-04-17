@@ -582,7 +582,8 @@ void UI::UISystem::processPainterAreas(void) noexcept
         SDL_GetMouseState(&x, &y);
         const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
         const Area area(mousePos - _eventCache.drop.size / 2, _eventCache.drop.size);
-        _eventCache.drop.painterArea.event(painter, area);
+        if (auto &painterAreaEvent = _eventCache.drop.painterArea.event; painterAreaEvent)
+            painterAreaEvent(painter, area);
     }
 }
 
