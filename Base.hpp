@@ -138,6 +138,17 @@ namespace kF::UI
         [[nodiscard]] static constexpr Color ApplyAlpha(const Color color, const std::uint8_t alpha) noexcept
             { return Color { color.r, color.g, color.b, alpha }; }
 
+        /** @brief Apply interpolation to a color */
+        [[nodiscard]] static constexpr Color ApplyInterpolation(const Color from, const Color to, const float ratio) noexcept
+            { return Color
+                {
+                    static_cast<Unit>(float(to.r - from.r) * ratio + from.r),
+                    static_cast<Unit>(float(to.g - from.g) * ratio + from.g),
+                    static_cast<Unit>(float(to.b - from.b) * ratio + from.b),
+                    static_cast<Unit>(float(to.a - from.a) * ratio + from.a)
+                };
+            }
+
 
         /** @brief Stream overload insert operator */
         friend std::ostream &operator<<(std::ostream &lhs, const Color &rhs) noexcept;
