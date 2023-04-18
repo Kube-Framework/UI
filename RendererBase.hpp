@@ -61,10 +61,10 @@ namespace kF::UI
         Point vertRotationCosSin;
     };
 
-    /** @brief Bezier pipeline name */
+    /** @brief Quadratic bezier pipeline name */
     constexpr GraphicPipelineName QuadraticBezierGraphicPipeline = Core::Hash("QuadraticBezier");
 
-    /** @brief Declare bezier graphic pipeline vertex */
+    /** @brief Declare quadratic bezier graphic pipeline vertex */
     template<>
     struct alignas_quarter_cacheline DeclareGraphicPipelineVertexType<QuadraticBezierGraphicPipeline>
     {
@@ -75,5 +75,23 @@ namespace kF::UI
         Color vertColor;
         Pixel vertThickness;
         Pixel vertEdgeSoftness;
+    };
+
+    /** @brief Cubic bezier pipeline name */
+    constexpr GraphicPipelineName CubicBezierGraphicPipeline = Core::Hash("CubicBezier");
+
+    /** @brief Declare cubic bezier graphic pipeline vertex */
+    template<>
+    struct alignas_quarter_cacheline DeclareGraphicPipelineVertexType<CubicBezierGraphicPipeline>
+    {
+        Point vertPos;
+        Point vertP0;
+        Point vertP1;
+        Point vertP2;
+        Point vertP3;
+        Color vertColor;
+        Pixel vertThickness;
+        Pixel vertEdgeSoftness;
+        std::uint32_t _padding;
     };
 }

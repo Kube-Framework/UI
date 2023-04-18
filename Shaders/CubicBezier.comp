@@ -1,0 +1,69 @@
+#version 450
+
+// #extension GL_EXT_debug_printf : enable
+#extension GL_GOOGLE_include_directive : enable
+
+// Area
+struct Area
+{
+    vec2 pos;
+    vec2 size;
+};
+
+// Rectangle instance
+struct Instance
+{
+    Area area; // Frame area
+    vec2 p0; // Curve point 0
+    vec2 p1; // Curve point 1
+    vec2 p2; // Curve point 2
+    vec2 p3; // Curve point 3
+    uint color; // Fill color
+    float thickness; // Width of the line
+    float edgeSoftness; // Edge softness in pixels
+    uint _padding;
+};
+
+#include "CubicBezierUtils.glsl"
+#include "PrimitiveCompute.glsl"
+
+layout (local_size_x = 1) in;
+
+void main(void)
+{
+    const uint instanceIndex = gl_GlobalInvocationID.x;
+    const Offset offset = offsets.data[instanceIndex];
+    const Instance instance = instances.data[instanceIndex];
+
+    // Set vertices
+    Vertex vertex;
+    vertex.p0 = instance.p0;
+    vertex.p1 = instance.p1;
+    vertex.p2 = instance.p2;
+    vertex.p3 = instance.p3;
+    vertex.color = instance.color;
+    vertex.thickness = instance.thickness;
+    vertex.edgeSoftness = instance.edgeSoftness;
+    //   TopLeft
+    vertex.pos = toRelative(instance.area.pos);
+    vertices.data[offset.vertexOffset + 0] = vertex;
+    //   TopRight
+    vertex.pos = toRelative(instance.area.pos + vec2(instance.area.size.x, 0.0));
+    vertices.data[offset.vertexOffset + 1] = vertex;
+    //   BottomRight
+    vertex.pos = toRelative(instance.area.pos + instance.area.size);
+    vertices.data[offset.vertexOffset + 2] = vertex;
+    //   BottomLeft
+    vertex.pos = toRelative(instance.area.pos + vec2(0.0, instance.area.size.y));
+    vertices.data[offset.vertexOffset + 3] = vertex;
+
+    // Set indices
+    //   TopLeft Triangle
+    indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
+    indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
+    indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
+    //   BottomRight Triangle
+    indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
+    indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
+    indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;
+}

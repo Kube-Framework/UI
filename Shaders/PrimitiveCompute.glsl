@@ -32,7 +32,7 @@ layout(std140, set = 0, binding = 1) buffer Instances { Instance data[]; } insta
 layout(std430, set = 0, binding = 2) buffer Offsets { Offset data[]; } offsets;
 
 // Vertices section
-layout(std430, set = 0, binding = 3) buffer Vertices { Vertex data[]; } vertices;
+layout(std140, set = 0, binding = 3) buffer Vertices { Vertex data[]; } vertices;
 
 // Indices section
 layout(std430, set = 0, binding = 4) buffer Indices { uint data[]; } indices;

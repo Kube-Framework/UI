@@ -13,6 +13,7 @@
 #include "UISystem.hpp"
 #include "LayoutBuilder.hpp"
 
+#include "CubicBezierProcessor.hpp"
 #include "CurveProcessor.hpp"
 #include "RectangleProcessor.hpp"
 #include "TextProcessor.hpp"
@@ -96,6 +97,7 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     registerPrimitive<Rectangle>();
     registerPrimitive<Text>();
     registerPrimitive<Curve>();
+    registerPrimitive<CubicBezier>();
 }
 
 bool UI::UISystem::tick(void) noexcept
