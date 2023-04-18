@@ -16,6 +16,8 @@ void UI::Animator::start(const Animation &animation) noexcept
 
     kFEnsure(animation.tickEvent,
         "UI::Animator::start: Animation must have a tick event callback");
+    kFEnsure(animation.duration,
+        "UI::Animator::start: Animation must have a duration > 0");
     if (!index.success()) [[likely]] {
         state = &_states.push(AnimationState { .animation = Core::TaggedPtr(&animation) });
     } else {
@@ -63,12 +65,14 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
             state.elapsed = totalElapsed;
             return false;
         } else [[unlikely]] {
-            state.elapsed = 0;
             if (animation.animationMode == AnimationMode::Bounce)
                 state.setReverse(!reverse);
+            const auto oldElapsed = state.elapsed;
             if (animation.statusEvent)
                 animation.statusEvent(AnimationStatus::Finish);
-            return animation.animationMode == AnimationMode::Single;
+            const bool restarted = state.elapsed != oldElapsed;
+            state.elapsed = {};
+            return animation.animationMode == AnimationMode::Single && !restarted;
         }
     });
 

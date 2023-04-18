@@ -492,7 +492,7 @@ void UI::UISystem::processElapsedTime(void) noexcept
     _cache.lastTick = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
     // Compute elapsed time
-    const auto elapsed = _cache.lastTick - oldTick;
+    const auto elapsed = bool(oldTick != 0) * (_cache.lastTick - oldTick);
     bool invalidateState = false;
 
     // Process timers & animations
