@@ -6,7 +6,6 @@
 #pragma once
 
 #include <Kube/UI/PrimitiveProcessor.hpp>
-#include <Kube/UI/Sprite.hpp>
 
 namespace kF::UI
 {

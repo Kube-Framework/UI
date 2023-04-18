@@ -34,6 +34,7 @@ public:
     {
         Core::HashedName name {};
         std::string_view vertexShader {};
+        std::string_view geometryShader {};
         std::string_view fragmentShader {};
         GPU::VertexInputBinding vertexInputBinding; // Only 1 binding is available
         Core::Vector<GPU::VertexInputAttribute, UIAllocator> vertexInputAttributes {};
@@ -212,6 +213,9 @@ private:
 
     /** @brief Register Quadratic Bezier graphic pipeline */
     void registerQuadraticBezierPipeline(void) noexcept;
+
+    /** @brief Register Cubic Bezier graphic pipeline */
+    void registerCubicBezierPipeline(void) noexcept;
 
 
 

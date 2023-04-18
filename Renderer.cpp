@@ -82,6 +82,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
     // Register custom pipelines
     registerFilledQuadPipeline();
     registerQuadraticBezierPipeline();
+    registerCubicBezierPipeline();
 }
 
 void UI::Renderer::registerGraphicPipeline(const GraphicPipelineRendererModel &model) noexcept
@@ -108,10 +109,13 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
     );
     const Shader vertexShader(IO::File(model.vertexShader).queryResource(), model.vertexShader);
     const Shader fragmentShader(IO::File(model.fragmentShader).queryResource(), model.fragmentShader);
-    const ShaderStageModel shaderStageModels[] {
+    ShaderStageModel shaderStageModels[3] {
         ShaderStageModel(ShaderStageFlags::Vertex, vertexShader),
-        ShaderStageModel(ShaderStageFlags::Fragment, fragmentShader, &fragmentSpecializationInfo)
+        ShaderStageModel(ShaderStageFlags::Fragment, fragmentShader, &fragmentSpecializationInfo),
+        ShaderStageModel(ShaderStageFlags::Geometry, NullHandle)
     };
+    if (!model.geometryShader.empty())
+        shaderStageModels[2].module = Shader(IO::File(model.geometryShader).queryResource(), model.geometryShader);
     const VertexInputBinding vertexInputBindings[] {
         model.vertexInputBinding
     };
@@ -139,7 +143,7 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
     return Pipeline(
         GraphicPipelineModel(
             PipelineCreateFlags::None,
-            std::begin(shaderStageModels), std::end(shaderStageModels),
+            std::begin(shaderStageModels), std::end(shaderStageModels) - model.geometryShader.empty(),
             VertexInputModel(
                 std::begin(vertexInputBindings), std::end(vertexInputBindings),
                 std::begin(model.vertexInputAttributes), std::end(model.vertexInputAttributes)
@@ -610,6 +614,31 @@ void UI::Renderer::registerQuadraticBezierPipeline(void) noexcept
             GPU::VertexInputAttribute(0, 4,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
             GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
             GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
+        },
+        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)
+    });
+}
+
+void UI::Renderer::registerCubicBezierPipeline(void) noexcept
+{
+    using namespace GPU;
+    using Vertex = DeclareGraphicPipelineVertexType<CubicBezierGraphicPipeline>;
+
+    registerGraphicPipeline(GraphicPipelineRendererModel {
+        .name = CubicBezierGraphicPipeline,
+        .vertexShader = ":/UI/Shaders/CubicBezier.vert.spv",
+        .fragmentShader = ":/UI/Shaders/CubicBezier.frag.spv",
+        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputAttributes = {
+            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
+            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP0)),
+            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP1)),
+            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP2)),
+            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP3)),
+            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
+            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
+            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
         },
         .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
         .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)
