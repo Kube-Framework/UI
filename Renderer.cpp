@@ -38,7 +38,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
             .computeSetLayout = DescriptorSetLayout::Make(
                 DescriptorSetLayoutCreateFlags::None,
                 {
-                    DescriptorSetLayoutBinding(0, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute), // Context
+                    DescriptorSetLayoutBinding(0, DescriptorType::StorageBuffer, 1, Core::MakeFlags(ShaderStageFlags::Compute, ShaderStageFlags::Fragment)), // Context
                     DescriptorSetLayoutBinding(1, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Instances
                     DescriptorSetLayoutBinding(2, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Offsets
                     DescriptorSetLayoutBinding(3, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute), // Vertices
@@ -46,7 +46,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
                 }
             ),
             .computePipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }),
-            .graphicPipelineLayout = PipelineLayout::Make({ _uiSystem->spriteManager().descriptorSetLayout() })
+            .graphicPipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() })
         };
         return cache;
     }())
@@ -383,8 +383,8 @@ void UI::Renderer::recordComputeCommand(const GPU::CommandRecorder &recorder) no
             continue;
 
         // Bind compute pipeline & descriptor sets
-        const std::uint32_t dynamicOffsets[] { primitiveCache.instancesDynamicOffset, primitiveCache.offsetsDynamicOffset };
         recorder.bindPipeline(PipelineBindPoint::Compute, primitiveCache.computePipeline);
+        const std::uint32_t dynamicOffsets[] { primitiveCache.instancesDynamicOffset, primitiveCache.offsetsDynamicOffset };
         const DescriptorSetHandle sets[] { frameCache.computeSet, _uiSystem->spriteManager().descriptorSet() };
         recorder.bindDescriptorSets(
             PipelineBindPoint::Compute, _cache.computePipelineLayout,
@@ -534,9 +534,11 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
             recorder.bindPipeline(PipelineBindPoint::Graphics, targetPipeline->instance);
             recorder.bindVertexBuffer(0, frameCache.buffers.deviceBuffer, frameCache.buffers.verticesOffset);
             recorder.bindIndexBuffer(frameCache.buffers.deviceBuffer, IndexType::Uint32, frameCache.buffers.indicesOffset);
-            recorder.bindDescriptorSet(
+            const DescriptorSetHandle sets[] { frameCache.computeSet, _uiSystem->spriteManager().descriptorSet() };
+            const std::uint32_t dynamicOffsets[] { 0u, 0u };
+            recorder.bindDescriptorSets(
                 PipelineBindPoint::Graphics, _cache.graphicPipelineLayout,
-                0, _uiSystem->spriteManager().descriptorSet()
+                0, std::begin(sets), std::end(sets), std::begin(dynamicOffsets), std::end(dynamicOffsets)
             );
             recorder.setScissor(lastScissor);
         }
@@ -612,8 +614,9 @@ void UI::Renderer::registerQuadraticBezierPipeline(void) noexcept
             GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertControl)),
             GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertRight)),
             GPU::VertexInputAttribute(0, 4,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
-            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
-            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
+            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertInnerColor)),
+            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
+            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
         },
         .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
         .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)

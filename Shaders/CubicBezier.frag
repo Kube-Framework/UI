@@ -3,10 +3,9 @@
 // #extension GL_EXT_debug_printf : enable
 // #extension GL_EXT_nonuniform_qualifier : enable
 // #extension GL_OES_standard_derivatives : enable
+#extension GL_GOOGLE_include_directive : enable
 
-// Constants
-layout(constant_id = 0) const uint MaxSpriteCount = 1;
-const uint NullSpriteIndex = ~0;
+#include "PrimitiveFrag.glsl"
 
 // Inputs
 layout(location = 0) in vec4 fragColor;
@@ -19,16 +18,6 @@ layout(location = 6) in float fragEdgeSoftness;
 
 // Outputs
 layout(location = 0) out vec4 outColor;
-
-// Bindings
-layout(set = 0, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
-
-
-// void main(void)
-// {
-//     outColor = vec4(1.0, 1.0, 1.0, 1.0);
-// }
-
 
 vec2 cubic(float t)     // return point on cubic from parameter
 {

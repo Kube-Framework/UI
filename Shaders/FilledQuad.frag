@@ -2,10 +2,9 @@
 
 // #extension GL_EXT_debug_printf : enable
 // #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_GOOGLE_include_directive : enable
 
-// Constants
-layout(constant_id = 0) const uint MaxSpriteCount = 1;
-const uint NullSpriteIndex = ~0;
+#include "PrimitiveFrag.glsl"
 
 // Inputs
 layout(location = 0) in vec4 fragColor;
@@ -21,9 +20,6 @@ layout(location = 9) in flat vec2 fragRotationCosSin;
 
 // Outputs
 layout(location = 0) out vec4 outColor;
-
-// Bindings
-layout(set = 0, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
 
 // Box signed distance field supporting 4 independent radius
 float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, const vec4 radius4)
@@ -48,11 +44,6 @@ mat2 getInversedRotationMatrix(const vec2 rotationCosSin)
         rotationCosSin.x, rotationCosSin.y,
         -rotationCosSin.y, rotationCosSin.x
     );
-}
-
-vec2 applyRotation(const mat2 matrix, const vec2 origin, const vec2 point)
-{
-    return (matrix * (point - origin)) + origin;
 }
 
 void main(void)

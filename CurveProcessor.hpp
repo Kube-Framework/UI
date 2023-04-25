@@ -17,10 +17,10 @@ namespace kF::UI
         Point left {}; // Curve left point
         Point control {}; // Curve control point
         Point right {}; // Curve right point
-        Color color {}; // Fill color
+        Color color {}; // Curve color
+        Color innerColor {}; // Inner color
         Pixel thickness {}; // Width of the line
         Pixel edgeSoftness {}; // Edge softness in pixels
-        std::uint32_t _padding;
     };
     static_assert_fit_cacheline(Curve);
 

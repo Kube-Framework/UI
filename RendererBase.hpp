@@ -73,6 +73,7 @@ namespace kF::UI
         Point vertControl;
         Point vertRight;
         Color vertColor;
+        Color vertInnerColor;
         Pixel vertThickness;
         Pixel vertEdgeSoftness;
     };

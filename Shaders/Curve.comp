@@ -17,10 +17,10 @@ struct Instance
     vec2 left; // Curve left point
     vec2 control; // Curve control point
     vec2 right; // Curve right point
-    uint color; // Fill color
+    uint color; // Curve color
+    uint innerColor; // Inner color
     float thickness; // Width of the line
     float edgeSoftness; // Edge softness in pixels
-    uint _padding;
 };
 
 #include "QuadraticBezierUtils.glsl"
@@ -50,6 +50,7 @@ void main(void)
     vertex.control = instance.control;
     vertex.right = instance.right;
     vertex.color = instance.color;
+    vertex.innerColor = instance.innerColor;
     vertex.thickness = instance.thickness;
     vertex.edgeSoftness = instance.edgeSoftness;
     //   TopLeft
