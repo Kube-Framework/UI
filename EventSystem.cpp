@@ -3,7 +3,7 @@
  * @ Description: Event system
  */
 
-#include <SDL2/SDL_events.h>
+#include <SDL2/SDL.h>
 
 #include <Kube/GPU/GPU.hpp>
 #include <Kube/ECS/Executor.hpp>

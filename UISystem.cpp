@@ -743,6 +743,16 @@ void UI::UISystem::setMouseGrab(const bool state) noexcept
     SDL_SetWindowMouseGrab(_cache.window, static_cast<SDL_bool>(state));
 }
 
+void UI::UISystem::setMouseCapture(const bool state) noexcept
+{
+    SDL_CaptureMouse(static_cast<SDL_bool>(state));
+}
+
+void UI::UISystem::setWindowGrab(const bool state) noexcept
+{
+    SDL_SetWindowGrab(_cache.window, static_cast<SDL_bool>(state));
+}
+
 bool UI::UISystem::keyboardGrab(void) const noexcept
 {
     return SDL_GetWindowKeyboardGrab(_cache.window);

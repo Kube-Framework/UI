@@ -423,7 +423,7 @@ constexpr void kF::UI::Area::DistributeRowImpl(const Range childCount, const Are
             callback(childIndex, child);
         else
             callback(child);
-        GetX(child.pos) += GetX(child.size);
+        GetX(child.pos) += GetX(child.size) + spacing;
     }
 }
 
@@ -434,7 +434,7 @@ constexpr void kF::UI::Area::DistributeRowImpl(const Area &parent, const Pixel s
     UI::Area child(parent);
     const auto childCountF = Pixel(sizeof...(callbacks));
     GetX(child.size) = (GetX(child.size) - spacing * (childCountF - 1.0f)) / childCountF;
-    ((callbacks(child), GetX(child.pos) += GetX(child.size)), ...);
+    ((callbacks(child), GetX(child.pos) += GetX(child.size) + spacing), ...);
 }
 
 template<kF::UI::ConstraintSpecifierRequirements WidthSpecifier, kF::UI::ConstraintSpecifierRequirements HeightSpecifier>

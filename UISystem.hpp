@@ -183,6 +183,15 @@ public:
     /** @brief Set current mouse grab state */
     void setMouseGrab(const bool state) noexcept;
 
+
+    /** @brief Set current mouse capture state */
+    void setMouseCapture(const bool state) noexcept;
+
+
+    /** @brief Set current window grab state */
+    void setWindowGrab(const bool state) noexcept;
+
+
     /** @brief Set mouse position inside window */
     void setMousePosition(const UI::Point pos) noexcept;
 
