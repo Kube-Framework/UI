@@ -151,11 +151,9 @@ void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropT
     _eventCache.drop.painterArea = std::move(painterArea);
 
     // Trigger begin event of every DropEventArea matching type hash
-    int x, y;
-    SDL_GetMouseState(&x, &y);
     processDropEventAreas(DropEvent {
         .type = DropEvent::Type::Begin,
-        .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
+        .pos = mousePosition(),
         .timestamp = SDL_GetTicks()
     });
 }
@@ -163,11 +161,9 @@ void UI::UISystem::onDrag(const TypeHash typeHash, const Size &size, const DropT
 void UI::UISystem::cancelDrag(void) noexcept
 {
     // Trigger end event of every DropEventArea matching type hash
-    int x, y;
-    SDL_GetMouseState(&x, &y);
     processDropEventAreas(DropEvent {
         .type = DropEvent::Type::End,
-        .pos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y)),
+        .pos = mousePosition(),
         .timestamp = SDL_GetTicks()
     });
 
@@ -580,9 +576,7 @@ void UI::UISystem::processPainterAreas(void) noexcept
         // Reset clip
         if (painter.currentClip() != DefaultClip)
             painter.setClip(DefaultClip);
-        int x, y;
-        SDL_GetMouseState(&x, &y);
-        const auto mousePos = Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
+        const auto mousePos = mousePosition();
         const Area area(mousePos - _eventCache.drop.size / 2, _eventCache.drop.size);
         if (auto &painterAreaEvent = _eventCache.drop.painterArea.event; painterAreaEvent)
             painterAreaEvent(painter, area);
@@ -769,6 +763,13 @@ void UI::UISystem::setKeyboardInputMode(const bool state) noexcept
         SDL_StartTextInput();
     else
         SDL_StopTextInput();
+}
+
+UI::Point UI::UISystem::mousePosition(void) const noexcept
+{
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    return Point(static_cast<Pixel>(x), static_cast<Pixel>(y));
 }
 
 void UI::UISystem::setMousePosition(const UI::Point pos) noexcept

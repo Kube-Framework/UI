@@ -192,6 +192,9 @@ public:
     void setWindowGrab(const bool state) noexcept;
 
 
+    /** @brief Get mouse position inside window */
+    [[nodiscard]] UI::Point mousePosition(void) const noexcept;
+
     /** @brief Set mouse position inside window */
     void setMousePosition(const UI::Point pos) noexcept;
 
