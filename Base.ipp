@@ -362,16 +362,15 @@ constexpr kF::UI::Area kF::UI::Area::ApplyPadding(const Area &area, const Paddin
 
 constexpr kF::UI::Area kF::UI::Area::ApplyClip(const Area &area, const Area &clipArea) noexcept
 {
-    Area clipped;
-
-    clipped.pos.x = std::max(area.pos.x, clipArea.pos.x);
-    clipped.pos.y = std::max(area.pos.y, clipArea.pos.y);
-
-    const auto removedWidth = clipped.pos.x - area.pos.x;
-    clipped.size.width = std::min(area.size.width - removedWidth, clipArea.right() - clipped.pos.x);
-    const auto removedHeight = clipped.pos.y - area.pos.y;
-    clipped.size.height = std::min(area.size.height - removedHeight, clipArea.bottom() - clipped.pos.y);
-    return clipped;
+    const auto clipTopLeft = clipArea.topLeft();
+    const auto clipBottomRight = clipArea.bottomRight();
+    const auto topLeft = std::min(std::max(area.topLeft(), clipTopLeft), clipBottomRight);
+    const auto bottomRight = std::min(std::max(area.bottomRight(), clipTopLeft), clipBottomRight);
+    Area result {
+        topLeft,
+        Size(bottomRight.x - topLeft.x, bottomRight.y - topLeft.y)
+    };
+    return result;
 }
 
 constexpr kF::UI::Area kF::UI::Area::ApplyAnchor(const Area &area, const Size childSize, const Anchor anchor) noexcept
