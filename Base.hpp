@@ -573,30 +573,30 @@ namespace std
 {
     /** @brief Extend standard min to work with point & size */
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::min(const Type &lhs, const Type &rhs) noexcept
-        { return Type { std::min(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), std::min(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
+    [[nodiscard]] constexpr Type min(const Type &lhs, const Type &rhs) noexcept
+        { return Type { min(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), min(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::min(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
-        { return Type { std::min(lhs, kF::UI::GetXAxis(rhs)), std::min(lhs, kF::UI::GetYAxis(rhs)) }; }
+    [[nodiscard]] constexpr Type min(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
+        { return Type { min(lhs, kF::UI::GetXAxis(rhs)), min(lhs, kF::UI::GetYAxis(rhs)) }; }
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::min(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
-        { return Type { std::min(kF::UI::GetXAxis(lhs), rhs), std::min(kF::UI::GetYAxis(lhs), rhs) }; }
+    [[nodiscard]] constexpr Type min(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
+        { return Type { min(kF::UI::GetXAxis(lhs), rhs), min(kF::UI::GetYAxis(lhs), rhs) }; }
 
     /** @brief Extend standard max to work with point & size */
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::max(const Type &lhs, const Type &rhs) noexcept
-        { return Type { std::max(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), std::max(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
+    [[nodiscard]] constexpr Type max(const Type &lhs, const Type &rhs) noexcept
+        { return Type { max(kF::UI::GetXAxis(lhs), kF::UI::GetXAxis(rhs)), max(kF::UI::GetYAxis(lhs), kF::UI::GetYAxis(rhs)) }; }
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::max(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
-        { return Type { std::max(lhs, kF::UI::GetXAxis(rhs)), std::max(lhs, kF::UI::GetYAxis(rhs)) }; }
+    [[nodiscard]] constexpr Type max(const kF::UI::Pixel &lhs, const Type &rhs) noexcept
+        { return Type { max(lhs, kF::UI::GetXAxis(rhs)), max(lhs, kF::UI::GetYAxis(rhs)) }; }
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::max(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
-        { return Type { std::max(kF::UI::GetXAxis(lhs), rhs), std::max(kF::UI::GetYAxis(lhs), rhs) }; }
+    [[nodiscard]] constexpr Type max(const Type &lhs, const kF::UI::Pixel &rhs) noexcept
+        { return Type { max(kF::UI::GetXAxis(lhs), rhs), max(kF::UI::GetYAxis(lhs), rhs) }; }
 
     /** @brief Extend standard abs to work with point & size */
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type std::abs(const Type &value, const Type &rhs) noexcept
-        { return Type { std::abs(kF::UI::GetXAxis(value)), std::abs(kF::UI::GetYAxis(value)) }; }
+    [[nodiscard]] constexpr Type abs(const Type &value, const Type &rhs) noexcept
+        { return Type { abs(kF::UI::GetXAxis(value)), abs(kF::UI::GetYAxis(value)) }; }
 }
 
 #include "Base.ipp"
