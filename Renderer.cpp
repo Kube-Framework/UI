@@ -496,7 +496,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         Rect2D { .offset = VkOffset2D {}, .extent = extent },
         {
             ClearValue {
-                .color = GPU::ClearColorValue {
+                .color = ClearColorValue {
                     static_cast<float>(_clearColor.r) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
                     static_cast<float>(_clearColor.g) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
                     static_cast<float>(_clearColor.b) / static_cast<float>(std::numeric_limits<std::uint8_t>::max()),
@@ -583,22 +583,22 @@ void UI::Renderer::registerFilledQuadPipeline(void) noexcept
         .name = FilledQuadGraphicPipeline,
         .vertexShader = ":/UI/Shaders/FilledQuad.vert.spv",
         .fragmentShader = ":/UI/Shaders/FilledQuad.frag.spv",
-        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
-            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
-            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertCenter)),
-            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertHalfSize)),
-            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertUV)),
-            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32B32A32_SFLOAT,    offsetof(Vertex, vertRadius)),
-            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertSpriteIndex)),
-            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
-            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_UINT,               offsetof(Vertex, vertBorderColor)),
-            GPU::VertexInputAttribute(0, 8,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertBorderWidth)),
-            GPU::VertexInputAttribute(0, 9,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness)),
-            GPU::VertexInputAttribute(0, 10, GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationCosSin))
+            VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
+            VertexInputAttribute(0, 1,  Format::R32G32_SFLOAT,          offsetof(Vertex, vertCenter)),
+            VertexInputAttribute(0, 2,  Format::R32G32_SFLOAT,          offsetof(Vertex, vertHalfSize)),
+            VertexInputAttribute(0, 3,  Format::R32G32_SFLOAT,          offsetof(Vertex, vertUV)),
+            VertexInputAttribute(0, 4,  Format::R32G32B32A32_SFLOAT,    offsetof(Vertex, vertRadius)),
+            VertexInputAttribute(0, 5,  Format::R32_UINT,               offsetof(Vertex, vertSpriteIndex)),
+            VertexInputAttribute(0, 6,  Format::R32_UINT,               offsetof(Vertex, vertColor)),
+            VertexInputAttribute(0, 7,  Format::R32_UINT,               offsetof(Vertex, vertBorderColor)),
+            VertexInputAttribute(0, 8,  Format::R32_SFLOAT,             offsetof(Vertex, vertBorderWidth)),
+            VertexInputAttribute(0, 9,  Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness)),
+            VertexInputAttribute(0, 10, Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationCosSin))
         },
-        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
-        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)
+        .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = RasterizationModel(PolygonMode::Fill)
     });
 }
 
@@ -611,19 +611,19 @@ void UI::Renderer::registerQuadraticBezierPipeline(void) noexcept
         .name = QuadraticBezierGraphicPipeline,
         .vertexShader = ":/UI/Shaders/QuadraticBezier.vert.spv",
         .fragmentShader = ":/UI/Shaders/QuadraticBezier.frag.spv",
-        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
-            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
-            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertLeft)),
-            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertControl)),
-            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertRight)),
-            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
-            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertInnerColor)),
-            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
-            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
+            VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertPos)),
+            VertexInputAttribute(0, 1,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertLeft)),
+            VertexInputAttribute(0, 2,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertControl)),
+            VertexInputAttribute(0, 3,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertRight)),
+            VertexInputAttribute(0, 4,  Format::R32_UINT,       offsetof(Vertex, vertColor)),
+            VertexInputAttribute(0, 5,  Format::R32_UINT,       offsetof(Vertex, vertInnerColor)),
+            VertexInputAttribute(0, 6,  Format::R32_SFLOAT,     offsetof(Vertex, vertThickness)),
+            VertexInputAttribute(0, 7,  Format::R32_SFLOAT,     offsetof(Vertex, vertEdgeSoftness))
         },
-        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
-        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)
+        .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = RasterizationModel(PolygonMode::Fill)
     });
 }
 
@@ -636,18 +636,18 @@ void UI::Renderer::registerCubicBezierPipeline(void) noexcept
         .name = CubicBezierGraphicPipeline,
         .vertexShader = ":/UI/Shaders/CubicBezier.vert.spv",
         .fragmentShader = ":/UI/Shaders/CubicBezier.frag.spv",
-        .vertexInputBinding = GPU::VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
-            GPU::VertexInputAttribute(0, 0,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
-            GPU::VertexInputAttribute(0, 1,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP0)),
-            GPU::VertexInputAttribute(0, 2,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP1)),
-            GPU::VertexInputAttribute(0, 3,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP2)),
-            GPU::VertexInputAttribute(0, 4,  GPU::Format::R32G32_SFLOAT,          offsetof(Vertex, vertP3)),
-            GPU::VertexInputAttribute(0, 5,  GPU::Format::R32_UINT,               offsetof(Vertex, vertColor)),
-            GPU::VertexInputAttribute(0, 6,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertThickness)),
-            GPU::VertexInputAttribute(0, 7,  GPU::Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness))
+            VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertPos)),
+            VertexInputAttribute(0, 1,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertP0)),
+            VertexInputAttribute(0, 2,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertP1)),
+            VertexInputAttribute(0, 3,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertP2)),
+            VertexInputAttribute(0, 4,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertP3)),
+            VertexInputAttribute(0, 5,  Format::R32_UINT,       offsetof(Vertex, vertColor)),
+            VertexInputAttribute(0, 6,  Format::R32_SFLOAT,     offsetof(Vertex, vertThickness)),
+            VertexInputAttribute(0, 7,  Format::R32_SFLOAT,     offsetof(Vertex, vertEdgeSoftness))
         },
-        .inputAssemblyModel = GPU::InputAssemblyModel(PrimitiveTopology::TriangleList),
-        .rasterizationModel = GPU::RasterizationModel(PolygonMode::Fill)
+        .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = RasterizationModel(PolygonMode::Fill)
     });
 }

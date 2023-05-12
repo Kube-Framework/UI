@@ -78,7 +78,7 @@ UI::DepthUnit UI::Internal::LayoutBuilder::build(void) noexcept
 void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
 {
     // Prepare current context resolve data
-    TraverseContext::ResolveData &data = [this] -> auto & {
+    TraverseContext::ResolveData &data = [this](void) -> auto & {
         // Query context resolve data
         TraverseContext::ResolveData &data = _traverseContext.resolveData();
 
