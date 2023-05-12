@@ -509,7 +509,6 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
 
     // Utility to convert from clip Area to scissor Rect2D
     const auto toScissor = [extent](const auto &area) {
-        Rect2D rect;
         if (area == DefaultClip) {
             return Rect2D(Offset2D(), extent);
         } else {
@@ -519,7 +518,6 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
                 Extent2D(std::uint32_t(clippedArea.size.width), std::uint32_t(clippedArea.size.height))
             );
         }
-        return rect;
     };
 
     // Loop over each clip and draw all vertices between them
@@ -562,7 +560,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
                 indexOffset += drawCount;
             }
             // Set next scissor clip
-            if (nextClipAvailable) [[likely]] {
+            if (nextClipAvailable && indexOffset == clip->indexOffset) [[likely]] {
                 lastScissor = toScissor(clip->area);
                 recorder.setScissor(lastScissor);
                 ++clip;
