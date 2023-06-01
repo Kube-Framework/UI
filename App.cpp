@@ -19,7 +19,7 @@ using namespace kF;
 
 KF_DECLARE_RESOURCE_ENVIRONMENT(UI);
 
-UI::App *UI::App::_Instance { nullptr };
+UI::App *UI::App::_Instance {};
 
 static SDL_WindowFlags ToWindowFlags(const UI::App::WindowFlags flags) noexcept
 {

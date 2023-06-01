@@ -86,6 +86,10 @@ public:
         const std::size_t eventQueueSize = ECS::Executor::DefaultExecutorEventQueueSize
     ) noexcept;
 
+    /** @brief App is not copiable */
+    App(const App &other) noexcept = delete;
+    App &operator=(const App &other) noexcept = delete;
+
 
     /** @brief Get GPU instance */
     [[nodiscard]] inline GPU::GPU &gpu(void) noexcept { return *_gpu; }
@@ -133,6 +137,10 @@ private:
 
         /** @brief Destructor */
         ~BackendInstance(void) noexcept;
+
+        /** @brief BackendInstance is not copiable */
+        BackendInstance(const BackendInstance &other) noexcept = delete;
+        BackendInstance &operator=(const BackendInstance &other) noexcept = delete;
 
         /** @brief Constructor */
         BackendInstance(const std::string_view windowTitle,

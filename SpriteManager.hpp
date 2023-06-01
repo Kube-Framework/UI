@@ -73,8 +73,8 @@ public:
     /** @brief Sprite cache */
     struct alignas_half_cacheline FrameCache
     {
-        GPU::DescriptorPool descriptorPool;
-        GPU::DescriptorSetHandle descriptorSet;
+        GPU::DescriptorPool descriptorPool {};
+        GPU::DescriptorSetHandle descriptorSet {};
         Core::Vector<Event, ResourceAllocator> events {};
     };
     static_assert_fit_half_cacheline(FrameCache);
@@ -94,6 +94,10 @@ public:
 
     /** @brief Constructor */
     SpriteManager(const std::uint32_t maxSpriteCount = DefaultMaxSpriteCount) noexcept;
+
+    /** @brief SpriteManager is not copiable */
+    SpriteManager(const SpriteManager &other) noexcept = delete;
+    SpriteManager &operator=(const SpriteManager &other) noexcept = delete;
 
 
     /** @brief Get the maximum number of simultaneous loaded sprite */
@@ -163,10 +167,10 @@ private:
     Core::Vector<SpriteDelayedRemove, ResourceAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1
     std::uint32_t _maxSpriteCount {};
-    GPU::Sampler _sampler;
-    GPU::DescriptorSetLayout _descriptorSetLayout;
+    GPU::Sampler _sampler {};
+    GPU::DescriptorSetLayout _descriptorSetLayout {};
     GPU::CommandPool _commandPool;
-    GPU::CommandHandle _command;
+    GPU::CommandHandle _command {};
     GPU::Fence _fence {};
     GPU::PerFrameCache<FrameCache, ResourceAllocator> _perFrameCache {};
 };

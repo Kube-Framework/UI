@@ -49,6 +49,10 @@ public:
     /** @brief Constructor */
     Renderer(UISystem &uiSystem) noexcept;
 
+    /** @brief Renderer is not copiable */
+    Renderer(const Renderer &other) noexcept = delete;
+    Renderer &operator=(const Renderer &other) noexcept = delete;
+
 
     /** @brief Set the clear color of the renderer */
     inline void setClearColor(const Color &color) noexcept { _clearColor = color; }
@@ -103,7 +107,7 @@ private:
     /** @brief Graphic pipeline key/value pair */
     struct alignas_quarter_cacheline GraphicPipelinePair
     {
-        GraphicPipelineName name;
+        GraphicPipelineName name {};
         GPU::Pipeline instance;
     };
     static_assert_fit_quarter_cacheline(GraphicPipelinePair);
@@ -116,10 +120,10 @@ private:
         std::uint32_t minAlignment {};
         std::uint32_t maxDispatchCount {};
         //   Compute
-        GPU::DescriptorSetLayout computeSetLayout;
-        GPU::PipelineLayout computePipelineLayout;
+        GPU::DescriptorSetLayout computeSetLayout {};
+        GPU::PipelineLayout computePipelineLayout {};
         //   Graphic
-        GPU::PipelineLayout graphicPipelineLayout;
+        GPU::PipelineLayout graphicPipelineLayout {};
         Core::Vector<GraphicPipelinePair, UIAllocator> graphicPipelines {};
         Core::Vector<GraphicPipelineRendererModel, UIAllocator> graphicPipelineModels {};
     };
@@ -147,11 +151,11 @@ private:
         // Cacheline 0
         GPU::CommandPool commandPool;
         // Compute
-        GPU::DescriptorPool computeSetPool;
-        GPU::DescriptorSetHandle computeSet;
-        GPU::CommandHandle computeCommand;
+        GPU::DescriptorPool computeSetPool {};
+        GPU::DescriptorSetHandle computeSet {};
+        GPU::CommandHandle computeCommand {};
         // Primary
-        GPU::CommandHandle primaryCommand;
+        GPU::CommandHandle primaryCommand {};
         GPU::Fence frameFence {};
         GPU::Semaphore frameSemaphore {};
 
@@ -178,8 +182,8 @@ private:
     /** @brief Primitive context layout */
     struct PrimitiveContext
     {
-        Size windowSize;
-        Size halfWindowSize;
+        Size windowSize {};
+        Size halfWindowSize {};
     };
 
     /** @brief QueryModel function signature */
@@ -227,7 +231,7 @@ private:
     GPU::PerFrameCache<FrameCache, UIAllocator> _perFrameCache {};
     PrimitiveCaches _primitiveCaches {};
     // Cacheline 3
-    Cache _cache;
+    Cache _cache {};
 };
 static_assert_alignof_double_cacheline(kF::UI::Renderer);
 static_assert_sizeof(kF::UI::Renderer, kF::Core::CacheLineDoubleSize * 2);

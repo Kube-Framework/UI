@@ -45,6 +45,10 @@ public:
     /** @brief Constructor */
     Item(void) noexcept;
 
+    /** @brief Item is not copiable */
+    Item(const Item &other) noexcept = delete;
+    Item &operator=(const Item &other) noexcept = delete;
+
 
     /** @brief Get UI system */
     [[nodiscard]] inline UISystem &uiSystem(void) const noexcept { return *_uiSystem; }

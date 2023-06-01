@@ -12,7 +12,7 @@ using namespace kF;
 void UI::Animator::start(const Animation &animation) noexcept
 {
     const auto index = findIndex(animation);
-    AnimationState *state { nullptr };
+    AnimationState *state {};
 
     kFEnsure(animation.tickEvent,
         "UI::Animator::start: Animation must have a tick event callback");

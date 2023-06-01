@@ -33,6 +33,10 @@ public:
     /** @brief Default constructor */
     ItemList(void) noexcept = default;
 
+    /** @brief ItemList is not copiable */
+    ItemList(const ItemList &other) noexcept = delete;
+    ItemList &operator=(const ItemList &other) noexcept = delete;
+
     /** @brief Model and delegate constructor
      *  @note The delegate Item type must be the first argument of the delegate functor
      *        If an argument doesn't match, it must be a functor that returns the matching argument

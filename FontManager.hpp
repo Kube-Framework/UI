@@ -64,6 +64,10 @@ public:
     /** @brief Constructor */
     FontManager(void) noexcept;
 
+    /** @brief FontManager is not copiable */
+    FontManager(const FontManager &other) noexcept = delete;
+    FontManager &operator=(const FontManager &other) noexcept = delete;
+
 
     /** @brief Add a font to the manager using its path if it doesn't exists
      *  @note If the font is already loaded this function does not duplicate its memory */
