@@ -595,7 +595,7 @@ namespace std
 
     /** @brief Extend standard abs to work with point & size */
     template<kF::UI::PointOrSize Type>
-    [[nodiscard]] constexpr Type abs(const Type &value, const Type &rhs) noexcept
+    [[nodiscard]] constexpr Type abs(const Type &value) noexcept
         { return Type { abs(kF::UI::GetXAxis(value)), abs(kF::UI::GetYAxis(value)) }; }
 }
 

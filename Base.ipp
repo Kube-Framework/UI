@@ -306,7 +306,7 @@ constexpr bool kF::UI::Area::contains(const Area &area) const noexcept
 constexpr bool kF::UI::Area::contains(const Point a, const Point b) const noexcept
 {
     constexpr auto GetX = [](const auto y, const auto slope, const auto dt) {
-        return slope != 0.0f ? (y - dt) / slope : 0.0f;
+        return slope ? (y - dt) / slope : 0.0f;
     };
     constexpr auto GetY = [](const auto x, const auto slope, const auto dt) {
         return x * slope + dt;

@@ -138,13 +138,13 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
 
 void kF::UI::EventSystem::dispatchEvents(void) noexcept
 {
-    const auto dispatch = [this](auto &queues, const auto &events) {
+    const auto dispatch = [](auto &queues, const auto &events) {
         // No events to dispatch
         if (events.empty()) [[likely]]
             return;
 
         // Dispatch each queue and mark unused
-        const auto it = std::remove_if(queues.begin(), queues.end(), [this, &events](auto &queue) {
+        const auto it = std::remove_if(queues.begin(), queues.end(), [&events](auto &queue) {
             if (queue.referenceCount() != 1) [[likely]] {
                 queue->produce(Core::IteratorRange { events.begin(), events.end() });
                 return false;

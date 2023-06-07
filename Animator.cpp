@@ -54,7 +54,7 @@ Core::Expected<std::uint32_t> UI::Animator::findIndex(const Animation &animation
 
 void UI::Animator::onTick(const std::int64_t elapsed) noexcept
 {
-    const auto it = std::remove_if(_states.begin(), _states.end(), [this, elapsed](auto &state) {
+    const auto it = std::remove_if(_states.begin(), _states.end(), [elapsed](auto &state) {
         const auto &animation = *state.animation;
         const auto totalElapsed = std::min(state.elapsed + elapsed, animation.duration);
         const auto ratio = static_cast<float>(totalElapsed) / static_cast<float>(animation.duration);

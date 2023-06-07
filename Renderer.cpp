@@ -21,35 +21,35 @@ UI::Renderer::~Renderer(void) noexcept
 UI::Renderer::Renderer(UISystem &uiSystem) noexcept
     :   _uiSystem(&uiSystem),
         _cache([this] {
-        using namespace GPU;
-        Cache cache {
-            // General
-            .minAlignment = [] {
-                const auto &limits = Parent().physicalDevice().limits();
-                return static_cast<decltype(Cache::minAlignment)>(std::max({
-                    limits.minMemoryMapAlignment,
-                    limits.minTexelBufferOffsetAlignment,
-                    limits.minUniformBufferOffsetAlignment,
-                    limits.minStorageBufferOffsetAlignment
-                }));
-            }(),
-            .maxDispatchCount = Parent().physicalDevice().limits().maxComputeWorkGroupCount[0],
-            // Compute
-            .computeSetLayout = DescriptorSetLayout::Make(
-                DescriptorSetLayoutCreateFlags::None,
-                {
-                    DescriptorSetLayoutBinding(0, DescriptorType::StorageBuffer, 1, Core::MakeFlags(ShaderStageFlags::Compute, ShaderStageFlags::Fragment)), // Context
-                    DescriptorSetLayoutBinding(1, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Instances
-                    DescriptorSetLayoutBinding(2, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Offsets
-                    DescriptorSetLayoutBinding(3, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute), // Vertices
-                    DescriptorSetLayoutBinding(4, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute) // Indices
-                }
-            ),
-            .computePipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }),
-            .graphicPipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() })
-        };
-        return cache;
-    }())
+            using namespace GPU;
+            Cache cache {
+                // General
+                .minAlignment = [] {
+                    const auto &limits = Parent().physicalDevice().limits();
+                    return static_cast<decltype(Cache::minAlignment)>(std::max({
+                        VkDeviceSize(limits.minMemoryMapAlignment),
+                        limits.minTexelBufferOffsetAlignment,
+                        limits.minUniformBufferOffsetAlignment,
+                        limits.minStorageBufferOffsetAlignment
+                    }));
+                }(),
+                .maxDispatchCount = Parent().physicalDevice().limits().maxComputeWorkGroupCount[0],
+                // Compute
+                .computeSetLayout = DescriptorSetLayout::Make(
+                    DescriptorSetLayoutCreateFlags::None,
+                    {
+                        DescriptorSetLayoutBinding(0, DescriptorType::StorageBuffer, 1, Core::MakeFlags(ShaderStageFlags::Compute, ShaderStageFlags::Fragment)), // Context
+                        DescriptorSetLayoutBinding(1, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Instances
+                        DescriptorSetLayoutBinding(2, DescriptorType::StorageBufferDynamic, 1, ShaderStageFlags::Compute), // Offsets
+                        DescriptorSetLayoutBinding(3, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute), // Vertices
+                        DescriptorSetLayoutBinding(4, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute) // Indices
+                    }
+                ),
+                .computePipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }),
+                .graphicPipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() })
+            };
+            return cache;
+        }())
 {
     using namespace GPU;
 
