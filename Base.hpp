@@ -8,6 +8,7 @@
 #include <limits>
 
 #include <Kube/Core/StaticSafeAllocator.hpp>
+#include <Kube/Core/SmallString.hpp>
 
 namespace kF::UI
 {
@@ -26,6 +27,9 @@ namespace kF::UI
 
     /** @brief Allocator Resource of the UI library */
     using ResourceAllocator = Core::StaticSafeAllocator<"ResourceAllocator">;
+
+    /** @brief Default string of UI library */
+    using UIString = Core::SmallString<UIAllocator>;
 
 
     /** @brief Image fill mode */
@@ -567,6 +571,13 @@ namespace kF::UI
 
     /** @brief Open browser at url */
     bool OpenUrl(const std::string_view &url) noexcept;
+
+    /** @brief Open a single file picker */
+    [[nodiscard]] std::string_view OpenSingleFilePicker(
+        const std::string_view &title = {},
+        const std::string_view &defaultPath = {},
+        const Core::IteratorRange<const std::string_view *> &filters = {}
+    ) noexcept;
 }
 
 namespace std

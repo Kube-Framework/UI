@@ -141,7 +141,7 @@ UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
         size.height = static_cast<Pixel>(rect.h);
 
     // Create the backend window
-    Core::SmallString<UIAllocator> str(windowTitle);
+    UIString str(windowTitle);
     window = SDL_CreateWindow(
         str.c_str(),
         static_cast<int>(pos.x), static_cast<int>(pos.y),

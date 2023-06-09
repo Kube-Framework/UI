@@ -3,10 +3,17 @@
  * @ Description: UI Base
  */
 
-#include <ostream>
+#include "Base.hpp"
+
+#include <Kube/Core/SmallString.hpp>
+#include <Kube/Core/Vector.hpp>
+
 #include <SDL2/SDL.h>
 
-#include "Base.hpp"
+#include <tinyfiledialogs/tinyfiledialogs.h>
+
+#include <ostream>
+
 
 using namespace kF;
 
@@ -14,6 +21,27 @@ bool UI::OpenUrl(const std::string_view &url) noexcept
 {
     std::string str(url);
     return SDL_OpenURL(str.c_str()) == 0;
+}
+
+std::string_view UI::OpenSingleFilePicker(
+    const std::string_view &title,
+    const std::string_view &defaultPath,
+    const Core::IteratorRange<const std::string_view *> &filters
+) noexcept
+{
+    Core::SmallString<UIAllocator> titleStr(title);
+    Core::SmallString<UIAllocator> defaultPathStr(defaultPath);
+    Core::Vector<Core::SmallString<UIAllocator>, UIAllocator> filtersStrs(filters.begin(), filters.end());
+    Core::Vector<const char *, UIAllocator> filtersCstrs(filtersStrs.begin(), filtersStrs.end(), [](const Core::SmallString<UIAllocator> &str) { return str.c_str(); });
+
+    return std::string_view(::tinyfd_openFileDialog(
+        titleStr.c_str(),
+        defaultPathStr.c_str(),
+        static_cast<int>(filtersCstrs.size()),
+        filtersCstrs.data(),
+        nullptr,
+        false
+    ));
 }
 
 namespace kF::UI

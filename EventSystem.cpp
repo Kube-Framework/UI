@@ -15,6 +15,7 @@ using namespace kF;
 
 UI::EventSystem::EventSystem(void) noexcept
 {
+    SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 }
 
 bool UI::EventSystem::tick(void) noexcept
@@ -130,6 +131,16 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
             .modifiers = _modifiers,
             .timestamp = event.wheel.timestamp
         });
+        break;
+    case SDL_DROPBEGIN:
+        kFInfo(">>>>> FILE DROP BEGIN");
+        break;
+    case SDL_DROPCOMPLETE:
+        kFInfo(">>>>> FILE DROP COMPLETE");
+        break;
+    case SDL_DROPFILE:
+        kFInfo(">>>>> FILE DROP: ", event.drop.file);
+        SDL_free(event.drop.file);
         break;
     default:
         break;

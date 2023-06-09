@@ -87,4 +87,5 @@ kube_add_library(UI
         IO
         stb
         FreetypeStatic
+        tinyfiledialogs
 )
