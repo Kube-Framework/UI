@@ -15,13 +15,6 @@ using namespace kF;
 
 KF_DECLARE_RESOURCE_ENVIRONMENT(UITests);
 
-static auto Delay = [](const auto sleepTime, auto &&callback) {
-    return std::make_unique<std::jthread>([sleepTime, callback = std::move(callback)] {
-        std::this_thread::sleep_for(sleepTime);
-        callback();
-    });
-};
-
 constexpr std::string_view TestSpritePath = ":/UITests/Resources/Test.png";
 
 TEST(SpriteManager, Basics)

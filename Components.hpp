@@ -15,13 +15,13 @@
 
 namespace kF::UI
 {
-    class Painter;
-    class MouseEvent;
-    class WheelEvent;
-    class DropEvent;
-    class KeyEvent;
-    class TextEvent;
     class UISystem;
+    class Painter;
+    struct MouseEvent;
+    struct WheelEvent;
+    struct DropEvent;
+    struct KeyEvent;
+    struct TextEvent;
     enum class ComponentFlags : std::uint32_t;
 
     namespace Internal

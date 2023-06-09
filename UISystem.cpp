@@ -46,8 +46,6 @@ UI::UISystem::~UISystem(void) noexcept
         ::SDL_FreeCursor(backendCursor);
 }
 
-static decltype(std::chrono::high_resolution_clock::now()) LastTime {};
-
 UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     : _cache(Cache {
         .windowSize = GetWindowSize(),
@@ -510,7 +508,7 @@ bool UI::UISystem::processTimers(const std::int64_t elapsed) noexcept
     getTable<Timer>().traverse([elapsed, &invalidateState](Timer &handler) {
         handler.elapsedTimeState += elapsed;
         if (handler.elapsedTimeState >= handler.interval) [[unlikely]] {
-            invalidateState |= handler.event(elapsed);
+            invalidateState |= handler.event(static_cast<std::uint64_t>(elapsed));
             handler.elapsedTimeState = 0;
         }
     });
@@ -665,7 +663,7 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
     const auto entity = traverseClippedEventTable<Component>(
         event,
         entityLock,
-        [this, entityLock, &hoveredEntities, &onEnter, &onLeave, &onInside, &hoverStack, &discardHoveredEntities](
+        [&hoveredEntities, &onEnter, &onInside, &hoverStack, &discardHoveredEntities](
             const Event &event, Component &component, const Area &clippedArea, const ECS::Entity entity
         ) {
             EventFlags flags;

@@ -418,7 +418,7 @@ void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
         // Compute space between children
         const bool isWidthDistributed = data.layout->flowType == FlowType::Row;
         const bool isHeightDistributed = data.layout->flowType == FlowType::Column;
-        const auto spaceBetween = [this, &data, isWidthDistributed, isHeightDistributed] {
+        const auto spaceBetween = [&data, isWidthDistributed, isHeightDistributed] {
             if (data.layout->spacingType == SpacingType::SpaceBetween) {
                 const auto count = Pixel(data.children.size());
                 if (isWidthDistributed)

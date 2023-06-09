@@ -7,7 +7,7 @@
 
 #include <Kube/Core/Platform.hpp>
 
-#if KUBE_COMPILER_GCC
+#if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wold-style-cast"
 # pragma GCC diagnostic ignored "-Wcast-qual"
@@ -17,7 +17,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#if KUBE_COMPILER_GCC
+#if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
 # pragma GCC diagnostic pop
 #endif
 
@@ -224,7 +224,7 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
     // Record transfer command
     _commandPool.reset();
     _commandPool.record(_command, CommandBufferUsageFlags::OneTimeSubmit,
-        [this, &spriteBuffer, &stagingBuffer, &spriteCache](const CommandRecorder &recorder) {
+        [&spriteBuffer, &stagingBuffer, &spriteCache](const CommandRecorder &recorder) {
             // Transition device image into transfer dest
             recorder.pipelineBarrier(
                 PipelineStageFlags::TopOfPipe, PipelineStageFlags::Transfer,
@@ -334,7 +334,7 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
     // Prepare descriptor set write models
     Core::SmallVector<GPU::DescriptorSetWriteModel, 8, ResourceAllocator> models(
         eventCount,
-        [this, &currentCache, &imageInfos](const auto index) {
+        [&currentCache, &imageInfos](const auto index) {
             return GPU::DescriptorSetWriteModel(
                 currentCache.descriptorSet,
                 0,
