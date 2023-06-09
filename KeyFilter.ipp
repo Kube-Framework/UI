@@ -13,8 +13,8 @@ inline kF::UI::EventFlags kF::UI::KeyFilter::MatchKeyEvent(const KeyEvent &event
         if ((event.key != match.key) | !matchModifiers) [[likely]]
             return EventFlags::Propagate;
         const auto pressedAndRelease = Core::HasFlags(match.specifiers, Specifiers::PressedAndRelease);
-        const auto allowRepeat = !Core::HasFlags(match.specifiers, Specifiers::AllowRepeat);
-        if ((!pressedAndRelease & !event.state) | (!allowRepeat & event.repeat))
+        const auto blockRepeat = !Core::HasFlags(match.specifiers, Specifiers::AllowRepeat);
+        if ((!pressedAndRelease & !event.state) | (blockRepeat & event.repeat))
             return EventFlags::Stop;
         if constexpr (std::is_invocable_v<decltype(match.callback), bool>)
             match.callback(event.state);
