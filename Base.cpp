@@ -12,7 +12,8 @@ using namespace kF;
 
 bool UI::OpenUrl(const std::string_view &url) noexcept
 {
-    return SDL_OpenURL(url.data()) == 0;
+    std::string str(url);
+    return SDL_OpenURL(str.c_str()) == 0;
 }
 
 namespace kF::UI
