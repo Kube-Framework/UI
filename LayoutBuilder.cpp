@@ -433,7 +433,7 @@ void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
         const auto anchor = data.layout->anchor;
         const UI::Area area = [this, &data, spaceBetween, anchor, isWidthDistributed, isHeightDistributed] {
             auto area = Area::ApplyPadding(_traverseContext.area(), data.layout->padding);
-            const auto totalSpacing = spaceBetween * Pixel(data.children.size());
+            const auto totalSpacing = spaceBetween * Pixel(data.children.size() - 1u);
             const Size contentSize {
                 isWidthDistributed ? data.totalFixed.width + totalSpacing : data.maxFixed.width,
                 isHeightDistributed ? data.totalFixed.height + totalSpacing : data.maxFixed.height
