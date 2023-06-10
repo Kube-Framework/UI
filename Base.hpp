@@ -576,7 +576,7 @@ namespace kF::UI
     [[nodiscard]] std::string_view OpenSingleFilePicker(
         const std::string_view &title = {},
         const std::string_view &defaultPath = {},
-        const Core::IteratorRange<const std::string_view *> &filters = {}
+        const std::initializer_list<std::string_view> &filters = {}
     ) noexcept;
 }
 

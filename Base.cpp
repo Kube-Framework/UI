@@ -26,7 +26,7 @@ bool UI::OpenUrl(const std::string_view &url) noexcept
 std::string_view UI::OpenSingleFilePicker(
     const std::string_view &title,
     const std::string_view &defaultPath,
-    const Core::IteratorRange<const std::string_view *> &filters
+    const std::initializer_list<std::string_view> &filters
 ) noexcept
 {
     Core::SmallString<UIAllocator> titleStr(title);
