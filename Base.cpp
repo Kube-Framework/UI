@@ -34,14 +34,18 @@ std::string_view UI::OpenSingleFilePicker(
     Core::Vector<Core::SmallString<UIAllocator>, UIAllocator> filtersStrs(filters.begin(), filters.end());
     Core::Vector<const char *, UIAllocator> filtersCstrs(filtersStrs.begin(), filtersStrs.end(), [](const Core::SmallString<UIAllocator> &str) { return str.c_str(); });
 
-    return std::string_view(::tinyfd_openFileDialog(
+    const auto file = ::tinyfd_openFileDialog(
         titleStr.c_str(),
         defaultPathStr.c_str(),
         static_cast<int>(filtersCstrs.size()),
         filtersCstrs.data(),
         nullptr,
         false
-    ));
+    );
+    if (file)
+        return std::string_view(file);
+    else
+        return std::string_view();
 }
 
 namespace kF::UI
