@@ -109,9 +109,13 @@ public:
     [[nodiscard]] Sprite add(const std::string_view &path, const float removeDelaySeconds = Sprite::DefaultRemoveDelay) noexcept;
 
 
-    /** @brief Add a sprite to the manager using a fake path and RGBA 32bits color data
+    /** @brief Add a sprite to the manager using RGBA 32bits color data
      *  @note The sprite instance is unique and cannot be copied nor queried */
     [[nodiscard]] Sprite add(const SpriteBuffer &spriteBuffer, const float removeDelaySeconds = Sprite::DefaultRemoveDelay) noexcept;
+
+    /** @brief Add a sprite to the manager using encoded raw data
+     *  @note The sprite instance is unique and cannot be copied nor queried */
+    [[nodiscard]] Sprite add(const Core::IteratorRange<const std::uint8_t *> &encodedData, const float removeDelaySeconds = Sprite::DefaultRemoveDelay) noexcept;
 
 
     /** @brief Get the size of a sprite */

@@ -17,6 +17,7 @@ namespace kF::UI
         /** @brief All kinds of list model event types */
         enum class Type : std::uint32_t
         {
+            None,
             Insert,
             Erase,
             Update,
@@ -59,8 +60,9 @@ namespace kF::UI
             std::uint32_t out {};
         };
 
-        Type type;
+        Type type {};
         union {
+            Core::DummyType dummy {};
             Insert insert;
             Erase erase;
             Update update;

@@ -132,8 +132,10 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path, const float remo
             ::stbi_load(str.c_str(), &x, &y, &channelCount, ::STBI_rgb_alpha)
         );
     }
-    kFEnsure(data,
-        "UI::SpriteManager::load: Couldn't load sprite at path '", path, '\'');
+    if (!data) {
+        kFError("[SpriteManager] Couldn't load sprite at path: ", path);
+        return UI::Sprite();
+    }
 
     // Reserve sprite index
     kFEnsure(!path.empty(), "UI::SpriteManager::add: Path cannot be empty");
@@ -167,6 +169,40 @@ UI::Sprite UI::SpriteManager::add(const SpriteBuffer &spriteBuffer, const float 
 
 #if KUBE_DEBUG_BUILD
     kFInfo("[UI] Init sprite ", spriteIndex, ":\t Path '{Buffer}' Extent (", spriteBuffer.extent.width, ", ", spriteBuffer.extent.height, ')');
+#endif
+
+    // Build sprite
+    return Sprite(*this, spriteIndex);
+}
+
+UI::Sprite UI::SpriteManager::add(const Core::IteratorRange<const std::uint8_t *> &encodedData, const float removeDelaySeconds) noexcept
+{
+    // Reserve sprite index
+    const auto spriteIndex = addImpl(Core::HashedName {}, removeDelaySeconds);
+
+    // Decode data
+    int x {};
+    int y {};
+    int channelCount {};
+    const auto data = reinterpret_cast<Color *>(
+        ::stbi_load_from_memory(encodedData.begin(), static_cast<int>(encodedData.size()), &x, &y, &channelCount, ::STBI_rgb_alpha)
+    );
+    if (!data) {
+        kFError("[SpriteManager] Couldn't decode raw sprite data");
+        return UI::Sprite();
+    }
+
+    // Build sprite cache at 'spriteIndex'
+    load(spriteIndex, SpriteBuffer {
+        .data = data,
+        .extent = { static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y) }
+    });
+
+    // Release decoded image
+    ::stbi_image_free(data);
+
+#if KUBE_DEBUG_BUILD
+    kFInfo("[UI] Init sprite ", spriteIndex, ":\t Path '{Encoded Buffer}' Extent (", x, ", ", y, ')');
 #endif
 
     // Build sprite
