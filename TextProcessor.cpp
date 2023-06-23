@@ -27,34 +27,34 @@ namespace kF::UI
     };
     static_assert_alignof_quarter_cacheline(Glyph);
 
+    /** @brief Metrics of a single line */
+    struct LineMetrics
+    {
+        std::uint32_t charCount {};
+        Pixel spaceCount {};
+        Pixel totalSize {};
+        Pixel totalGlyphSize {};
+        Pixel width {};
+        bool elided {};
+    };
+
     /** @brief Pixel small optimized cache */
-    using PixelCache = Core::SmallVector<Pixel, Core::CacheLineSize / sizeof(Pixel), UIAllocator>;
+    using LinesMetrics = Core::SmallVector<LineMetrics, Core::CacheLineSize / sizeof(LineMetrics), UIAllocator>;
 
     /** @brief Stores all parameters from a text computation */
     struct alignas_double_cacheline ComputeParameters
     {
         const Text *text {};
         const FontManager::GlyphIndexSet *glyphIndexSet {};
-        const FontManager::GlyphUVs *glyphUVs {};
-        Size mapSize {};
+        const FontManager::GlyphsMetrics *glyphsMetrics {};
         Pixel spaceWidth {};
         Pixel lineHeight {};
+        Pixel baseline {};
         Pixel lineCount {};
         SpriteIndex spriteIndex {};
-        PixelCache pixelCache {};
+        LinesMetrics linesMetrics {};
     };
     static_assert_fit_double_cacheline(ComputeParameters);
-
-    /** @brief Metrics of a single line */
-    struct alignas_half_cacheline LineMetrics
-    {
-        std::uint32_t charCount {};
-        Pixel spaceCount {};
-        Pixel totalSize {};
-        Pixel totalGlyphSize {};
-        bool elided {};
-    };
-    static_assert_fit_half_cacheline(LineMetrics);
 
     /** @brief Compute all glyphs from a text in packed mode */
     template<auto GetX, auto GetY>
@@ -62,25 +62,41 @@ namespace kF::UI
 
     /** @brief Compute the metrics of a line of glyphs */
     template<auto GetX, auto GetY>
-    [[nodiscard]] static LineMetrics ComputeLineMetrics(ComputeParameters &params,
-            const std::string_view::iterator from, const std::string_view::iterator to,
-            const Pixel yOffset) noexcept;
+    [[nodiscard]] static LineMetrics ComputeLineMetrics(
+        ComputeParameters &params,
+        const std::string_view::iterator from,
+        const std::string_view::iterator to,
+        const Pixel yOffset
+    ) noexcept;
 
     /** @brief Compute a line of glyphs from a text */
     template<auto GetX, auto GetY>
-    static Pixel ComputeLine(Glyph *&out, ComputeParameters &params,
-            const std::string_view::iterator from, const std::string_view::iterator to,
-            const LineMetrics &metrics, const Pixel yOffset) noexcept;
+    static Pixel ComputeLine(
+        Glyph *&out, ComputeParameters &params,
+        const std::string_view::iterator from,
+        const std::string_view::iterator to,
+        const LineMetrics &metrics,
+        const Pixel yOffset
+    ) noexcept;
 
     /** @brief Compute the anchor of all glyphs within range */
     template<auto GetX, auto GetY>
-    static void ComputeGlyphPositions(Glyph * const from, Glyph * const to,
-            const ComputeParameters &params, const Size metrics) noexcept;
+    static void ComputeGlyphPositions(
+        Glyph * const from,
+        Glyph * const to,
+        const ComputeParameters &params,
+        const Size metrics
+    ) noexcept;
 
     /** @brief Apply the offset of all glyphs within range */
     template<auto GetX, auto GetY>
-    static void ApplyGlyphOffsets(Glyph * const from, Glyph * const to,
-            const ComputeParameters &params, const Size metrics, const Point offset) noexcept;
+    static void ApplyGlyphOffsets(
+        Glyph * const from,
+        Glyph * const to,
+        const ComputeParameters &params,
+        const Size metrics,
+        const Point offset
+    ) noexcept;
 }
 
 template<>
@@ -98,7 +114,9 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Text>(void) n
 
 template<>
 std::uint32_t UI::PrimitiveProcessor::GetInstanceCount<UI::Text>(
-        const Text * const primitiveBegin, const Text * const primitiveEnd) noexcept
+    const Text * const primitiveBegin,
+    const Text * const primitiveEnd
+) noexcept
 {
     std::uint32_t count {};
     for (auto it = primitiveBegin; it != primitiveEnd; ++it) {
@@ -113,8 +131,10 @@ std::uint32_t UI::PrimitiveProcessor::GetInstanceCount<UI::Text>(
 
 template<>
 std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
-        const Text * const primitiveBegin, const Text * const primitiveEnd,
-        std::uint8_t * const instanceBegin) noexcept
+    const Text * const primitiveBegin,
+    const Text * const primitiveEnd,
+    std::uint8_t * const instanceBegin
+) noexcept
 {
     const auto &fontManager = App::Get().uiSystem().fontManager();
     auto * const begin = reinterpret_cast<Glyph *>(instanceBegin);
@@ -125,12 +145,11 @@ std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         // Query compute parameters
         params.text = &text;
         params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.fontIndex);
-        params.glyphUVs = &fontManager.glyphUVsAt(text.fontIndex);
-        params.mapSize = fontManager.mapSizeAt(text.fontIndex);
+        params.glyphsMetrics = &fontManager.glyphsMetricsAt(text.fontIndex);
         params.spaceWidth = fontManager.spaceWidthAt(text.fontIndex);
         params.lineHeight = fontManager.lineHeightAt(text.fontIndex);
         params.spriteIndex = fontManager.spriteAt(text.fontIndex);
-        params.pixelCache.clear();
+        params.linesMetrics.clear();
 
         // Dispatch
         if (!text.vertical) [[likely]]
@@ -151,21 +170,21 @@ static void UI::ComputeGlyph(Glyph *&out, ComputeParameters &params) noexcept
 
     while (it != end) {
         // Compute line metrics
-        const auto metrics = ComputeLineMetrics<GetX, GetY>(params, it, end, GetY(size));
+        auto lineMetrics = ComputeLineMetrics<GetX, GetY>(params, it, end, GetY(size));
 
         // Compute line glyphs
-        const auto lineWidth = ComputeLine<GetX, GetY>(
-            out, params, it, it + metrics.charCount, metrics, GetY(size)
+        lineMetrics.width = ComputeLine<GetX, GetY>(
+            out, params, it, it + lineMetrics.charCount, lineMetrics, GetY(size)
         );
 
         // Update caches
-        params.pixelCache.push(lineWidth);
-        it += metrics.charCount;
-        GetX(size) = std::max(GetX(size), lineWidth);
+        params.linesMetrics.push(std::move(lineMetrics));
+        it += lineMetrics.charCount;
+        GetX(size) = std::max(GetX(size), lineMetrics.width);
         GetY(size) += params.lineHeight;
 
         // Stop on line elided
-        if (metrics.elided) [[unlikely]]
+        if (lineMetrics.elided) [[unlikely]]
             break;
     }
 
@@ -175,8 +194,12 @@ static void UI::ComputeGlyph(Glyph *&out, ComputeParameters &params) noexcept
 }
 
 template<auto GetX, auto GetY>
-static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
-        const std::string_view::iterator from, const std::string_view::iterator to, const Pixel yOffset) noexcept
+static UI::LineMetrics UI::ComputeLineMetrics(
+    ComputeParameters &params,
+    const std::string_view::iterator from,
+    const std::string_view::iterator to,
+    const Pixel yOffset
+) noexcept
 {
     constexpr auto CheckFit = [](const auto &metrics, const auto textSize, const auto xFit, const auto size) {
         return !xFit | (metrics.totalSize + size <= GetX(textSize));
@@ -186,8 +209,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
     const auto spaceWidth = params.spaceWidth;
     const auto tabMultiplier = params.text->spacesPerTab - 1;
     const auto textSize = params.text->area.size;
-    const bool lastLine = (yOffset + params.lineHeight * 2)
-            > (GetY(params.text->area.pos) + GetY(params.text->area.size));
+    const bool lastLine = (yOffset + params.lineHeight * 2) > (GetY(params.text->area.pos) + GetY(params.text->area.size));
     const bool xFit = params.text->fit | params.text->elide;
     const bool xElide = params.text->elide & (lastLine | !params.text->fit);
     auto it = from;
@@ -195,10 +217,10 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
     for (; it != to; ++it) {
         // Glyph
         if (!std::isspace(*it)) {
-            const auto size = params.glyphUVs->at(params.glyphIndexSet->at(*it)).size.width;
-            if (CheckFit(metrics, textSize, xFit, size)) [[likely]] {
-                metrics.totalSize += size;
-                metrics.totalGlyphSize += size;
+            const auto advance = params.glyphsMetrics->at(params.glyphIndexSet->at(*it)).advance;
+            if (CheckFit(metrics, textSize, xFit, advance)) [[likely]] {
+                metrics.totalSize += advance;
+                metrics.totalGlyphSize += advance;
             } else [[unlikely]] {
                 metrics.elided = xElide & params.text->elide;
                 break;
@@ -223,7 +245,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
 
     // Insert elided dots
     if (metrics.elided) [[unlikely]] {
-        const auto elideSize = params.glyphUVs->at(params.glyphIndexSet->at('.')).size.width * ElideDotCount;
+        const auto elideSize = params.glyphsMetrics->at(params.glyphIndexSet->at('.')).advance * ElideDotCount;
         while (!CheckFit(metrics, textSize, xFit, elideSize)) {
             // Decrement iterator if possible
             if (it != from)
@@ -233,9 +255,9 @@ static UI::LineMetrics UI::ComputeLineMetrics(ComputeParameters &params,
 
             // Glyph
             if (!std::isspace(*it)) {
-                const auto size = params.glyphUVs->at(params.glyphIndexSet->at(*it)).size.width;
-                metrics.totalSize -= size;
-                metrics.totalGlyphSize -= size;
+                const auto advance = params.glyphsMetrics->at(params.glyphIndexSet->at(*it)).advance;
+                metrics.totalSize -= advance;
+                metrics.totalGlyphSize -= advance;
             // Space
             } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
                 const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
@@ -272,16 +294,16 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
     for (auto it = from; it != to; ++it) {
         // Glyph
         if (!std::isspace(*it)) {
-            const auto &uv = params.glyphUVs->at(params.glyphIndexSet->at(*it));
+            const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at(*it));
             new (out++) Glyph {
-                .uv = uv,
-                .pos = pos,
+                .uv = metrics.uv,
+                .pos = pos + metrics.bearing,
                 .spriteIndex = params.spriteIndex,
                 .color = params.text->color,
                 .rotationAngle = params.text->rotationAngle,
                 .vertical = static_cast<float>(params.text->vertical)
             };
-            GetX(pos) += uv.size.width;
+            GetX(pos) += metrics.advance;
         // Space
         } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
             const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
@@ -291,17 +313,17 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
     }
 
     if (metrics.elided) [[unlikely]] {
-        const auto &uv = params.glyphUVs->at(params.glyphIndexSet->at('.'));
+        const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at('.'));
         for (auto i = 0u; i != ElideDotCount; ++i) {
             new (out++) Glyph {
-                .uv = uv,
-                .pos = pos,
+                .uv = metrics.uv,
+                .pos = pos + metrics.bearing,
                 .spriteIndex = params.spriteIndex,
                 .color = params.text->color,
                 .rotationAngle = params.text->rotationAngle,
                 .vertical = static_cast<float>(params.text->vertical)
             };
-            GetX(pos) += uv.size.width;
+            GetX(pos) += metrics.advance;
         }
     }
     return GetX(pos);
@@ -372,14 +394,14 @@ template<auto GetX, auto GetY>
 static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset) noexcept
 {
     constexpr auto ApplyOffsets = [](Glyph * const from, Glyph * const to, const ComputeParameters &params, const Size metrics, const Point offset, const Point rotationOrigin, auto &&computeFunc) {
-        auto lineWidthIt = params.pixelCache.begin();
-        Pixel oldY = GetY(from->pos);
-        auto currentOffset = computeFunc(offset, metrics, *lineWidthIt);
+        auto lineMetricsIt = params.linesMetrics.begin();
+        auto currentOffset = computeFunc(offset, metrics, lineMetricsIt->width);
+        auto nextLineIt = from + std::uint32_t(lineMetricsIt->charCount - std::uint32_t(lineMetricsIt->spaceCount));
         for (auto it = from; it != to; ++it) {
-            if (oldY != GetY(it->pos)) [[unlikely]] {
-                oldY = GetY(it->pos);
-                ++lineWidthIt;
-                currentOffset = computeFunc(offset, metrics, *lineWidthIt);
+            if (it == nextLineIt) [[unlikely]] {
+                nextLineIt = from + lineMetricsIt->charCount - std::uint32_t(lineMetricsIt->spaceCount);
+                ++lineMetricsIt;
+                currentOffset = computeFunc(offset, metrics, lineMetricsIt->width);
             }
             it->pos += currentOffset;
             it->rotationOrigin = rotationOrigin;

@@ -29,30 +29,29 @@ public:
     /** @brief Glyph index set */
     using GlyphIndexSet = Core::SparseSet<std::uint32_t, 1024, ResourceAllocator, wchar_t>;
 
-    /** @brief Glyph uv coordinates */
-    using GlyphUVs = Core::Vector<Area, ResourceAllocator, std::uint32_t>;
+    /** @brief Glyph metrics */
+    struct GlyphMetrics
+    {
+        Area uv {};
+        Point bearing {};
+        Pixel advance {};
+    };
+
+    /** @brief Glyph metrics */
+    using GlyphsMetrics = Core::Vector<GlyphMetrics, ResourceAllocator, std::uint32_t>;
 
     /** @brief Cache of a font file instance */
     struct alignas_double_cacheline FontCache
     {
         GlyphIndexSet glyphIndexSet {};
         Sprite sprite {};
-        GlyphUVs glyphUVs {};
-        std::uint32_t glyphCount {};
+        GlyphsMetrics glyphsMetrics {};
         FontModel model {};
         Size mapSize {};
         Pixel spaceWidth {};
         Pixel lineHeight {};
-        Pixel maxUnderBaseline {};
     };
     static_assert_fit_double_cacheline(FontCache);
-
-    /** @brief Contains the size of a map */
-    struct MapSize
-    {
-        std::uint32_t width {};
-        std::uint32_t height {};
-    };
 
     /** @brief Buffer type of a map */
     using MapBuffer = Core::Vector<Color, ResourceAllocator>;
@@ -99,9 +98,9 @@ public: // Unsafe functions reserved for internal usage
     [[nodiscard]] inline const GlyphIndexSet &glyphIndexSetAt(const FontIndex fontIndex) const noexcept
         { return _fontCaches.at(fontIndex).glyphIndexSet; }
 
-    /** @brief Get glyph uv coordinates of a texture instance */
-    [[nodiscard]] inline const GlyphUVs &glyphUVsAt(const FontIndex fontIndex) const noexcept
-        { return _fontCaches.at(fontIndex).glyphUVs; }
+    /** @brief Get glyph metrics of a texture instance */
+    [[nodiscard]] inline const GlyphsMetrics &glyphsMetricsAt(const FontIndex fontIndex) const noexcept
+        { return _fontCaches.at(fontIndex).glyphsMetrics; }
 
     /** @brief Get sprite of a texture instance index */
     [[nodiscard]] inline SpriteIndex spriteAt(const FontIndex fontIndex) const noexcept
@@ -114,16 +113,6 @@ public: // Unsafe functions reserved for internal usage
 private:
     /** @brief Load a font from 'path' that is stored at 'fontIndex' */
     void load(const std::string_view &path, const FontIndex fontIndex) noexcept;
-
-    /** @brief Collect glyphs data of a font instance
-     *  @note Font instance UVs are not normalized
-     *  @return Returns the map height */
-    [[nodiscard]] MapSize collectGlyphs(const FT_Face fontFace, const FontIndex fontIndex) noexcept;
-
-    /** @brief Render glyphs of a font instance into a map
-     *  @note Font instance UVs must not be normalized
-     *  @return Map pixel buffer */
-    [[nodiscard]] MapBuffer renderGlyphs(const FT_Face fontFace, const FontIndex fontIndex, const MapSize mapSize) noexcept;
 
 
     /** @brief Generate a unique font name from a path and a model */
