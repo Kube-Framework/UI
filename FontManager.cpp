@@ -5,18 +5,18 @@
 
 #include <cmath>
 
-#include <Kube/Core/Platform.hpp>
-#if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wold-style-cast"
-# pragma GCC diagnostic ignored "-Wcast-qual"
-# pragma GCC diagnostic ignored "-Wconversion"
-#endif
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-#if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
-# pragma GCC diagnostic pop
-#endif
+// #include <Kube/Core/Platform.hpp>
+// #if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
+// # pragma GCC diagnostic push
+// # pragma GCC diagnostic ignored "-Wold-style-cast"
+// # pragma GCC diagnostic ignored "-Wcast-qual"
+// # pragma GCC diagnostic ignored "-Wconversion"
+// #endif
+// #define STB_IMAGE_WRITE_IMPLEMENTATION
+// #include <stb_image_write.h>
+// #if KUBE_COMPILER_GCC | KUBE_COMPILER_CLANG
+// # pragma GCC diagnostic pop
+// #endif
 
 #include <freetype/freetype.h>
 #include <freetype/ftsizes.h>
@@ -197,9 +197,9 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
         .extent = GPU::Extent2D { std::uint32_t(fontCache.mapSize.width), std::uint32_t(fontCache.mapSize.height) }
     });
 
-    // Save bitmap as a file
-    auto imgPath = std::string(IO::File(path).filename()) + "_" + std::to_string(fontIndex) +".bmp";
-    ::stbi_write_bmp(imgPath.c_str(), std::uint32_t(fontCache.mapSize.width), std::uint32_t(fontCache.mapSize.height), 4, buffer.data());
+    // // Save bitmap as a file
+    // auto imgPath = std::string(IO::File(path).filename()) + "_" + std::to_string(fontIndex) +".bmp";
+    // ::stbi_write_bmp(imgPath.c_str(), std::uint32_t(fontCache.mapSize.width), std::uint32_t(fontCache.mapSize.height), 4, buffer.data());
 
 #if KUBE_DEBUG_BUILD
     kFInfo("[UI] Init font ", fontIndex, ":\t Family ", fontFace->family_name, " Style ", fontFace->style_name);
