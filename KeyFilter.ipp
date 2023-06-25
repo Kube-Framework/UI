@@ -9,7 +9,11 @@ template<typename ...Callbacks>
 inline kF::UI::EventFlags kF::UI::KeyFilter::MatchKeyEvent(const KeyEvent &event, const Match<Callbacks> &...args) noexcept
 {
     constexpr auto Match = []<typename Callback>(const auto &event, const KeyFilter::Match<Callback> &match) {
-        const bool matchModifiers = (match.modifiers == Modifier::None) | Core::HasFlags(event.modifiers, match.modifiers);
+        const bool matchModifiers
+            = (Core::HasFlags(event.modifiers, Modifier::Shift) == Core::HasFlags(match.modifiers, Modifier::Shift))
+            & (Core::HasFlags(event.modifiers, Modifier::Ctrl) == Core::HasFlags(match.modifiers, Modifier::Ctrl))
+            & (Core::HasFlags(event.modifiers, Modifier::Alt) == Core::HasFlags(match.modifiers, Modifier::Alt))
+            & (Core::HasFlags(event.modifiers, Modifier::Super) == Core::HasFlags(match.modifiers, Modifier::Super));
         if ((event.key != match.key) | !matchModifiers) [[likely]]
             return EventFlags::Propagate;
         const auto pressedAndRelease = Core::HasFlags(match.specifiers, Specifiers::PressedAndRelease);
