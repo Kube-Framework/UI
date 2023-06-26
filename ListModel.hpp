@@ -118,6 +118,9 @@ public:
     /** @brief Container ConstReverseIterator */
     using ConstReverseIterator = Container::ConstReverseIterator;
 
+    /** @brief Event dispatcher */
+    using EventDispatcher = Core::RemovableDispatcher<void(const ListModelEvent &), Allocator>;
+
 
     /** @brief Virtual destructor */
     ~ListModel(void) noexcept = default;
@@ -145,7 +148,7 @@ public:
 
 
     /** @brief Get ListModel's event dispatcher */
-    [[nodiscard]] inline auto &eventDispatcher(void) const noexcept { return _eventDispatcher; }
+    [[nodiscard]] inline EventDispatcher &eventDispatcher(void) const noexcept { return _eventDispatcher; }
 
 
     /** @brief Invalidate all elements that must be updated */
@@ -415,7 +418,7 @@ public:
 
 private:
     Container _container {};
-    mutable Core::RemovableDispatcher<void(const ListModelEvent &), Allocator> _eventDispatcher {};
+    mutable EventDispatcher _eventDispatcher {};
 };
 
 #include "ListModel.ipp"
