@@ -20,13 +20,10 @@ namespace kF::UI
 
 
     /** @brief Allocator of the UI library */
-    using UIAllocator = Core::StaticSafeAllocator<"UIAllocator">;
+    struct UIAllocator : Core::StaticSafeAllocator<"UIAllocator"> {};
 
-    /** @brief Event Allocator of the UI library */
-    using EventAllocator = Core::StaticSafeAllocator<"EventAllocator">;
-
-    /** @brief Allocator Resource of the UI library */
-    using ResourceAllocator = Core::StaticSafeAllocator<"ResourceAllocator">;
+    /** @brief Event allocator of the UI library */
+    struct EventAllocator : Core::StaticSafeAllocator<"EventAllocator"> {};
 
     /** @brief Default string of UI library */
     using UIString = Core::SmallString<UIAllocator>;

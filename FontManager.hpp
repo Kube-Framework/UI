@@ -27,7 +27,7 @@ class alignas_cacheline kF::UI::FontManager
 {
 public:
     /** @brief Glyph index set */
-    using GlyphIndexSet = Core::SparseSet<std::uint32_t, 1024, ResourceAllocator, wchar_t>;
+    using GlyphIndexSet = Core::SparseSet<std::uint32_t, 1024, UIAllocator, wchar_t>;
 
     /** @brief Glyph metrics */
     struct GlyphMetrics
@@ -38,7 +38,7 @@ public:
     };
 
     /** @brief Glyph metrics */
-    using GlyphsMetrics = Core::Vector<GlyphMetrics, ResourceAllocator, std::uint32_t>;
+    using GlyphsMetrics = Core::Vector<GlyphMetrics, UIAllocator, std::uint32_t>;
 
     /** @brief Cache of a font file instance */
     struct alignas_double_cacheline FontCache
@@ -54,7 +54,7 @@ public:
     static_assert_fit_double_cacheline(FontCache);
 
     /** @brief Buffer type of a map */
-    using MapBuffer = Core::Vector<Color, ResourceAllocator>;
+    using MapBuffer = Core::Vector<Color, UIAllocator>;
 
 
     /** @brief Destructor */
@@ -121,10 +121,10 @@ private:
 
 
     // Cacheline 0
-    Core::Vector<Core::HashedName, ResourceAllocator, FontIndex::IndexType> _fontNames {};
-    Core::Vector<FontCache, ResourceAllocator, FontIndex::IndexType> _fontCaches {};
-    Core::Vector<std::uint32_t, ResourceAllocator, FontIndex::IndexType> _fontCounters {};
-    Core::FlatVector<FontIndex, ResourceAllocator, FontIndex::IndexType> _fontFreeList {};
+    Core::Vector<Core::HashedName, UIAllocator, FontIndex::IndexType> _fontNames {};
+    Core::Vector<FontCache, UIAllocator, FontIndex::IndexType> _fontCaches {};
+    Core::Vector<std::uint32_t, UIAllocator, FontIndex::IndexType> _fontCounters {};
+    Core::FlatVector<FontIndex, UIAllocator, FontIndex::IndexType> _fontFreeList {};
     FT_Library _backend {};
 };
 static_assert_fit_cacheline(kF::UI::FontManager);

@@ -354,7 +354,7 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
         return;
 
     // Prepare image infos
-    Core::SmallVector<GPU::DescriptorImageInfo, 8, ResourceAllocator> imageInfos(
+    Core::SmallVector<GPU::DescriptorImageInfo, 8, UIAllocator> imageInfos(
         eventCount,
         [this, &currentCache](const auto index) {
             const auto &event = currentCache.events.at(index);
@@ -368,7 +368,7 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
     );
 
     // Prepare descriptor set write models
-    Core::SmallVector<GPU::DescriptorSetWriteModel, 8, ResourceAllocator> models(
+    Core::SmallVector<GPU::DescriptorSetWriteModel, 8, UIAllocator> models(
         eventCount,
         [&currentCache, &imageInfos](const auto index) {
             return GPU::DescriptorSetWriteModel(

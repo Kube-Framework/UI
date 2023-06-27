@@ -75,7 +75,7 @@ public:
     {
         GPU::DescriptorPool descriptorPool {};
         GPU::DescriptorSetHandle descriptorSet {};
-        Core::Vector<Event, ResourceAllocator> events {};
+        Core::Vector<Event, UIAllocator> events {};
     };
     static_assert_fit_half_cacheline(FrameCache);
 
@@ -164,11 +164,11 @@ private:
     void cancelDelayedRemove(const SpriteIndex spriteIndex) noexcept;
 
     // Cacheline 0
-    Core::Vector<Core::HashedName, ResourceAllocator, SpriteIndex::IndexType> _spriteNames {};
-    Core::FlatVector<SpriteCache, ResourceAllocator, SpriteIndex::IndexType> _spriteCaches {};
-    Core::FlatVector<SpriteCounter, ResourceAllocator, SpriteIndex::IndexType> _spriteCounters {};
-    Core::Vector<SpriteIndex, ResourceAllocator, SpriteIndex::IndexType> _spriteFreeList {};
-    Core::Vector<SpriteDelayedRemove, ResourceAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
+    Core::Vector<Core::HashedName, UIAllocator, SpriteIndex::IndexType> _spriteNames {};
+    Core::FlatVector<SpriteCache, UIAllocator, SpriteIndex::IndexType> _spriteCaches {};
+    Core::FlatVector<SpriteCounter, UIAllocator, SpriteIndex::IndexType> _spriteCounters {};
+    Core::Vector<SpriteIndex, UIAllocator, SpriteIndex::IndexType> _spriteFreeList {};
+    Core::Vector<SpriteDelayedRemove, UIAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1
     std::uint32_t _maxSpriteCount {};
     GPU::Sampler _sampler {};
@@ -176,6 +176,6 @@ private:
     GPU::CommandPool _commandPool;
     GPU::CommandHandle _command {};
     GPU::Fence _fence {};
-    GPU::PerFrameCache<FrameCache, ResourceAllocator> _perFrameCache {};
+    GPU::PerFrameCache<FrameCache, UIAllocator> _perFrameCache {};
 };
 static_assert_fit_double_cacheline(kF::UI::SpriteManager);
