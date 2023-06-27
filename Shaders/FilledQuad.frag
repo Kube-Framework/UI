@@ -60,8 +60,6 @@ void main(void)
         // Recolored texture
         } else {
             outColor = textureColor * fragColor;
-            // float alpha = textureColor.a * fragColor.a;
-            // outColor = vec4(textureColor.rgb * (1.0 - alpha) + fragColor.rgb * alpha, alpha);
         }
     }
 
