@@ -171,7 +171,7 @@ public:
     [[nodiscard]] inline bool empty(void) const noexcept { return _container.empty(); }
 
     /** @brief Fast non-empty check */
-    [[nodiscard]] inline operator bool(void) const noexcept { return _container.operator bool(); }
+    [[nodiscard]] explicit inline operator bool(void) const noexcept { return _container.operator bool(); }
 
     /** @brief Base container */
     [[nodiscard]] inline operator const Container &(void) const noexcept { return _container; }
