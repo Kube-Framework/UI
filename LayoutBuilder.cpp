@@ -92,6 +92,20 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
         else [[unlikely]]
             *data.constraints = _uiSystem.get<Constraints>(_traverseContext.entity());
 
+        // Use explicit layout if defined or use default stack layout
+        data.layout = [this, &data](void) -> Layout * {
+            if (!Core::HasFlags(data.node->componentFlags, ComponentFlags::Layout)) [[likely]]
+                return &_defaultLayout;
+            else
+                return &_uiSystem.get<Layout>(_traverseContext.entity());
+        }();
+        // If a layout event is defined, call it to let user modify layout
+        if (data.layout->event) {
+            // If the event returns true, we must invalidate frame to prevent non synchronized caches
+            if (data.layout->event(*data.constraints, *data.layout))
+                _uiSystem.invalidate();
+        }
+
         // Resolve mirror constraints that have a fixed opposite
         constexpr auto ResolveStrictMirror = [](auto &constraint, const auto oppositeConstraint) {
             if ((constraint == PixelMirror) & IsFixedConstraint(oppositeConstraint))
@@ -106,18 +120,10 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
             data.constraints->maxSize.width
         );
 
-        // Use explicit layout if defined or use default stack layout
-        data.layout = &[this, &data](void) -> const Layout & {
-            if (!Core::HasFlags(data.node->componentFlags, ComponentFlags::Layout)) [[likely]]
-                return _defaultLayout;
-            else
-                return _uiSystem.get<Layout>(_traverseContext.entity());
-        }();
-
         return data;
     }();
 
-    // Discover every chuild entity index
+    // Discover every child entity index
     data.children.reserve(data.node->children.size());
     for (const auto childEntity : data.node->children) {
         const auto childEntityIndex = _traverseContext.entityIndexOf(childEntity);

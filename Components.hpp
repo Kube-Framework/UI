@@ -99,8 +99,12 @@ namespace kF::UI
 
 
     /** @brief Layout describes the children distribution of an item */
-    struct alignas_half_cacheline Layout
+    struct alignas_cacheline Layout
     {
+        /** @brief Layout event allows to modify an item's constraints or layout before the layout is built
+         *  @return Return true if the tree must be invalidated */
+        using Event = Core::Functor<bool(UI::Constraints &, Layout &), UIAllocator>;
+
         FlowType flowType {};
         Anchor anchor {};
         Anchor flexAnchor {};
@@ -109,8 +113,9 @@ namespace kF::UI
         Pixel spacing {};
         Pixel flexSpacing {};
         Padding padding {};
+        Event event {};
     };
-    static_assert_fit_half_cacheline(Layout);
+    static_assert_fit_cacheline(Layout);
 
 
     /** @brief Timer handler */

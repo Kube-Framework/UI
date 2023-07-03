@@ -28,7 +28,7 @@ public:
         // Cacheline 0
         const TreeNode *node {};
         Constraints *constraints {};
-        const Layout *layout {};
+        Layout *layout {};
         Size totalFixed {};
         Size maxFixed {};
         Size fillCount {};

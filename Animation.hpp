@@ -31,12 +31,10 @@ namespace kF::UI
     struct alignas_cacheline Animation
     {
         /** @brief Tick event */
-        using TickEvent = Core::Functor<void(const float), UIAllocator,
-                Core::CacheLineEighthSize * 3>;
+        using TickEvent = Core::Functor<void(const float), UIAllocator, Core::CacheLineEighthSize * 3>;
 
         /** @brief Status event */
-        using StatusEvent = Core::Functor<void(const AnimationStatus), UIAllocator,
-                Core::CacheLineEighthSize * 3>;
+        using StatusEvent = Core::Functor<void(const AnimationStatus), UIAllocator, Core::CacheLineEighthSize * 3>;
 
 
         std::int64_t duration {};

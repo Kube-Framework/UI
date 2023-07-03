@@ -13,17 +13,13 @@ void UI::Animator::start(const Animation &animation) noexcept
 {
     const auto index = findIndex(animation);
     AnimationState *state {};
-
-    kFEnsure(animation.tickEvent,
-        "UI::Animator::start: Animation must have a tick event callback");
-    kFEnsure(animation.duration,
-        "UI::Animator::start: Animation must have a duration > 0");
     if (!index.success()) [[likely]] {
         state = &_states.push(AnimationState { .animation = Core::TaggedPtr(&animation) });
     } else {
         state = &_states.at(index.value());
+        if (animation.statusEvent)
+            animation.statusEvent(AnimationStatus::Stop);
     }
-    // if (state->elapsed) // This is a restart
     state->elapsed = {};
     state->setReverse(animation.reverse);
     if (animation.statusEvent)
@@ -56,11 +52,14 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
 {
     const auto it = std::remove_if(_states.begin(), _states.end(), [elapsed](auto &state) {
         const auto &animation = *state.animation;
-        const auto totalElapsed = std::min(state.elapsed + elapsed, animation.duration);
-        const auto ratio = static_cast<float>(totalElapsed) / static_cast<float>(animation.duration);
-        const auto reverse = state.reverse();
-        const auto reversedRatio = !reverse ? ratio : 1.0f - ratio;
-        animation.tickEvent(reversedRatio);
+        const auto reverse = animation.reverse;
+        const auto duration = std::max<std::int64_t>(animation.duration, 1);
+        const auto totalElapsed = std::min(state.elapsed + elapsed, duration);
+        if (animation.tickEvent) {
+            const auto ratio = float(double(totalElapsed) / double(duration));
+            const auto reversedRatio = reverse ? 1.0f - ratio : ratio;
+            animation.tickEvent(reversedRatio);
+        }
         if (animation.duration != totalElapsed) [[likely]] {
             state.elapsed = totalElapsed;
             return false;
@@ -70,9 +69,9 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
             const auto oldElapsed = state.elapsed;
             if (animation.statusEvent)
                 animation.statusEvent(AnimationStatus::Finish);
-            const bool restarted = state.elapsed != oldElapsed;
+            const bool manuallyRestarted = state.elapsed != oldElapsed;
             state.elapsed = {};
-            return animation.animationMode == AnimationMode::Single && !restarted;
+            return animation.animationMode == AnimationMode::Single && !manuallyRestarted;
         }
     });
 

@@ -554,7 +554,6 @@ namespace kF::UI
 
     namespace Internal
     {
-
         /** @brief Forward an argument either by forwarding or by invoking a functor */
         template<typename Arg>
         [[nodiscard]] constexpr decltype(auto) ForwardArg(Arg &&arg) noexcept
