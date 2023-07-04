@@ -202,16 +202,16 @@ template<typename ItemType>
     requires std::derived_from<ItemType, kF::UI::Item>
 inline ItemType &kF::UI::Item::parent(void) const noexcept
 {
-    kFAssert(dynamic_cast<ItemType *>(_parent) != nullptr,
-        "UI::Item::parent<ParentType>: ParentType is not the type of this' parent");
-    return *reinterpret_cast<ItemType *>(_parent);
+    const auto ptr = dynamic_cast<ItemType *>(_parent) != nullptr;
+    kFEnsure(ptr, "UI::Item::parent<ParentType>: ParentType is not the type of this' parent");
+    return *ptr;
 }
 
 template<typename ItemType>
     requires std::derived_from<ItemType, kF::UI::Item>
 inline const ItemType &kF::UI::Item::childAt(const std::uint32_t index) const noexcept
 {
-    const auto ptr = _children.at(index).get();
-    kFAssert(dynamic_cast<const ItemType *>(ptr), "kF::UI::Item::childAt: Child at index '", index, "' is not derived from ItemType");
-    return reinterpret_cast<const ItemType &>(*ptr);
+    const auto ptr = dynamic_cast<const ItemType *>(_children.at(index).get());
+    kFEnsure(ptr, "kF::UI::Item::childAt: Child at index '", index, "' is not derived from ItemType");
+    return *ptr;
 }
