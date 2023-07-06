@@ -68,21 +68,35 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
             }
         }
 
+        constexpr bool IsInvocableModelIndex = std::is_invocable_v<Delegate, decltype(*child), decltype(modelData), std::uint32_t>;
         constexpr bool IsInvocableModel = std::is_invocable_v<Delegate, decltype(*child), decltype(modelData)>;
+        constexpr bool IsInvocableDerefencedModelIndex = [] {
+            if constexpr (Core::IsDereferencable<ModelData>) {
+                return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData), std::uint32_t>;
+            } else
+                return false;
+        }();
         constexpr bool IsInvocableDerefencedModel = [] {
             if constexpr (Core::IsDereferencable<ModelData>) {
                 return std::is_invocable_v<Delegate, decltype(*child), decltype(*modelData)>;
             } else
                 return false;
         }();
-        constexpr bool IsInvocableWithoutModel = std::is_invocable_v<Delegate, decltype(*child)>;
-        static_assert(IsInvocableModel || IsInvocableDerefencedModel || IsInvocableWithoutModel,
+        constexpr bool IsInvocableIndex = std::is_invocable_v<Delegate, decltype(*child), std::uint32_t>;
+        constexpr bool IsInvocableVoid = std::is_invocable_v<Delegate, decltype(*child)>;
+        static_assert(IsInvocableModelIndex || IsInvocableModel || IsInvocableDerefencedModelIndex || IsInvocableDerefencedModel || IsInvocableIndex || IsInvocableVoid,
             "ItemList::setup: Delegate is not invocable");
 
-        if constexpr (IsInvocableModel)
+        if constexpr (IsInvocableModelIndex)
+            delegate(*child, modelData, index);
+        else if constexpr (IsInvocableDerefencedModel)
+            delegate(*child, *modelData, index);
+        else if constexpr (IsInvocableModel)
             delegate(*child, modelData);
         else if constexpr (IsInvocableDerefencedModel)
             delegate(*child, *modelData);
+        else if constexpr (IsInvocableIndex)
+            delegate(*child, index);
         else
             delegate(*child);
     };
