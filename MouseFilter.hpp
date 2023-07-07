@@ -57,8 +57,8 @@ struct kF::UI::MouseFilter
         Modifier modifierWhiteList {};
         Modifier modifierBlackList {};
         Callback pressed {};
-        Callback released {};
         Callback motion {};
+        Callback released {};
     };
 
     /** @brief Hover event (motion only) */
