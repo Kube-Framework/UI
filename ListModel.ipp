@@ -43,7 +43,7 @@ inline void kF::UI::ListModel<Container, Allocator>::invalidate(const ConstItera
 template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
 inline void kF::UI::ListModel<Container, Allocator>::invalidate(const Range from, const Range to) noexcept
 {
-    _eventDispatcher.dispatch(ListModelEvent::Update {
+    _dispatcher.dispatch(ListModelEvent::Update {
         .from = from,
         .to = to
     });
@@ -55,7 +55,7 @@ inline kF::UI::ListModel<Container, Allocator>::Type &kF::UI::ListModel<Containe
 {
     const auto index = _container.size();
     auto &ref = _container.push(std::forward<Args>(args)...);
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + 1
     });
@@ -67,7 +67,7 @@ inline void kF::UI::ListModel<Container, Allocator>::pop(void) noexcept
 {
     _container.pop();
     const auto index = _container.size();
-    _eventDispatcher.dispatch(ListModelEvent::Erase {
+    _dispatcher.dispatch(ListModelEvent::Erase {
         .from = index,
         .to = index + 1
     });
@@ -78,7 +78,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertDefault(pos, count);
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
@@ -90,7 +90,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertFill(pos, count, value);
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
@@ -104,7 +104,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
     const auto index = Core::Distance<Range>(begin(), pos);
     const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.insert(pos, from, to);
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
@@ -118,7 +118,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
     const auto index = Core::Distance<Range>(begin(), pos);
     const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.insert(pos, from, to, std::forward<Map>(map));
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
@@ -131,7 +131,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
 {
     const auto index = Core::Distance<Range>(begin(), pos);
     const auto it = _container.insertCustom(pos, count, std::forward<InsertFunc>(insertFunc));
-    _eventDispatcher.dispatch(ListModelEvent::Insert {
+    _dispatcher.dispatch(ListModelEvent::Insert {
         .from = index,
         .to = index + count
     });
@@ -144,7 +144,7 @@ inline kF::UI::ListModel<Container, Allocator>::Iterator kF::UI::ListModel<Conta
     const auto index = Core::Distance<Range>(begin(), from);
     const auto count = Core::Distance<Range>(from, to);
     const auto it = _container.erase(from, to);
-    _eventDispatcher.dispatch(ListModelEvent::Erase {
+    _dispatcher.dispatch(ListModelEvent::Erase {
         .from = index,
         .to = index + count
     });
@@ -156,7 +156,7 @@ inline void kF::UI::ListModel<Container, Allocator>::resize(const Range count) n
     requires std::constructible_from<kF::UI::ListModel<Container, Allocator>::Type>
 {
     _container.resize(count);
-    _eventDispatcher.dispatch(ListModelEvent::Resize {
+    _dispatcher.dispatch(ListModelEvent::Resize {
         .count = count
     });
 }
@@ -166,7 +166,7 @@ inline void kF::UI::ListModel<Container, Allocator>::resize(const Range count, c
     requires std::copy_constructible<kF::UI::ListModel<Container, Allocator>::Type>
 {
     _container.resize(count, value);
-    _eventDispatcher.dispatch(ListModelEvent::Resize {
+    _dispatcher.dispatch(ListModelEvent::Resize {
         .count = count
     });
 }
@@ -176,7 +176,7 @@ template<typename Initializer>
 void kF::UI::ListModel<Container, Allocator>::resize(const Range count, Initializer &&initializer) noexcept
 {
     _container.resize(count, std::forward<Initializer>(initializer));
-    _eventDispatcher.dispatch(ListModelEvent::Resize {
+    _dispatcher.dispatch(ListModelEvent::Resize {
         .count = count
     });
 }
@@ -186,7 +186,7 @@ template<std::input_iterator InputIterator>
 inline void kF::UI::ListModel<Container, Allocator>::resize(const InputIterator from, const InputIterator to) noexcept
 {
     _container.resize(from, to);
-    _eventDispatcher.dispatch(ListModelEvent::Resize {
+    _dispatcher.dispatch(ListModelEvent::Resize {
         .count = Core::Distance<Range>(from, to)
     });
 }
@@ -196,7 +196,7 @@ template<std::input_iterator InputIterator, typename Map>
 inline void kF::UI::ListModel<Container, Allocator>::resize(const InputIterator from, const InputIterator to, Map &&map) noexcept
 {
     _container.resize(from, to, std::forward<Map>(map));
-    _eventDispatcher.dispatch(ListModelEvent::Resize {
+    _dispatcher.dispatch(ListModelEvent::Resize {
         .count = Core::Distance<Range>(from, to)
     });
 }
@@ -207,7 +207,7 @@ inline void kF::UI::ListModel<Container, Allocator>::clear(void) noexcept
     const auto count = _container.size();
     _container.clear();
     if (count) [[likely]] {
-        _eventDispatcher.dispatch(ListModelEvent::Erase {
+        _dispatcher.dispatch(ListModelEvent::Erase {
             .from = 0,
             .to = count
         });
@@ -219,7 +219,7 @@ inline void kF::UI::ListModel<Container, Allocator>::release(void) noexcept
 {
     const auto count = _container.size();
     _container.release();
-    _eventDispatcher.dispatch(ListModelEvent::Erase {
+    _dispatcher.dispatch(ListModelEvent::Erase {
         .from = 0,
         .to = count
     });
@@ -229,7 +229,7 @@ template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAlloc
 inline void kF::UI::ListModel<Container, Allocator>::move(const Range from, const Range to, const Range out) noexcept
 {
     _container.move(from, to, out);
-    _eventDispatcher.dispatch(ListModelEvent::Move {
+    _dispatcher.dispatch(ListModelEvent::Move {
         .from = from,
         .to = to,
         .out = out

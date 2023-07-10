@@ -103,7 +103,7 @@ inline void kF::UI::ItemList::setup(ListModelType &listModel, Delegate &&delegat
 
     // Setup list model & connect to its event dispatcher
     _listModel = &listModel;
-    _dispatcherSlot = listModel.eventDispatcher().template add<&ItemList::onListModelEvent>(this);
+    _dispatcherSlot = listModel.dispatcher().template add<&ItemList::onListModelEvent>(this);
     _modelSize = 0;
 
     // Insert list model items

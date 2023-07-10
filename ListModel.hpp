@@ -148,7 +148,7 @@ public:
 
 
     /** @brief Get ListModel's event dispatcher */
-    [[nodiscard]] inline EventDispatcher &eventDispatcher(void) const noexcept { return _eventDispatcher; }
+    [[nodiscard]] inline EventDispatcher &dispatcher(void) const noexcept { return _dispatcher; }
 
 
     /** @brief Invalidate all elements that must be updated */
@@ -418,7 +418,7 @@ public:
 
 private:
     Container _container {};
-    mutable EventDispatcher _eventDispatcher {};
+    mutable EventDispatcher _dispatcher {};
 };
 
 #include "ListModel.ipp"
