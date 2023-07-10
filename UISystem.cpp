@@ -196,6 +196,7 @@ UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &
         return area;
 
     // Find depth index
+    // @todo Replace backward search with binary search
     const auto count = clipDepths.size<std::uint32_t>();
     const auto depth = get<UI::Depth>(entity).depth;
     auto index = count - 1u;
@@ -214,23 +215,8 @@ UI::Area UI::UISystem::getClippedArea(const ECS::Entity entity, const UI::Area &
     const auto &clipAreas = _traverseContext.clipAreas();
     if (index == count || clipAreas.at(index) == DefaultClip)
         return area;
-
-    // Find highest parent of current clip
-    auto idx = index;
-    while (idx) {
-        if (clipAreas.at(idx - 1) == DefaultClip)
-            break;
-        --idx;
-    }
-
-    // Compute clip recursively
-    Area recursiveClip = clipAreas.at(idx);
-    while (idx != index) {
-        recursiveClip = Area::ApplyClip(clipAreas.at(++idx), recursiveClip);
-    }
-
-    // Apply recursive clip to area
-    return Area::ApplyClip(area, recursiveClip);
+    else
+        return Area::ApplyClip(area, clipAreas.at(index));
 }
 
 void UI::UISystem::processEventHandlers(void) noexcept
