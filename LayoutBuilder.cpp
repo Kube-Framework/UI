@@ -404,7 +404,6 @@ void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
 
     // Set self depth
     _traverseContext.depth().depth = _maxDepth++;
-
     // Apply item transform
     applyTransform(_traverseContext.entityIndexOf(*data.node), _traverseContext.area());
 
@@ -475,19 +474,15 @@ void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
 
     // Process clip if necessary
     Area lastClip { DefaultClip };
-    bool clip {};
-    {
-        const auto &clipTable = _uiSystem.getTable<Clip>();
-        const auto clipIndex = clipTable.getUnstableIndex(_traverseContext.entity());
-        if (clipIndex != ECS::NullEntityIndex) [[unlikely]] {
-            const auto currentClip = _traverseContext.currentClip();
-            if (lastClip.contains(currentClip)) [[likely]] {
-                lastClip = currentClip;
-                clip = true;
-                const auto clipArea = Area::ApplyPadding(_traverseContext.area(), clipTable.atIndex(clipIndex).padding);
-                _traverseContext.setClip(clipArea, _maxDepth);
-            }
-        }
+    bool reverseClip = false;
+    if (Core::HasFlags(_traverseContext.resolveData().node->componentFlags, ComponentFlags::Clip)) {
+        lastClip = _traverseContext.currentClip();
+        const auto clipArea = Area::ApplyClip(
+            Area::ApplyPadding(_traverseContext.area(), _uiSystem.get<Clip>(_traverseContext.entity()).padding),
+            lastClip
+        );
+        _traverseContext.setClip(clipArea, _maxDepth);
+        reverseClip = true;
     }
 
     // Top-bottom recursion
@@ -498,7 +493,7 @@ void UI::Internal::LayoutBuilder::resolveAreas(void) noexcept
     }
 
     // Restore previous clip
-    if (clip) [[unlikely]]
+    if (reverseClip) [[unlikely]]
         _traverseContext.setClip(lastClip, _maxDepth);
 }
 
