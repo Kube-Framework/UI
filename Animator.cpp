@@ -50,7 +50,8 @@ Core::Expected<std::uint32_t> UI::Animator::findIndex(const Animation &animation
 
 void UI::Animator::onTick(const std::int64_t elapsed) noexcept
 {
-    const auto it = std::remove_if(_states.begin(), _states.end(), [elapsed](auto &state) {
+    const auto end = _states.end();
+    const auto it = std::remove_if(_states.begin(), end, [elapsed](auto &state) {
         const auto &animation = *state.animation;
         const auto reverse = animation.reverse;
         const auto duration = std::max<std::int64_t>(animation.duration, 1);
@@ -75,6 +76,6 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
         }
     });
 
-    if (it != _states.end()) [[unlikely]]
-        _states.erase(it, _states.end());
+    if (it != end) [[unlikely]]
+        _states.erase(it, end);
 }
