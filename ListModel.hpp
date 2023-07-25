@@ -103,6 +103,9 @@ public:
     /** @brief Container range type */
     using Range = decltype(std::declval<const Container &>().size());
 
+    /** @brief Container type */
+    using ContainerType = Container;
+
     /** @brief Container underlying type */
     using Type = std::remove_cvref_t<decltype(std::declval<const Container &>()[0])>;
 
@@ -415,6 +418,15 @@ public:
     /** @brief Get the index of an iterator */
     [[nodiscard]] inline Range indexOf(const ConstIterator pos) const noexcept
         { return _container.indexOf(pos); }
+
+
+
+    /** @brief Sort the vector with default Type comparison operator */
+    inline void sort(void) noexcept { sort(std::less<Type>()); }
+
+    /** @brief Sort the vector using a comparator functor */
+    template<typename Compare>
+    void sort(Compare &&compare) noexcept;
 
 private:
     Container _container {};

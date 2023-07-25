@@ -25,11 +25,11 @@ inline kF::UI::EventFlags kF::UI::MouseFilter::operator()(
     constexpr bool Propagate = ((std::is_same_v<Args, Hover> || std::is_same_v<Args, PropagateUnusedEvents>) || ...);
     constexpr bool AllowCursor = (!std::is_same_v<Args, DisableCursorChange> && ...);
 
-    if constexpr (AllowCursor)
-        onBeforeEvent(event, uiSystem);
-    bool lock {};
+    const bool wasLocked = onBeforeEvent(event, entity, uiSystem, AllowCursor);
+    auto lock = wasLocked;
     auto flags = MergeFlags(onEvent(event, area, entity, uiSystem, args, lock, Propagate)...);
-    onAfterEvent(entity, uiSystem, lock);
+    if (wasLocked != lock)
+        setLockState(entity, uiSystem, lock);
 
     // Add invalidate on enter / leave when 'Hover' is not declared
     if constexpr (!Propagate) {

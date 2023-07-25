@@ -235,3 +235,21 @@ inline void kF::UI::ListModel<Container, Allocator>::move(const Range from, cons
         .out = out
     });
 }
+
+
+template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator>
+template<typename Compare>
+inline void kF::UI::ListModel<Container, Allocator>::sort(Compare &&compare) noexcept
+{
+    bool invalidated = false;
+    _container.sort([compare = std::forward<Compare>(compare), &invalidated](const auto &lhs, const auto &rhs) {
+        const auto res = compare(lhs, rhs);
+        invalidated |= res;
+        return res;
+    });
+    if (invalidated & !_container.empty()) {
+        _dispatcher.dispatch(ListModelEvent::Resize {
+            .count = _container.size()
+        });
+    }
+}

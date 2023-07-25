@@ -42,6 +42,8 @@ public:
     /** @brief Small optimized animation states */
     using AnimationStates = Core::SmallVector<AnimationState, OptimizedCount, UIAllocator>;
 
+    ~Animator(void) noexcept { if (_guard) *_guard = false; }
+
 
     /** @brief Start an animation
      *  @note The animation pointer must be valid until animation stops */
@@ -69,6 +71,7 @@ private:
 
 
     AnimationStates _states {};
+    bool *_guard {};
 };
 
 #include "Animator.ipp"

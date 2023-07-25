@@ -103,11 +103,11 @@ struct kF::UI::MouseFilter
     ) const noexcept;
 
 private:
-    /** @brief To call before onEvent */
-    void onBeforeEvent(const MouseEvent &event, UISystem &uiSystem) const noexcept;
+    /** @brief To call before onEvent, return if the entity is locked */
+    [[nodiscard]] bool onBeforeEvent(const MouseEvent &event, const ECS::Entity entity, UISystem &uiSystem, const bool allowCursor) const noexcept;
 
-    /** @brief To call after onEvent */
-    void onAfterEvent(const ECS::Entity entity, UISystem &uiSystem, const bool lock) const noexcept;
+    /** @brief Set the lock state of target entity */
+    void setLockState(const ECS::Entity entity, UISystem &uiSystem, const bool lock) const noexcept;
 
 
     /** @brief Handle click event */

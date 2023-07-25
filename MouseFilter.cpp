@@ -20,21 +20,19 @@ namespace kF::UI
     }
 }
 
-void UI::MouseFilter::onBeforeEvent(const MouseEvent &event, UISystem &uiSystem) const noexcept
+bool UI::MouseFilter::onBeforeEvent(const MouseEvent &event, const ECS::Entity entity, UISystem &uiSystem, const bool allowCursor) const noexcept
 {
-    switch (event.type) {
-    case MouseEvent::Type::Enter:
+    // Change cursor if required
+    if (allowCursor & (event.type == MouseEvent::Type::Enter))
         uiSystem.setCursor(Cursor::Hand);
-        break;
-    case MouseEvent::Type::Leave:
+    else if (allowCursor & (event.type == MouseEvent::Type::Leave))
         uiSystem.setCursor(Cursor::Arrow);
-        break;
-    default:
-        break;
-    }
+
+    // Determine if the entity is locked
+    return uiSystem.lockedEntity<MouseEventArea>() == entity;
 }
 
-void UI::MouseFilter::onAfterEvent(const ECS::Entity entity, UISystem &uiSystem, const bool lock) const noexcept
+void UI::MouseFilter::setLockState(const ECS::Entity entity, UISystem &uiSystem, const bool lock) const noexcept
 {
     if (!lock)
         uiSystem.unlockEvents<MouseEventArea>(entity);
@@ -104,7 +102,7 @@ UI::EventFlags UI::MouseFilter::onEvent(
         if (uiSystem.lockedEntity<MouseEventArea>() == entity && event.button == pen.button) {
             if (pen.released)
                 pen.released(event, area);
-            lock = true;
+            lock = false;
             return EventFlags::Invalidate;
         }
         break;
