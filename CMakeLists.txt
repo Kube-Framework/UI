@@ -28,6 +28,8 @@ kube_add_library(UI
         Font.ipp
         FontManager.cpp
         FontManager.hpp
+        GradientRectangleProcessor.cpp
+        GradientRectangleProcessor.hpp
         Item.cpp
         Item.hpp
         Item.ipp
@@ -79,6 +81,7 @@ kube_add_library(UI
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.frag
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.vert
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Rectangle.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/GradientRectangle.comp
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Text.comp
 
     LIBRARIES

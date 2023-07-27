@@ -16,6 +16,7 @@
 #include "CubicBezierProcessor.hpp"
 #include "CurveProcessor.hpp"
 #include "RectangleProcessor.hpp"
+#include "GradientRectangleProcessor.hpp"
 #include "TextProcessor.hpp"
 
 using namespace kF;
@@ -94,6 +95,7 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     // Register primitives
     registerPrimitive<Rectangle>();
     registerPrimitive<Text>();
+    registerPrimitive<GradientRectangle>();
     registerPrimitive<Curve>();
     registerPrimitive<CubicBezier>();
 }
