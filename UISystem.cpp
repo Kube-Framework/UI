@@ -257,7 +257,6 @@ void UI::UISystem::processEventHandlers(void) noexcept
         for (const auto hoveredEntity : _eventCache.mouseHoveredEntities) {
             auto &component = get<MouseEventArea>(hoveredEntity);
             const auto &clippedArea = getClippedArea(hoveredEntity, get<Area>(hoveredEntity));
-            component.hovered = false;
             const auto flags = component.event(leaveEvent, clippedArea, hoveredEntity, *this);
             if (Core::HasFlags(flags, EventFlags::Invalidate))
                 invalidate();
@@ -294,14 +293,12 @@ void UI::UISystem::processMouseEventAreasMotion(const MouseEvent &event) noexcep
         [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
             MouseEvent mouseEvent { event };
             mouseEvent.type = MouseEvent::Type::Enter;
-            component.hovered = true;
             return component.event(mouseEvent, clippedArea, entity, *this);
         },
         // On leave
         [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
             MouseEvent mouseEvent { event };
             mouseEvent.type = MouseEvent::Type::Leave;
-            component.hovered = false;
             return component.event(mouseEvent, clippedArea, entity, *this);
         },
         // On inside
@@ -337,21 +334,45 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
         event,
         _eventCache.mouseLock,
         [this](const MouseEvent &event, MouseEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
-            const auto flags = component.event(event, clippedArea, entity, *this);
-            // If mouse action is inside area or is locked, return now
-            if (clippedArea.contains(event.pos) || _eventCache.mouseLock == entity)
+            const auto updateHoverIndex = [this, entity](auto &hoverIndex) {
+                for (auto loop = 0u; loop != 2; ++loop) {
+                    if (hoverIndex < _eventCache.mouseHoveredEntities.size() && _eventCache.mouseHoveredEntities.at(hoverIndex) == entity)
+                        return true;
+                    hoverIndex = Core::Distance<std::uint32_t>(
+                        _eventCache.mouseHoveredEntities.begin(),
+                        _eventCache.mouseHoveredEntities.find(entity)
+                    );
+                }
+                return false;
+            };
+            const auto manageNonExpectedEventFlags = [this](const EventFlags flags) {
+                if (Core::HasFlags(flags, EventFlags::Invalidate))
+                    invalidate();
+            };
+
+            auto hoverIndex = 0u;
+            EventFlags flags {};
+            // Trigger enter event and add entity to hover list if not inside hover list
+            if (!updateHoverIndex(hoverIndex)) {
+                MouseEvent mouseEvent { event };
+                mouseEvent.type = MouseEvent::Type::Enter;
+                _eventCache.mouseHoveredEntities.push(entity);
+                manageNonExpectedEventFlags(component.event(mouseEvent, clippedArea, entity, *this));
+            }
+            // The entity has been destroyed if not in the hover list anymore
+            if (!updateHoverIndex(hoverIndex))
+                return EventFlags::Stop;
+            // Trigger action event
+            flags = component.event(event, clippedArea, entity, *this);
+            // Return now if mouse action is inside area or is locked or entity has been destroyed
+            if (clippedArea.contains(event.pos) || _eventCache.mouseLock == entity || !updateHoverIndex(hoverIndex))
                 return flags;
-            // Else send leave event
+            // Else send leave event and remove entity from hover list
             MouseEvent mouseEvent(event);
             mouseEvent.type = MouseEvent::Type::Leave;
-            component.hovered = false;
-            const auto leaveFlags = component.event(mouseEvent, clippedArea, entity, *this);
-            if (Core::HasFlags(leaveFlags, EventFlags::Invalidate))
-                invalidate();
-            const auto it = _eventCache.mouseHoveredEntities.find(entity);
-            kFAssert(it != _eventCache.mouseHoveredEntities.end(),
-                "UI::UISystem::processMouseEventAreasAction: Entity was not inside mouse hovered entity list");
-            _eventCache.mouseHoveredEntities.erase(it);
+            manageNonExpectedEventFlags(component.event(mouseEvent, clippedArea, entity, *this));
+            if (updateHoverIndex(hoverIndex))
+                _eventCache.mouseHoveredEntities.erase(_eventCache.mouseHoveredEntities.begin() + hoverIndex);
             return flags;
         }
     );
@@ -377,7 +398,6 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
     case DropEvent::Type::Begin:
     case DropEvent::Type::End:
         getTable<DropEventArea>().traverse([this, &event](const ECS::Entity entity, DropEventArea &component) {
-            component.hovered = false;
             component.event(
                 _eventCache.drop.typeHash,
                 _eventCache.drop.data(),
@@ -399,14 +419,12 @@ void UI::UISystem::processDropEventAreas(const DropEvent &event) noexcept
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
                 DropEvent dropEvent { event };
                 dropEvent.type = DropEvent::Type::Enter;
-                component.hovered = true;
                 return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), dropEvent, clippedArea, entity, *this);
             },
             // On leave
             [this](const DropEvent &event, DropEventArea &component, const Area &clippedArea, const ECS::Entity entity) {
                 DropEvent dropEvent { event };
                 dropEvent.type = DropEvent::Type::Leave;
-                component.hovered = false;
                 return component.event(_eventCache.drop.typeHash, _eventCache.drop.data(), dropEvent, clippedArea, entity, *this);
             },
             // On inside
@@ -434,17 +452,15 @@ void UI::UISystem::processKeyEventReceivers(const KeyEvent &event) noexcept
     // Send event to locked entity if any
     if (_eventCache.keyLock != ECS::NullEntity) {
         // Process locked event now
-        auto &component = table.get(_eventCache.keyLock);
-        const auto flags = component.event(event, _eventCache.keyLock, *this);
-
+        const auto flags = table.get(_eventCache.keyLock).event(event, _eventCache.keyLock, *this);
         // If locked event flags tells to stop, return now
         if (processEventFlags(flags))
             return;
     }
 
+    // Traverse all receivers
     table.traverse([this, &event](const ECS::Entity entity, KeyEventReceiver &component) {
-        const auto flags = component.event(event, entity, *this);
-        return !processEventFlags(flags);
+        return !processEventFlags(component.event(event, entity, *this));
     });
 }
 
@@ -455,17 +471,16 @@ void UI::UISystem::processTextEventReceivers(const TextEvent &event) noexcept
     // Send event to locked entity if any
     if (_eventCache.textLock != ECS::NullEntity) {
         // Process locked event now
-        auto &component = table.get(_eventCache.textLock);
-        const auto flags = component.event(event, _eventCache.textLock, *this);
+        const auto flags = table.get(_eventCache.textLock).event(event, _eventCache.textLock, *this);
 
         // If locked event flags tells to stop, return now
         if (processEventFlags(flags))
             return;
     }
 
+    // Traverse all receivers
     table.traverse([this, &event](const ECS::Entity entity, TextEventReceiver &component) {
-        const auto flags = component.event(event, entity, *this);
-        return !processEventFlags(flags);
+        return !processEventFlags(component.event(event, entity, *this));
     });
 }
 
@@ -662,9 +677,8 @@ inline ECS::Entity UI::UISystem::traverseClippedEventTableWithHover(
                 flags = onEnter(event, component, clippedArea, entity);
                 hoveredEntities.push(entity);
             // Hit entity is already entered
-            } else {
+            } else
                 flags = onInside(event, component, clippedArea, entity);
-            }
             return flags;
         }
     );
