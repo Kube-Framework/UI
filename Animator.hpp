@@ -18,31 +18,22 @@ namespace kF::UI
 
 
 /** @brief UI Animator */
-class kF::UI::Animator
+class alignas_cacheline kF::UI::Animator
 {
 public:
     /** @brief State of an animation */
-    struct alignas_quarter_cacheline AnimationState
+    struct alignas_eighth_cacheline AnimationState
     {
-        Core::TaggedPtr<const Animation> animation {};
+        const Animation *animation {};
         std::int64_t elapsed {};
-
-        /** @brief Get reverse state */
-        [[nodiscard]] inline bool reverse(void) const noexcept { return static_cast<bool>(animation.tag()); }
-
-        /** @brief Set reverse state */
-        inline void setReverse(const bool value) noexcept { animation.setTag(value); }
+        std::uint32_t startCount {};
+        bool reverse {};
     };
-    static_assert_fit_quarter_cacheline(AnimationState);
-
-    /** @brief Compute the optimized value count */
-    static constexpr auto OptimizedCount = Core::CacheLineQuarterSize / sizeof(AnimationState);
-    static_assert(OptimizedCount != 0, "Invalid small optimization");
+    static_assert_alignof_eighth_cacheline(AnimationState);
+    static_assert_sizeof(AnimationState, Core::CacheLineEighthSize * 3);
 
     /** @brief Small optimized animation states */
-    using AnimationStates = Core::SmallVector<AnimationState, OptimizedCount, UIAllocator>;
-
-    ~Animator(void) noexcept { if (_guard) *_guard = false; }
+    using AnimationStates = Core::SmallVector<AnimationState, 2, UIAllocator>;
 
 
     /** @brief Start an animation
@@ -71,7 +62,7 @@ private:
 
 
     AnimationStates _states {};
-    bool *_guard {};
 };
+static_assert_fit_cacheline(kF::UI::Animator);
 
 #include "Animator.ipp"

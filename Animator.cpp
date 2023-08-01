@@ -11,17 +11,20 @@ using namespace kF;
 
 void UI::Animator::start(const Animation &animation) noexcept
 {
+    kFEnsure(animation.duration, "UI::Animator::start: Animation cannot have zero as duration");
+
     const auto index = findIndex(animation);
     AnimationState *state {};
     if (!index.success()) [[likely]] {
-        state = &_states.push(AnimationState { .animation = Core::TaggedPtr(&animation) });
+        state = &_states.push(AnimationState { .animation = &animation });
     } else {
         state = &_states.at(index.value());
         if (animation.statusEvent)
             animation.statusEvent(AnimationStatus::Stop);
     }
     state->elapsed = {};
-    state->setReverse(animation.reverse);
+    state->reverse = animation.reverse;
+    ++state->startCount;
     if (animation.statusEvent)
         animation.statusEvent(AnimationStatus::Start);
 }
@@ -40,7 +43,7 @@ void UI::Animator::stop(const Animation &animation) noexcept
 
 Core::Expected<std::uint32_t> UI::Animator::findIndex(const Animation &animation) const noexcept
 {
-    auto it = _states.find([&animation](const auto &state) { return &animation == state.animation.get(); });
+    auto it = _states.find([&animation](const auto &state) { return &animation == state.animation; });
 
     if (it != _states.end()) [[likely]]
         return Core::Expected<std::uint32_t>(Core::Distance<std::uint32_t>(_states.begin(), it));
@@ -66,15 +69,11 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
             return false;
         } else [[unlikely]] {
             if (animation.animationMode == AnimationMode::Bounce)
-                state.setReverse(!reverse);
-            const auto oldElapsed = state.elapsed;
-            bool guard = true;
-            _guard = &guard;
+                state.reverse = !reverse;
+            const auto oldStartCount = state.startCount;
             if (animation.statusEvent)
                 animation.statusEvent(AnimationStatus::Finish);
-            _guard = nullptr;
-            kFEnsure(guard, "GUARD FAILED");
-            const bool manuallyRestarted = state.elapsed != oldElapsed;
+            const bool manuallyRestarted = state.startCount != oldStartCount;
             state.elapsed = {};
             return animation.animationMode == AnimationMode::Single && !manuallyRestarted;
         }
