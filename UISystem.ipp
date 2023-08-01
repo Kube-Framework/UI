@@ -51,6 +51,8 @@ inline void kF::UI::UISystem::onDettach(const ECS::Entity entity) noexcept
         onDropEventAreaRemovedUnsafe(entity);
     if constexpr ((std::is_same_v<Components, KeyEventReceiver> || ...))
         onKeyEventReceiverRemovedUnsafe(entity);
+    if constexpr ((std::is_same_v<Components, TextEventReceiver> || ...))
+        onTextEventReceiverRemovedUnsafe(entity);
 }
 
 inline void kF::UI::UISystem::onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
@@ -92,4 +94,11 @@ inline void kF::UI::UISystem::onKeyEventReceiverRemovedUnsafe(const ECS::Entity 
     // Check if deleted entity is currently locked
     if (_eventCache.keyLock == entity)
         _eventCache.keyLock = ECS::NullEntity;
+}
+
+inline void kF::UI::UISystem::onTextEventReceiverRemovedUnsafe(const ECS::Entity entity) noexcept
+{
+    // Check if deleted entity is currently locked
+    if (_eventCache.textLock == entity)
+        _eventCache.textLock = ECS::NullEntity;
 }

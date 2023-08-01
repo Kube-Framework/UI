@@ -224,7 +224,7 @@ void UI::FontManager::decrementRefCount(const FontIndex fontIndex) noexcept
     _fontFreeList.push(fontIndex);
 }
 
-UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab) noexcept
+UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab) const noexcept
 {
     constexpr auto UpdateMetrics = [](UI::Size &metrics, const UI::Point pen) {
         metrics.width = std::max(metrics.width, pen.x);

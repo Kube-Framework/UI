@@ -327,6 +327,9 @@ private:
     /** @brief Unsafe function notifying that key event receiver has been removed   */
     void onKeyEventReceiverRemovedUnsafe(const ECS::Entity entity) noexcept;
 
+    /** @brief Unsafe function notifying that text event receiver has been removed   */
+    void onTextEventReceiverRemovedUnsafe(const ECS::Entity entity) noexcept;
+
 
     /** @brief Check if a frame is invalid */
     [[nodiscard]] inline bool isFrameInvalid(const GPU::FrameIndex frame) const noexcept

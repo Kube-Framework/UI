@@ -108,7 +108,7 @@ public: // Unsafe functions reserved for internal usage
 
 
     /** @brief Compute text metrics using a given font */
-    [[nodiscard]] UI::Size computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab = DefaultSpacesPerTab) noexcept;
+    [[nodiscard]] UI::Size computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab = DefaultSpacesPerTab) const noexcept;
 
 private:
     /** @brief Load a font from 'path' that is stored at 'fontIndex' */
