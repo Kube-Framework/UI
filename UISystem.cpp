@@ -349,9 +349,8 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
                 if (Core::HasFlags(flags, EventFlags::Invalidate))
                     invalidate();
             };
-
             auto hoverIndex = 0u;
-            EventFlags flags {};
+
             // Trigger enter event and add entity to hover list if not inside hover list
             if (!updateHoverIndex(hoverIndex)) {
                 MouseEvent mouseEvent { event };
@@ -363,7 +362,7 @@ void UI::UISystem::processMouseEventAreasAction(const MouseEvent &event) noexcep
             if (!updateHoverIndex(hoverIndex))
                 return EventFlags::Stop;
             // Trigger action event
-            flags = component.event(event, clippedArea, entity, *this);
+            const auto flags = component.event(event, clippedArea, entity, *this);
             // Return now if mouse action is inside area or is locked or entity has been destroyed
             if (clippedArea.contains(event.pos) || _eventCache.mouseLock == entity || !updateHoverIndex(hoverIndex))
                 return flags;
