@@ -209,7 +209,7 @@ template<typename ItemType>
     requires std::derived_from<ItemType, kF::UI::Item>
 inline ItemType &kF::UI::Item::parent(void) const noexcept
 {
-    const auto ptr = dynamic_cast<ItemType *>(_parent) != nullptr;
+    const auto ptr = dynamic_cast<ItemType *>(_parent);
     kFEnsure(ptr, "UI::Item::parent<ParentType>: ParentType is not the type of this' parent");
     return *ptr;
 }
