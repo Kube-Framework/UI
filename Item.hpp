@@ -155,6 +155,13 @@ public:
     [[nodiscard]] inline const Component &get(void) const noexcept;
 
 
+    /** @brief Check if an entity is hovered */
+    [[nodiscard]] bool isHovered(void) const noexcept;
+
+    /** @brief Check if an entity is drop hovered */
+    [[nodiscard]] bool isDropHovered(void) const noexcept;
+
+
     /** @brief Delay a callback to the end of current tick */
     template<typename Callback>
     void delayToTickEnd(Callback &&callback) noexcept;

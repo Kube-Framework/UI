@@ -268,6 +268,20 @@ public:
     inline void unlockEvents(void) noexcept { lockEvents<Component>(ECS::NullEntity); }
 
 
+    /** @brief Check if an entity is hovered */
+    [[nodiscard]] inline bool isHovered(const ECS::Entity entity) const noexcept
+        { return _eventCache.mouseHoveredEntities.find(entity) != _eventCache.mouseHoveredEntities.end(); }
+
+    /** @brief Check if an entity is drop hovered */
+    [[nodiscard]] inline bool isDropHovered(const ECS::Entity entity) const noexcept
+        { return _eventCache.dropHoveredEntities.find(entity) != _eventCache.dropHoveredEntities.end(); }
+
+
+    /** @brief Delay a callback to the end of current tick */
+    inline void delayToTickEnd(DelayedEvent &&callback) noexcept
+        { _eventCache.delayedEvents.push(std::move(callback)); }
+
+
     /** @brief Virtual tick callback */
     [[nodiscard]] bool tick(void) noexcept override;
 
@@ -275,10 +289,6 @@ public:
     /** @brief Register renderer primitive */
     template<kF::UI::PrimitiveKind Primitive>
     inline void registerPrimitive(void) noexcept { _renderer.registerPrimitive<Primitive>(); }
-
-    /** @brief Delay a callback to the end of current tick */
-    inline void delayToTickEnd(DelayedEvent &&callback) noexcept
-        { _eventCache.delayedEvents.push(std::move(callback)); }
 
 private:
     // Item is a friend to prevent unsafe API access

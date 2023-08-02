@@ -99,6 +99,16 @@ inline void kF::UI::Item::delayToTickEnd(Callback &&callback) noexcept
     uiSystem().delayToTickEnd(std::forward<Callback>(callback));
 }
 
+inline bool kF::UI::Item::isHovered(void) const noexcept
+{
+    return uiSystem().isHovered(_entity);
+}
+
+inline bool kF::UI::Item::isDropHovered(void) const noexcept
+{
+    return uiSystem().isDropHovered(_entity);
+}
+
 template<typename ...Components>
 inline void kF::UI::Item::markComponents(void) noexcept
 {
