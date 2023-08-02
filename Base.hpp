@@ -298,11 +298,11 @@ namespace kF::UI
             { return Point(right(), centerY()); }
 
         /** @brief Get center top position */
-        [[nodiscard]] constexpr Point centerTop(void) const noexcept
+        [[nodiscard]] constexpr Point topCenter(void) const noexcept
             { return Point(centerX(), top()); }
 
         /** @brief Get center bottom position */
-        [[nodiscard]] constexpr Point centerBottom(void) const noexcept
+        [[nodiscard]] constexpr Point bottomCenter(void) const noexcept
             { return Point(centerX(), bottom()); }
 
 
