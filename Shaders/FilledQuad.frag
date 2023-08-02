@@ -31,11 +31,10 @@ float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, co
     const float radius = (isLeft * radius2.x) + ((1.0 - isLeft) * radius2.y);
 
     // Compute SDF
-    // return length(max(abs(point - center) - halfSize + radius, 0.0)) - radius;
     const vec2 componentWiseEdgeDistance = abs(point - center) - halfSize + radius;
     const float outsideDistance = length(max(componentWiseEdgeDistance, 0.0));
     const float insideDistance = min(max(componentWiseEdgeDistance.x, componentWiseEdgeDistance.y), 0.0);
-    return (outsideDistance + insideDistance) - radius;
+    return (outsideDistance + insideDistance) + 0.25 - radius;
 }
 
 mat2 getInversedRotationMatrix(const vec2 rotationCosSin)

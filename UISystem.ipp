@@ -57,7 +57,6 @@ inline void kF::UI::UISystem::onDettach(const ECS::Entity entity) noexcept
 
 inline void kF::UI::UISystem::onMouseEventAreaRemovedUnsafe(const ECS::Entity entity) noexcept
 {
-    kFInfo("onMouseEventAreaRemovedUnsafe: ", entity, " lock: ", _eventCache.mouseLock);
     // Check if deleted entity is currently locked
     if (_eventCache.mouseLock == entity)
         _eventCache.mouseLock = ECS::NullEntity;
