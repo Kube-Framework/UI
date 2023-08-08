@@ -171,6 +171,7 @@ private:
     Core::Vector<SpriteDelayedRemove, UIAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1
     std::uint32_t _maxSpriteCount {};
+    std::uint32_t _allocatedSpriteCount {};
     GPU::Sampler _sampler {};
     GPU::DescriptorSetLayout _descriptorSetLayout {};
     GPU::CommandPool _commandPool;
