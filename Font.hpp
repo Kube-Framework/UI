@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "Base.hpp"
+
 #include <Kube/Core/Utils.hpp>
 
 namespace kF::UI
