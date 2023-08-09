@@ -18,7 +18,7 @@ class kF::UI::PresentSystem : public ECS::System<"PresentSystem", PresentPipelin
 {
 public:
     /** @brief Virtual destructor */
-    virtual ~PresentSystem(void) noexcept = default;
+    virtual ~PresentSystem(void) noexcept override = default;
 
     /** @brief Constructor */
     PresentSystem(void) noexcept;

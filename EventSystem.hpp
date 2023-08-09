@@ -24,7 +24,7 @@ class alignas_double_cacheline kF::UI::EventSystem : public ECS::System<"EventSy
 {
 public:
     /** @brief Virtual destructor */
-    virtual ~EventSystem(void) noexcept = default;
+    virtual ~EventSystem(void) noexcept override = default;
 
     /** @brief Constructor */
     EventSystem(void) noexcept;
