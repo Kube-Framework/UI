@@ -21,6 +21,11 @@ layout(std430, binding = 0) buffer ContextSection {
 // Samplers
 layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount]; // 640 FOR M1
 
+// Push constants
+layout(push_constant) uniform ComputeConstants
+{
+    uint instanceCount;
+} computeConstants;
 
 // Area
 struct Area

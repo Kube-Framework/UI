@@ -189,6 +189,12 @@ private:
     /** @brief QueryModel function signature */
     using QueryModelSignature = PrimitiveProcessorModel(*)(void) noexcept;
 
+    /** @brief Push constant data structure of the compute shader */
+    struct ComputePushConstant
+    {
+        std::uint32_t instanceCount {};
+    };
+
 
     /** @brief Create graphic pipeline */
     [[nodiscard]] GPU::Pipeline createGraphicPipeline(const GPU::PipelineLayoutHandle pipelineLayout, const GraphicPipelineRendererModel &model) const noexcept;

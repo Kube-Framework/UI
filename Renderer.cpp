@@ -45,8 +45,13 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
                         DescriptorSetLayoutBinding(4, DescriptorType::StorageBuffer, 1, ShaderStageFlags::Compute) // Indices
                     }
                 ),
-                .computePipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }),
-                .graphicPipelineLayout = PipelineLayout::Make({ cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() })
+                .computePipelineLayout = PipelineLayout::Make(
+                    { cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() },
+                    { PushConstantRange(ShaderStageFlags::Compute, 0U, sizeof(ComputePushConstant))  }
+                ),
+                .graphicPipelineLayout = PipelineLayout::Make(
+                    { cache.computeSetLayout, _uiSystem->spriteManager().descriptorSetLayout() }
+                )
             };
             return cache;
         }())
@@ -395,7 +400,9 @@ void UI::Renderer::recordComputeCommand(const GPU::CommandRecorder &recorder) no
         const auto instanceCount = primitiveCache.instanceCount;
         const auto maxDispatchCount = _cache.maxDispatchCount;
         const auto localGroupSize = primitiveCache.model.computeLocalGroupSize;
-        const auto totalDispatchCount = (instanceCount / localGroupSize) + (static_cast<bool>(instanceCount % localGroupSize));
+        const auto totalDispatchCount = (instanceCount / localGroupSize) + (bool(instanceCount % localGroupSize));
+        // Push compute constants
+        recorder.pushConstants(_cache.computePipelineLayout, ShaderStageFlags::Compute, ComputePushConstant { .instanceCount = instanceCount });
         for (auto left = totalDispatchCount, dispatchBase = 0u; left; dispatchBase = totalDispatchCount - left) {
             std::uint32_t dispatchCount;
             if (left >= maxDispatchCount) {

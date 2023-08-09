@@ -20,12 +20,16 @@ struct Instance
 
 #include "../PrimitiveCompute.glsl"
 
-layout (local_size_x = 1) in;
+layout (local_size_x = 256) in;
 
 void main(void)
 {
-    // Compute metrics
+    // Don't compute if invocation index is out of instance range
     const uint instanceIndex = gl_GlobalInvocationID.x;
+    if (instanceIndex >= computeConstants.instanceCount)
+        return;
+
+    // Compute metrics
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
     const Area clampedArea = getClampedArea(instance.area);
