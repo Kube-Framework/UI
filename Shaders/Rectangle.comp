@@ -25,20 +25,29 @@ struct Instance
 
 #include "RectangleUtils.glsl"
 
+Area getClampedArea(const Area area)
+{
+    Area clamped;
+    clamped.pos = round(area.pos);
+    clamped.size = round(area.pos + area.size) - clamped.pos;
+    return clamped;
+}
+
 void main(void)
 {
     // Compute metrics
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
-    const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
+    const Area area = getClampedArea(instance.area);
+    const vec2 uvs[4] = getUVs(area.size, instance.spriteIndex, instance.fillMode);
     const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
-    const Quad quad = getQuad(instance.area.pos, instance.area.size, instance.spriteIndex, instance.fillMode, rotationCosSin);
+    const Quad quad = getQuad(area.pos, area.size, instance.spriteIndex, instance.fillMode, rotationCosSin);
 
     // Set vertices
     Vertex vertex;
-    vertex.halfSize = instance.area.size / 2.0;
-    vertex.center = instance.area.pos + instance.area.size / 2.0;
+    vertex.halfSize = area.size / 2.0;
+    vertex.center = area.pos + area.size / 2.0;
     vertex.radius = instance.radius;
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
