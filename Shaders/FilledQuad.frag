@@ -21,20 +21,23 @@ layout(location = 9) in flat vec2 fragRotationCosSin;
 // Outputs
 layout(location = 0) out vec4 outColor;
 
-// Box signed distance field supporting 4 independent radius
-float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, const vec4 radius4)
+float nearestRadius(const vec2 point, const vec2 center, const vec4 radius4)
 {
     // Select nearest radius
     const float isTop = float(point.y < center.y);
     const float isLeft = float(point.x < center.x);
     const vec2 radius2 = (isTop * radius4.xy) + ((1.0 - isTop) * radius4.zw);
-    const float radius = (isLeft * radius2.x) + ((1.0 - isLeft) * radius2.y);
+    return (isLeft * radius2.x) + ((1.0 - isLeft) * radius2.y);
+}
 
+// Box signed distance field supporting 4 independent radius
+float roundedBoxSDF(const vec2 point, const vec2 center, const vec2 halfSize, const float radius)
+{
     // Compute SDF
-    const vec2 componentWiseEdgeDistance = abs(point - center) - halfSize + radius;
+    const vec2 componentWiseEdgeDistance = abs(point - center) - (halfSize - 0.5) + radius;
     const float outsideDistance = length(max(componentWiseEdgeDistance, 0.0));
     const float insideDistance = min(max(componentWiseEdgeDistance.x, componentWiseEdgeDistance.y), 0.0);
-    return (outsideDistance + insideDistance) + 0.25 - radius;
+    return (outsideDistance + insideDistance) - radius;
 }
 
 mat2 getInversedRotationMatrix(const vec2 rotationCosSin)
@@ -64,13 +67,14 @@ void main(void)
 
     // Compute SDF alpha
     const vec2 inversedPoint = applyRotation(getInversedRotationMatrix(fragRotationCosSin), fragCenter, gl_FragCoord.xy);
-    const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize, fragRadius);
+    const float radius = nearestRadius(inversedPoint, fragCenter, fragRadius);
+    const float dist = roundedBoxSDF(inversedPoint, fragCenter, fragHalfSize, radius);
 
     // Smooth the border by antialiasing
     const float smoothedBorderAlpha = float(fragBorderWidth != 0.0) * smoothstep(-(fragBorderWidth + fragEdgeSoftness), -fragBorderWidth, dist);
     outColor = fragBorderColor * smoothedBorderAlpha + outColor * (1.0 - smoothedBorderAlpha);
 
     // Smooth the outer bound by antialiasing
-    const float smoothedAlpha =  smoothstep(fragEdgeSoftness, 0.0 , dist);
+    const float smoothedAlpha = smoothstep(max(min(fragEdgeSoftness, radius), 0.001), 0.0 , dist);
     outColor.a *= smoothedAlpha;
 }
