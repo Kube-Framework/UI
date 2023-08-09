@@ -2,82 +2,74 @@
 
 #extension GL_GOOGLE_include_directive : enable
 
-// Area
-struct Area
-{
-    vec2 pos;
-    vec2 size;
-};
+#include "FilledQuad.glsl"
 
-// Rectangle instance
+// Text glyph instance
 struct Instance
 {
-    Area area;
-    vec4 radius;
+    vec2 uvPos;
+    vec2 uvSize;
+    vec2 pos;
     uint spriteIndex;
-    uint fillMode;
     uint color;
-    uint borderColor;
-    float borderWidth;
-    float edgeSoftness;
+    vec2 rotationOrigin;
     float rotationAngle;
+    float vertical;
 };
 
-#include "RectangleUtils.glsl"
+#include "../PrimitiveCompute.glsl"
 
-Area getClampedArea(const Area area)
-{
-    Area clamped;
-    clamped.pos = round(area.pos);
-    clamped.size = round(area.pos + area.size) - clamped.pos;
-    return clamped;
-}
+layout (local_size_x = 1) in;
 
 void main(void)
 {
-    // Compute metrics
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
-    const Area area = getClampedArea(instance.area);
-    const vec2 uvs[4] = getUVs(area.size, instance.spriteIndex, instance.fillMode);
-    const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
-    const Quad quad = getQuad(area.pos, area.size, instance.spriteIndex, instance.fillMode, rotationCosSin);
+    const bool isVertical = bool(instance.vertical != 0.0);
+    // Compute relative UVs
+    const Quad uvQuad = getTextUVQuad(Area(instance.uvPos, instance.uvSize), textureSize(sprites[instance.spriteIndex], 0), isVertical);
+    // Compute relative area
+    const vec2 rotationCosSin = getRotationCosSin(instance.rotationAngle);
+    const mat2 rotationMatrix = getRotationMatrix(rotationCosSin);
+    const Area clampedArea = getClampedArea(Area(instance.pos, branchlessIf(isVertical, instance.uvSize.yx, instance.uvSize)));
+    const Quad quad = getTextRelativeQuad(clampedArea, rotationMatrix, instance.rotationOrigin);
 
     // Set vertices
     Vertex vertex;
-    vertex.halfSize = area.size / 2.0;
-    vertex.center = area.pos + area.size / 2.0;
-    vertex.radius = instance.radius;
+    vertex.halfSize = clampedArea.size / 2.0;
+    vertex.center = clampedArea.pos + vertex.halfSize;
+    vertex.radius = vec4(0.0);
     vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
-    vertex.borderColor = instance.borderColor;
-    vertex.borderWidth = instance.borderWidth;
-    vertex.edgeSoftness = instance.edgeSoftness;
+    vertex.borderColor = 0;
+    vertex.borderWidth = 0.0;
+    vertex.edgeSoftness = 0.0;
+    vertex.rotationOrigin = instance.rotationOrigin;
     vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
     vertex.pos = quad.p1;
-    vertex.uv = uvs[0];
+    vertex.uv = uvQuad.p1;
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
     vertex.pos = quad.p2;
-    vertex.uv = uvs[1];
+    vertex.uv = uvQuad.p2;
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
     vertex.pos = quad.p3;
-    vertex.uv = uvs[2];
+    vertex.uv = uvQuad.p3;
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
     vertex.pos = quad.p4;
-    vertex.uv = uvs[3];
+    vertex.uv = uvQuad.p4;
     vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices
-    //   TopLeft Triangle
+    //   TopRight Triangle
     indices.data[offset.indexOffset + 0] = offset.vertexOffset + 0;
     indices.data[offset.indexOffset + 1] = offset.vertexOffset + 1;
     indices.data[offset.indexOffset + 2] = offset.vertexOffset + 2;
-    //   BottomRight Triangle
+    //   BottomLeft Triangle
     indices.data[offset.indexOffset + 3] = offset.vertexOffset + 2;
     indices.data[offset.indexOffset + 4] = offset.vertexOffset + 3;
     indices.data[offset.indexOffset + 5] = offset.vertexOffset + 0;

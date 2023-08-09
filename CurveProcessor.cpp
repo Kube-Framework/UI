@@ -13,7 +13,7 @@ template<>
 UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Curve>(void) noexcept
 {
     return PrimitiveProcessorModel {
-        .computeShader = GPU::Shader(IO::File(":/UI/Shaders/Curve.comp.spv").queryResource()),
+        .computeShader = GPU::Shader(":/UI/Shaders/QuadraticBezier/Curve.comp.spv"),
         .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Curve),
         .instanceAlignment = alignof(Curve),

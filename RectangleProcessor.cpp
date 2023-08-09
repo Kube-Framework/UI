@@ -13,7 +13,7 @@ template<>
 UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Rectangle>(void) noexcept
 {
     return PrimitiveProcessorModel {
-        .computeShader = GPU::Shader(IO::File(":/UI/Shaders/Rectangle.comp.spv").queryResource()),
+        .computeShader = GPU::Shader(":/UI/Shaders/FilledQuad/Rectangle.comp.spv"),
         .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Rectangle),
         .instanceAlignment = alignof(Rectangle),

@@ -1,3 +1,5 @@
+#include "../Primitive.glsl"
+
 // Vertex
 struct Vertex
 {

@@ -2,14 +2,9 @@
 
 #extension GL_GOOGLE_include_directive : enable
 
-// Area
-struct Area
-{
-    vec2 pos;
-    vec2 size;
-};
+#include "FilledQuad.glsl"
 
-// Rectangle instance
+// Gradient rectangle instance
 struct Instance
 {
     Area area;
@@ -29,47 +24,52 @@ struct Instance
     float rotationAngle;
 };
 
-#include "RectangleUtils.glsl"
+#include "../PrimitiveCompute.glsl"
+
+layout (local_size_x = 1) in;
 
 void main(void)
 {
+    // Compute metrics
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
-    const vec2 uvs[4] = getUVs(instance.area.size, instance.spriteIndex, instance.fillMode);
-    const vec2 rotationCosSin = vec2(cos(instance.rotationAngle), sin(instance.rotationAngle));
-    const Quad quad = getQuad(instance.area.pos, instance.area.size, instance.spriteIndex, instance.fillMode, rotationCosSin);
+    const Area clampedArea = getClampedArea(instance.area);
+    const Quad uvQuad = getRectangleUVQuad(clampedArea.size, instance.spriteIndex, instance.fillMode);
+    const vec2 rotationCosSin = getRotationCosSin(instance.rotationAngle);
+    const Quad quad = getRectangleRelativeQuad(clampedArea, instance.spriteIndex, instance.fillMode, rotationCosSin);
 
     // Set vertices
     Vertex vertex;
-    vertex.halfSize = instance.area.size / 2.0;
-    vertex.center = instance.area.pos + instance.area.size / 2.0;
+    vertex.halfSize = clampedArea.size / 2.0;
+    vertex.center = clampedArea.pos + clampedArea.size / 2.0;
     vertex.radius = instance.radius;
     vertex.spriteIndex = instance.spriteIndex;
     vertex.borderWidth = instance.borderWidth;
     vertex.edgeSoftness = instance.edgeSoftness;
+    vertex.rotationOrigin = vertex.center;
     vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
     vertex.pos = quad.p1;
-    vertex.uv = uvs[0];
+    vertex.uv = uvQuad.p1;
     vertex.color = instance.topLeftColor;
     vertex.borderColor = instance.topLeftBorderColor;
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
     vertex.pos = quad.p2;
-    vertex.uv = uvs[1];
+    vertex.uv = uvQuad.p2;
     vertex.color = instance.topRightColor;
     vertex.borderColor = instance.topRightBorderColor;
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
     vertex.pos = quad.p3;
-    vertex.uv = uvs[2];
+    vertex.uv = uvQuad.p3;
     vertex.color = instance.bottomRightColor;
     vertex.borderColor = instance.bottomRightBorderColor;
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
     vertex.pos = quad.p4;
-    vertex.uv = uvs[3];
+    vertex.uv = uvQuad.p4;
     vertex.color = instance.bottomLeftColor;
     vertex.borderColor = instance.bottomLeftBorderColor;
     vertices.data[offset.vertexOffset + 3] = vertex;

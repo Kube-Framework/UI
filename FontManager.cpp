@@ -103,8 +103,10 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
     // Allocate glyph uvs
     fontCache.glyphsMetrics.resize(std::uint32_t(fontFace->num_glyphs));
 
-    // Update instance line height
-    fontCache.lineHeight = Pixel((fontFace->size->metrics.ascender - fontFace->size->metrics.descender) / 64);
+    // Update instance line height, ascender and descender
+    fontCache.ascender = Pixel(fontFace->size->metrics.ascender / 64);
+    fontCache.descender = Pixel(fontFace->size->metrics.descender / 64);
+    fontCache.lineHeight = fontCache.ascender - fontCache.descender;
 
     { // Collect metrics of each glyph and determine map size
         Size mapSize {
@@ -134,7 +136,7 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
 
                 // Register font coordinates
                 glyphMetrics.uv = glyphArea;
-                glyphMetrics.bearing = Point { Pixel(metrics.horiBearingX / 64), Pixel((fontFace->size->metrics.ascender - metrics.horiBearingY) / 64) };
+                glyphMetrics.bearing = Point { Pixel(metrics.horiBearingX / 64), Pixel(metrics.horiBearingY / 64) };
                 glyphMetrics.advance = Pixel(metrics.horiAdvance / 64);
 
                 // Increment x coordinate for next glyph

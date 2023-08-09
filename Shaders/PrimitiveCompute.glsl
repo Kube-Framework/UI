@@ -1,4 +1,4 @@
-#include "PrimitiveFrag.glsl"
+// PLEASE INCLUDE THIS FILE AFTER DECLARING AN 'Instance' STRUCTURE
 
 // Offset
 struct Offset
@@ -6,6 +6,7 @@ struct Offset
     uint vertexOffset;
     uint indexOffset;
 };
+
 // Instances section
 layout(std140, set = 0, binding = 1) buffer Instances { Instance data[]; } instances;
 

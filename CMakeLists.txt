@@ -72,17 +72,17 @@ kube_add_library(UI
         UISystem.ipp
 
     SHADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier.comp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier.frag
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Curve.comp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad.frag
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.frag
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Rectangle.comp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/GradientRectangle.comp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Text.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.vert
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad/FilledQuad.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad/FilledQuad.vert
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad/GradientRectangle.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad/Rectangle.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/FilledQuad/Text.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier/Curve.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier/QuadraticBezier.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/QuadraticBezier/QuadraticBezier.vert
 
     LIBRARIES
         ECS

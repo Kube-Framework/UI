@@ -1,14 +1,8 @@
 #version 450
 
-// #extension GL_EXT_debug_printf : enable
 #extension GL_GOOGLE_include_directive : enable
 
-// Area
-struct Area
-{
-    vec2 pos;
-    vec2 size;
-};
+#include "QuadraticBezier.glsl"
 
 // Rectangle instance
 struct Instance
@@ -23,26 +17,17 @@ struct Instance
     float edgeSoftness; // Edge softness in pixels
 };
 
-#include "QuadraticBezierUtils.glsl"
-#include "PrimitiveCompute.glsl"
+#include "../PrimitiveCompute.glsl"
 
 layout (local_size_x = 1) in;
-
-// vec2 moveAway(const vec2 point, const vec2 offset, const float moveAwayDistance)
-// {
-//     return point + moveAwayDistance * offset / length(offset);
-// }
 
 void main(void)
 {
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
+    const Area clampedArea = getClampedArea(instance.area);
     const vec2 midPoint = (instance.left + instance.right + instance.control) / 3.0;
-    // const float moveAwayDistance = instance.thickness + instance.edgeSoftness * 2.0;
-
-    // debugPrintfEXT("> Instance %u: left (%v2f) right: (%v2f) control: (%v2f) color: (%u) thickness: (%f) edgeSoftness: (%f) vertexOffset: verticesOffset %u indexOffset: %u\n",
-    //     instanceIndex, instance.left, instance.right, instance.control, instance.color, instance.thickness, instance.edgeSoftness, offset.vertexOffset, offset.indexOffset);
 
     // Set vertices
     Vertex vertex;
@@ -54,20 +39,16 @@ void main(void)
     vertex.thickness = instance.thickness;
     vertex.edgeSoftness = instance.edgeSoftness;
     //   TopLeft
-    vertex.pos = toRelative(instance.area.pos);
-    // vertex.pos = toRelative(moveAway(instance.left, instance.left - instance.right + instance.left - instance.control, moveAwayDistance));
+    vertex.pos = toRelative(clampedArea.pos);
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
-    vertex.pos = toRelative(instance.area.pos + vec2(instance.area.size.x, 0.0));
-    // vertex.pos = toRelative(moveAway(instance.control, instance.control - instance.left + instance.control - instance.right, moveAwayDistance));
+    vertex.pos = toRelative(clampedArea.pos + vec2(clampedArea.size.x, 0.0));
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
-    vertex.pos = toRelative(instance.area.pos + instance.area.size);
-    // vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
+    vertex.pos = toRelative(clampedArea.pos + clampedArea.size);
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
-    vertex.pos = toRelative(instance.area.pos + vec2(0.0, instance.area.size.y));
-    // vertex.pos = toRelative(moveAway(instance.right, instance.right - instance.left + instance.right - instance.control, moveAwayDistance));
+    vertex.pos = toRelative(clampedArea.pos + vec2(0.0, clampedArea.size.y));
     vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices

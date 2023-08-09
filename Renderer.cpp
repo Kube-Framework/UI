@@ -579,8 +579,8 @@ void UI::Renderer::registerFilledQuadPipeline(void) noexcept
 
     registerGraphicPipeline(GraphicPipelineRendererModel {
         .name = FilledQuadGraphicPipeline,
-        .vertexShader = ":/UI/Shaders/FilledQuad.vert.spv",
-        .fragmentShader = ":/UI/Shaders/FilledQuad.frag.spv",
+        .vertexShader = ":/UI/Shaders/FilledQuad/FilledQuad.vert.spv",
+        .fragmentShader = ":/UI/Shaders/FilledQuad/FilledQuad.frag.spv",
         .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
             VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,          offsetof(Vertex, vertPos)),
@@ -593,7 +593,8 @@ void UI::Renderer::registerFilledQuadPipeline(void) noexcept
             VertexInputAttribute(0, 7,  Format::R32_UINT,               offsetof(Vertex, vertBorderColor)),
             VertexInputAttribute(0, 8,  Format::R32_SFLOAT,             offsetof(Vertex, vertBorderWidth)),
             VertexInputAttribute(0, 9,  Format::R32_SFLOAT,             offsetof(Vertex, vertEdgeSoftness)),
-            VertexInputAttribute(0, 10, Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationCosSin))
+            VertexInputAttribute(0, 10, Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationOrigin)),
+            VertexInputAttribute(0, 11, Format::R32G32_SFLOAT,          offsetof(Vertex, vertRotationCosSin))
         },
         .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
         .rasterizationModel = RasterizationModel(PolygonMode::Fill)
@@ -607,8 +608,8 @@ void UI::Renderer::registerQuadraticBezierPipeline(void) noexcept
 
     registerGraphicPipeline(GraphicPipelineRendererModel {
         .name = QuadraticBezierGraphicPipeline,
-        .vertexShader = ":/UI/Shaders/QuadraticBezier.vert.spv",
-        .fragmentShader = ":/UI/Shaders/QuadraticBezier.frag.spv",
+        .vertexShader = ":/UI/Shaders/QuadraticBezier/QuadraticBezier.vert.spv",
+        .fragmentShader = ":/UI/Shaders/QuadraticBezier/QuadraticBezier.frag.spv",
         .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
             VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertPos)),
@@ -632,8 +633,8 @@ void UI::Renderer::registerCubicBezierPipeline(void) noexcept
 
     registerGraphicPipeline(GraphicPipelineRendererModel {
         .name = CubicBezierGraphicPipeline,
-        .vertexShader = ":/UI/Shaders/CubicBezier.vert.spv",
-        .fragmentShader = ":/UI/Shaders/CubicBezier.frag.spv",
+        .vertexShader = ":/UI/Shaders/CubicBezier/CubicBezier.vert.spv",
+        .fragmentShader = ":/UI/Shaders/CubicBezier/CubicBezier.frag.spv",
         .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
         .vertexInputAttributes = {
             VertexInputAttribute(0, 0,  Format::R32G32_SFLOAT,  offsetof(Vertex, vertPos)),

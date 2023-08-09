@@ -58,6 +58,7 @@ namespace kF::UI
         Pixel vertBorderWidth;
         Pixel vertEdgeSoftness;
         std::uint32_t padding;
+        Point vertRotationOrigin;
         Point vertRotationCosSin;
     };
 

@@ -1,60 +1,65 @@
 #version 450
 
-// #extension GL_EXT_debug_printf : enable
 #extension GL_GOOGLE_include_directive : enable
 
-// Area
-struct Area
-{
-    vec2 pos;
-    vec2 size;
-};
+#include "FilledQuad.glsl"
 
 // Rectangle instance
 struct Instance
 {
-    Area area; // Frame area
-    vec2 p0; // Curve point 0
-    vec2 p1; // Curve point 1
-    vec2 p2; // Curve point 2
-    vec2 p3; // Curve point 3
-    uint color; // Fill color
-    float thickness; // Width of the line
-    float edgeSoftness; // Edge softness in pixels
-    uint _padding;
+    Area area;
+    vec4 radius;
+    uint spriteIndex;
+    uint fillMode;
+    uint color;
+    uint borderColor;
+    float borderWidth;
+    float edgeSoftness;
+    float rotationAngle;
 };
 
-#include "CubicBezierUtils.glsl"
-#include "PrimitiveCompute.glsl"
+#include "../PrimitiveCompute.glsl"
 
 layout (local_size_x = 1) in;
 
 void main(void)
 {
+    // Compute metrics
     const uint instanceIndex = gl_GlobalInvocationID.x;
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
+    const Area clampedArea = getClampedArea(instance.area);
+    const Quad uvQuad = getRectangleUVQuad(clampedArea.size, instance.spriteIndex, instance.fillMode);
+    const vec2 rotationCosSin = getRotationCosSin(instance.rotationAngle);
+    const Quad quad = getRectangleRelativeQuad(clampedArea, instance.spriteIndex, instance.fillMode, rotationCosSin);
 
     // Set vertices
     Vertex vertex;
-    vertex.p0 = instance.p0;
-    vertex.p1 = instance.p1;
-    vertex.p2 = instance.p2;
-    vertex.p3 = instance.p3;
+    vertex.halfSize = clampedArea.size / 2.0;
+    vertex.center = clampedArea.pos + clampedArea.size / 2.0;
+    vertex.radius = instance.radius;
+    vertex.spriteIndex = instance.spriteIndex;
     vertex.color = instance.color;
-    vertex.thickness = instance.thickness;
+    vertex.borderColor = instance.borderColor;
+    vertex.borderWidth = instance.borderWidth;
     vertex.edgeSoftness = instance.edgeSoftness;
+    vertex.rotationOrigin = vertex.center;
+    vertex.rotationCosSin = rotationCosSin;
     //   TopLeft
-    vertex.pos = toRelative(instance.area.pos);
+    vertex.pos = quad.p1;
+    vertex.uv = uvQuad.p1;
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
-    vertex.pos = toRelative(instance.area.pos + vec2(instance.area.size.x, 0.0));
+    vertex.pos = quad.p2;
+    vertex.uv = uvQuad.p2;
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
-    vertex.pos = toRelative(instance.area.pos + instance.area.size);
+    vertex.pos = quad.p3;
+    vertex.uv = uvQuad.p3;
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
-    vertex.pos = toRelative(instance.area.pos + vec2(0.0, instance.area.size.y));
+    vertex.pos = quad.p4;
+    vertex.uv = uvQuad.p4;
     vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices

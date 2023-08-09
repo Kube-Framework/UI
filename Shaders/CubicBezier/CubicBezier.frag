@@ -1,11 +1,10 @@
 #version 450
 
-// #extension GL_EXT_debug_printf : enable
 // #extension GL_EXT_nonuniform_qualifier : enable
 // #extension GL_OES_standard_derivatives : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "PrimitiveFrag.glsl"
+#include "CubicBezier.glsl"
 
 // Inputs
 layout(location = 0) in vec4 fragColor;
@@ -19,14 +18,13 @@ layout(location = 6) in float fragEdgeSoftness;
 // Outputs
 layout(location = 0) out vec4 outColor;
 
-vec2 cubic(float t)     // return point on cubic from parameter
+// Return point on cubic from parameter
+vec2 cubic(float t)
 {
     float tt = t * t;
     float ttt = tt * t;
     return fragP0 + fragP1 * t + fragP2 * tt + fragP3 * ttt;
 }
-
-#define show_coverage
 
 void main(void)
 {
@@ -59,50 +57,4 @@ void main(void)
         discard;
     // const float intensity = smoothstep(fragThickness + fragEdgeSoftness, fragThickness, minDist1);
     outColor = fragColor; //vec4(fragColor.rgb, fragColor.a * intensity);
-
-
-//     float d = 5.0; // half thickness
-//     vec2 p;
-//     int i, n;
-//     float t, tt, t0, t1, dt, l, ll;
-//     tt = -1.0;
-//     ll = -1.0;
-//     l = 0.0;
-// #ifdef show_coverage
-//     t0 = 0.0;
-//     t1 = 1.0;
-//     dt = 0.05;
-//     n = 3;
-// #else
-//     t0 = 0.0;
-//     n = 2;
-//     t1 = 1.0;
-//     dt = (t1 - t0) * 0.1;
-// #endif
-//     for (i = 0; i < n; i++) {
-//         for (t = t0; t <= t1; t += dt) {
-//             p = cubic(t) - gl_FragCoord.xy;
-//             l = length(p);
-//             if ((ll < 0.0) || (ll > l)) {
-//                 ll = l;
-//                 tt = t;
-//             }
-//         }
-//         t0 = tt - dt;
-//         if (t0 < 0.0)
-//             t0 = 0.0;
-//         t1 = tt + dt;
-//         if (t1 > 1.0)
-//             t1 = 1.0;
-//         dt *= 0.2;
-//     }
-// #ifdef show_coverage
-//     if (ll > d)
-//         outColor = vec4(0.1, 0.1, 0.1, 1.0);
-//     else
-// #else
-//     if (ll > d)
-//         discard;
-// #endif
-    // outColor = fragColor;
 }

@@ -1,5 +1,4 @@
 #version 450
-// #extension GL_EXT_debug_printf : enable
 
 // Inputs
 layout(location = 0)    in vec2 vertPos;
@@ -12,7 +11,8 @@ layout(location = 6)    in uint vertColor;
 layout(location = 7)    in uint vertBorderColor;
 layout(location = 8)    in float vertBorderWidth;
 layout(location = 9)    in float vertEdgeSoftness;
-layout(location = 10)   in vec2 vertRotationCosSin;
+layout(location = 10)   in vec2 vertRotationOrigin;
+layout(location = 11)   in vec2 vertRotationCosSin;
 
 // Outputs
 layout(location = 0) out vec4 fragColor;
@@ -24,11 +24,11 @@ layout(location = 5) out vec4 fragBorderColor;
 layout(location = 6) out flat float fragBorderWidth;
 layout(location = 7) out flat uint fragSpriteIndex;
 layout(location = 8) out flat float fragEdgeSoftness;
-layout(location = 9) out flat vec2 fragRotationCosSin;
+layout(location = 9) out flat vec2 fragRotationOrigin;
+layout(location = 10) out flat vec2 fragRotationCosSin;
 
 void main(void)
 {
-    // debugPrintfEXT("> Vert spriteIndex: %u", vertSpriteIndex);
     gl_Position = vec4(vertPos, 0.0, 1.0);
     fragColor = unpackUnorm4x8(vertColor);
     fragCenter = vertCenter;
@@ -39,5 +39,6 @@ void main(void)
     fragBorderWidth = vertBorderWidth;
     fragSpriteIndex = vertSpriteIndex;
     fragEdgeSoftness = vertEdgeSoftness;
+    fragRotationOrigin = vertRotationOrigin;
     fragRotationCosSin = vertRotationCosSin;
 }

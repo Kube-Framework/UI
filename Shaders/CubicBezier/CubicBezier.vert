@@ -1,5 +1,4 @@
 #version 450
-// #extension GL_EXT_debug_printf : enable
 
 // Inputs
 layout(location = 0) in vec2 vertPos;
@@ -22,7 +21,6 @@ layout(location = 6) out float fragEdgeSoftness;
 
 void main(void)
 {
-    // debugPrintfEXT("> Vert spriteIndex: %u", vertSpriteIndex);
     gl_Position = vec4(vertPos, 0.0, 1.0);
     fragColor = unpackUnorm4x8(vertColor);
     fragP0 = vertP0;

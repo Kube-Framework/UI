@@ -49,6 +49,8 @@ public:
         FontModel model {};
         Size mapSize {};
         Pixel spaceWidth {};
+        Pixel ascender {};
+        Pixel descender {};
         Pixel lineHeight {};
     };
     static_assert_fit_double_cacheline(FontCache);
@@ -89,6 +91,14 @@ public: // Unsafe functions reserved for internal usage
     /** @brief Get space width of a font instance */
     [[nodiscard]] inline Pixel spaceWidthAt(const FontIndex fontIndex) const noexcept
         { return _fontCaches.at(fontIndex).spaceWidth; }
+
+    /** @brief Get ascender of a font instance */
+    [[nodiscard]] inline Pixel ascenderAt(const FontIndex fontIndex) const noexcept
+        { return _fontCaches.at(fontIndex).ascender; }
+
+    /** @brief Get descender of a font instance */
+    [[nodiscard]] inline Pixel descenderAt(const FontIndex fontIndex) const noexcept
+        { return _fontCaches.at(fontIndex).descender; }
 
     /** @brief Get line height of a font instance */
     [[nodiscard]] inline Pixel lineHeightAt(const FontIndex fontIndex) const noexcept

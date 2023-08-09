@@ -48,6 +48,8 @@ namespace kF::UI
         const FontManager::GlyphIndexSet *glyphIndexSet {};
         const FontManager::GlyphsMetrics *glyphsMetrics {};
         Pixel spaceWidth {};
+        Pixel ascender {};
+        Pixel descender {};
         Pixel lineHeight {};
         Pixel baseline {};
         Pixel lineCount {};
@@ -103,7 +105,7 @@ template<>
 UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Text>(void) noexcept
 {
     return UI::PrimitiveProcessorModel {
-        .computeShader = GPU::Shader(IO::File(":/UI/Shaders/Text.comp.spv").queryResource()),
+        .computeShader = GPU::Shader(":/UI/Shaders/FilledQuad/Text.comp.spv"),
         .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Glyph),
         .instanceAlignment = alignof(Glyph),
@@ -147,6 +149,8 @@ std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.fontIndex);
         params.glyphsMetrics = &fontManager.glyphsMetricsAt(text.fontIndex);
         params.spaceWidth = fontManager.spaceWidthAt(text.fontIndex);
+        params.ascender = fontManager.ascenderAt(text.fontIndex);
+        params.descender = fontManager.descenderAt(text.fontIndex);
         params.lineHeight = fontManager.lineHeightAt(text.fontIndex);
         params.spriteIndex = fontManager.spriteAt(text.fontIndex);
         params.linesMetrics.clear();
@@ -166,7 +170,7 @@ static void UI::ComputeGlyph(Glyph *&out, ComputeParameters &params) noexcept
     const auto begin = out;
     auto it = params.text->str.begin();
     const auto end = params.text->str.end();
-    Size size;
+    Size size {};
 
     while (it != end) {
         // Compute line metrics
@@ -284,26 +288,42 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
 {
     const auto spaceWidth = Core::BranchlessIf(
         params.text->textAlignment == TextAlignment::Justify,
-        (GetX(params.text->area.size) - metrics.totalGlyphSize) / metrics.spaceCount,
+        metrics.spaceCount ? (GetX(params.text->area.size) - metrics.totalGlyphSize) / metrics.spaceCount : 0.0f,
         params.spaceWidth
     );
     const auto tabMultiplier = params.text->spacesPerTab - 1;
-    Point pos;
+    Point pos {};
     GetY(pos) = yOffset;
 
+    // Insert glyphs
+    const auto insertGlyph = [
+        &out,
+        &pos,
+        &params,
+        color = params.text->color,
+        rotationAngle = params.text->rotationAngle,
+        vertical = params.text->vertical
+    ](const auto &metrics) {
+        auto glyphPos = pos;
+        GetX(glyphPos) += metrics.bearing.x;
+        GetY(glyphPos) += !vertical
+            ? params.ascender - metrics.bearing.y
+            : -params.descender - (metrics.uv.size.height - metrics.bearing.y);
+        new (out++) Glyph {
+            .uv = metrics.uv,
+            .pos = glyphPos,
+            .spriteIndex = params.spriteIndex,
+            .color = color,
+            .rotationAngle = rotationAngle,
+            .vertical = float(vertical),
+        };
+        GetX(pos) += metrics.advance;
+    };
     for (auto it = from; it != to; ++it) {
         // Glyph
         if (!std::isspace(*it)) {
             const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at(*it));
-            new (out++) Glyph {
-                .uv = metrics.uv,
-                .pos = pos + metrics.bearing,
-                .spriteIndex = params.spriteIndex,
-                .color = params.text->color,
-                .rotationAngle = params.text->rotationAngle,
-                .vertical = static_cast<float>(params.text->vertical)
-            };
-            GetX(pos) += metrics.advance;
+            insertGlyph(metrics);
         // Space
         } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
             const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
@@ -314,24 +334,19 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
 
     if (metrics.elided) [[unlikely]] {
         const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at('.'));
-        for (auto i = 0u; i != ElideDotCount; ++i) {
-            new (out++) Glyph {
-                .uv = metrics.uv,
-                .pos = pos + metrics.bearing,
-                .spriteIndex = params.spriteIndex,
-                .color = params.text->color,
-                .rotationAngle = params.text->rotationAngle,
-                .vertical = static_cast<float>(params.text->vertical)
-            };
-            GetX(pos) += metrics.advance;
-        }
+        for (auto i = 0u; i != ElideDotCount; ++i)
+            insertGlyph(metrics);
     }
     return GetX(pos);
 }
 
 template<auto GetX, auto GetY>
-static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to,
-        const ComputeParameters &params, const Size metrics) noexcept
+static void UI::ComputeGlyphPositions(
+    Glyph * const from,
+    Glyph * const to,
+    const ComputeParameters &params,
+    const Size metrics
+) noexcept
 {
     // Compute global offset
     Point offset {};
@@ -386,7 +401,10 @@ static void UI::ComputeGlyphPositions(Glyph * const from, Glyph * const to,
     }
 
     // Apply offsets
-    offset += params.text->area.pos;
+    offset = Point {
+        .x = std::round(offset.x + params.text->area.pos.x),
+        .y = std::round(offset.y + params.text->area.pos.y),
+    };
     ApplyGlyphOffsets<GetX, GetY>(from, to, params, metrics, offset);
 }
 
@@ -409,7 +427,6 @@ static void UI::ApplyGlyphOffsets(Glyph * const from, Glyph * const to, const Co
     };
 
     const Point rotationOrigin = offset + metrics / 2.0f;
-
     switch (params.text->textAlignment) {
     case TextAlignment::Left:
     case TextAlignment::Justify:
