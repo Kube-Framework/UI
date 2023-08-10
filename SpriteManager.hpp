@@ -93,7 +93,7 @@ public:
     ~SpriteManager(void) noexcept = default;
 
     /** @brief Constructor */
-    SpriteManager(const std::uint32_t maxSpriteCount = DefaultMaxSpriteCount) noexcept;
+    SpriteManager(void) noexcept;
 
     /** @brief SpriteManager is not copiable */
     SpriteManager(const SpriteManager &other) noexcept = delete;

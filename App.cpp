@@ -117,8 +117,12 @@ UI::App::BackendInstance::~BackendInstance(void) noexcept
 UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
         const Point windowPos, const Size windowSize, const WindowFlags windowFlags) noexcept
 {
+    // Init SDL2
     kFEnsure(!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS),
         "UI::App: Couldn't initialize SDL2 video & events subsystems");
+
+    // Try to lo ad vulkan
+    kFEnsure(!SDL_Vulkan_LoadLibrary(nullptr), "UI::App: Couldn't load vulkan library '", SDL_GetError(), '\'');
 
     // Check window position special values
     Point pos = windowPos;

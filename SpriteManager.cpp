@@ -31,16 +31,16 @@
 
 using namespace kF;
 
-UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
-    : _maxSpriteCount([this, maxSpriteCount] {
+UI::SpriteManager::SpriteManager(void) noexcept
+    : _maxSpriteCount([this] {
         const auto max = std::min(
-            maxSpriteCount,
+            DefaultMaxSpriteCount.value,
             parent().physicalDevice().limits().maxDescriptorSetSampledImages
         );
         kFEnsure(max != 0u, "UI::SpriteManager: Maximum sprite count cannot be 0");
         return max;
     }())
-    , _allocatedSpriteCount(maxSpriteCount)
+    , _allocatedSpriteCount(DefaultMaxSpriteCount)
     , _sampler(GPU::SamplerModel(
             GPU::SamplerCreateFlags::None,
             GPU::Filter::Linear,
@@ -60,7 +60,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
         {
             GPU::DescriptorSetLayoutBinding(
                 0u,
-                GPU::DescriptorType::CombinedImageSampler, _allocatedSpriteCount,
+                GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount,
                 Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
             )
         },
@@ -80,7 +80,7 @@ UI::SpriteManager::SpriteManager(const std::uint32_t maxSpriteCount) noexcept
                 GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
                 1,
                 {
-                    GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _allocatedSpriteCount)
+                    GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, _maxSpriteCount)
                 }
             ),
             .descriptorSet = frameCache.descriptorPool.allocate(_descriptorSetLayout)
