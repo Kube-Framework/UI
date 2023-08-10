@@ -4,7 +4,7 @@ const float PI2 = 2 * PI;
 const float Epsilon = 0.00001;
 
 // Constants - Sprites
-layout(constant_id = 0) const uint MaxSpriteCount = 4096;
+layout(constant_id = 0) const uint MaxSpriteCount = 1024;
 const uint NullSpriteIndex = ~0;
 
 // Constants - FillMode
@@ -19,7 +19,7 @@ layout(std430, binding = 0) buffer ContextSection {
 } context;
 
 // Samplers
-layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount]; // 640 FOR M1
+layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
 
 // Push constants
 layout(push_constant) uniform ComputeConstants

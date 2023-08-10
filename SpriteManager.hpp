@@ -35,7 +35,7 @@ public:
     static constexpr SpriteIndex DefaultSprite { 0u };
 
     /** @brief Default sprite index */
-    static constexpr SpriteIndex DefaultMaxSpriteCount { 4096u };
+    static constexpr SpriteIndex DefaultMaxSpriteCount { 1024u };
 
     /** @brief Sprite cache */
     struct alignas_half_cacheline SpriteCache
@@ -171,7 +171,6 @@ private:
     Core::Vector<SpriteDelayedRemove, UIAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1
     std::uint32_t _maxSpriteCount {};
-    std::uint32_t _allocatedSpriteCount {};
     GPU::Sampler _sampler {};
     GPU::DescriptorSetLayout _descriptorSetLayout {};
     GPU::CommandPool _commandPool;
