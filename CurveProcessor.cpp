@@ -14,7 +14,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Curve>(void) 
 {
     return PrimitiveProcessorModel {
         .computeShader = GPU::Shader(":/UI/Shaders/QuadraticBezier/Curve.comp.spv"),
-        .computeLocalGroupSize = 64,
+        .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Curve),
         .instanceAlignment = alignof(Curve),
         .verticesPerInstance = 4,

@@ -70,15 +70,15 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
 
     // Build task graph
     auto &graph = taskGraph();
-    auto &computeTask = graph.add([this] {
-        _spriteManager.prepareFrameCache();
-        _renderer.batchPrimitives();
-    });
-    auto &transferTask = graph.add<&Renderer::transferPrimitives>(&_renderer);
+    auto &prepareSpriteManagerTask = graph.add<&SpriteManager::prepareFrameCache>(&_spriteManager);
+    auto &batchPrimitivesTask = graph.add<&Renderer::batchPrimitives>(&_renderer);
+    auto &transferPrimitivesTask = graph.add<&Renderer::transferPrimitives>(&_renderer);
     auto &dispatchTask = graph.add<&Renderer::dispatchInvalidFrame>(&_renderer);
     graph.add<&UISystem::dispatchDelayedEvents>(this);
-    dispatchTask.after(computeTask);
-    dispatchTask.after(transferTask);
+    batchPrimitivesTask.after(prepareSpriteManagerTask);
+    transferPrimitivesTask.after(prepareSpriteManagerTask);
+    dispatchTask.after(batchPrimitivesTask);
+    dispatchTask.after(transferPrimitivesTask);
 
     // Relative mouse mode SDL2 bug
     SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1", SDL_HINT_OVERRIDE);

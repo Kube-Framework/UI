@@ -14,7 +14,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::CubicBezier>(
 {
     return PrimitiveProcessorModel {
         .computeShader = GPU::Shader(":/UI/Shaders/CubicBezier/CubicBezier.comp.spv"),
-        .computeLocalGroupSize = 64,
+        .computeLocalGroupSize = 1,
         .instanceSize = sizeof(CubicBezier),
         .instanceAlignment = alignof(CubicBezier),
         .verticesPerInstance = 4,

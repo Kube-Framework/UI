@@ -154,6 +154,7 @@ private:
         GPU::DescriptorPool computeSetPool {};
         GPU::DescriptorSetHandle computeSet {};
         GPU::CommandHandle computeCommand {};
+        GPU::CommandHandle transferCommand {};
         // Primary
         GPU::CommandHandle primaryCommand {};
         GPU::Fence frameFence {};

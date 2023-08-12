@@ -68,7 +68,8 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
             }),
             .computeSet = cache.computeSetPool.allocate(_cache.computeSetLayout),
             .computeCommand = cache.commandPool.add(CommandLevel::Secondary),
-            .primaryCommand = cache.commandPool.add(CommandLevel::Primary)
+            .transferCommand = cache.commandPool.add(CommandLevel::Secondary),
+            .primaryCommand = cache.commandPool.add(CommandLevel::Primary),
         };
         return cache;
     });
@@ -143,7 +144,7 @@ GPU::Pipeline UI::Renderer::createGraphicPipeline(const GPU::PipelineLayoutHandl
             BlendFactor::One, BlendFactor::Zero, BlendOp::Add
         )
     };
-    const DynamicState dynamicStates[] { DynamicState::Scissor };
+    const DynamicState dynamicStates[] { DynamicState::Viewport, DynamicState::Scissor };
 
     return Pipeline(
         GraphicPipelineModel(
@@ -259,24 +260,44 @@ bool UI::Renderer::prepare(void) noexcept
 
     DescriptorSetUpdate::UpdateWrite({
         DescriptorSetWriteModel(
-            frameCache.computeSet, 0, 0, DescriptorType::StorageBuffer,
-            bufferInfos + 0, bufferInfos + 1
+            frameCache.computeSet,
+            0,
+            0,
+            DescriptorType::StorageBuffer,
+            bufferInfos + 0,
+            bufferInfos + 1
         ),
         DescriptorSetWriteModel(
-            frameCache.computeSet, 1, 0, DescriptorType::StorageBufferDynamic,
-            bufferInfos + 1, bufferInfos + 2
+            frameCache.computeSet,
+            1,
+            0,
+            DescriptorType::StorageBufferDynamic,
+            bufferInfos + 1,
+            bufferInfos + 2
         ),
         DescriptorSetWriteModel(
-            frameCache.computeSet, 2, 0, DescriptorType::StorageBufferDynamic,
-            bufferInfos + 2, bufferInfos + 3
+            frameCache.computeSet,
+            2,
+            0,
+            DescriptorType::StorageBufferDynamic,
+            bufferInfos + 2,
+            bufferInfos + 3
         ),
         DescriptorSetWriteModel(
-            frameCache.computeSet, 3, 0, DescriptorType::StorageBuffer,
-            bufferInfos + 3, bufferInfos + 4
+            frameCache.computeSet,
+            3,
+            0,
+            DescriptorType::StorageBuffer,
+            bufferInfos + 3,
+            bufferInfos + 4
         ),
         DescriptorSetWriteModel(
-            frameCache.computeSet, 4, 0, DescriptorType::StorageBuffer,
-            bufferInfos + 4, bufferInfos + 5
+            frameCache.computeSet,
+            4,
+            0,
+            DescriptorType::StorageBuffer,
+            bufferInfos + 4,
+            bufferInfos + 5
         )
     });
 
@@ -358,6 +379,19 @@ void UI::Renderer::transferPrimitives(void) noexcept
 
     // End memory map
     frameCache.buffers.stagingAllocation.endMemoryMap();
+
+
+    // Record transfer command
+    frameCache.commandPool.record(
+        frameCache.transferCommand,
+        GPU::CommandBufferUsageFlags::OneTimeSubmit,
+        GPU::CommandInheritanceInfo(),
+        [this, &frameCache](const GPU::CommandRecorder &recorder) {
+            recorder.copyBuffer(frameCache.buffers.stagingBuffer, frameCache.buffers.deviceBuffer, GPU::BufferCopy(frameCache.buffers.stagingSize));
+            _uiSystem->spriteManager().transferSpriteSizesBuffer(recorder);
+        }
+    );
+
 }
 
 void UI::Renderer::batchPrimitives(void) noexcept
@@ -458,27 +492,16 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
 
     FrameCache &frameCache = _perFrameCache.current();
     auto &gpu = parent();
-    const auto extent = gpu.swapchain().extent();
-
-    // Block all compute pipelines until transfer ended
-    recorder.pipelineBarrier(
-        PipelineStageFlags::AllCommands,
-        PipelineStageFlags::AllCommands,
-        DependencyFlags::None,
-        MemoryBarrier(AccessFlags::None, AccessFlags::None)
-    );
 
     // Check if frame has been recomputed by checking if memory was mapped
     if (isInvalidated) [[likely]] {
         // Transfer memory
-        recorder.copyBuffer(frameCache.buffers.stagingBuffer, frameCache.buffers.deviceBuffer, BufferCopy(frameCache.buffers.stagingSize));
+        recorder.executeCommand(frameCache.transferCommand);
 
         // Block all compute pipelines until transfer ended
         recorder.pipelineBarrier(
             PipelineStageFlags::Transfer,
-            PipelineStageFlags::ComputeShader,
-            DependencyFlags::None,
-            MemoryBarrier(AccessFlags::TransferWrite, AccessFlags::ShaderRead)
+            PipelineStageFlags::ComputeShader
         );
 
         // Execute compute command
@@ -487,16 +510,12 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         // Block all graphic pipelines until compute pipelines ended
         recorder.pipelineBarrier(
             PipelineStageFlags::ComputeShader,
-            PipelineStageFlags::VertexInput,
-            DependencyFlags::None,
-            MemoryBarrier(
-                AccessFlags::ShaderWrite,
-                Core::MakeFlags(AccessFlags::VertexAttributeRead, AccessFlags::IndexRead)
-            )
+            PipelineStageFlags::AllGraphics
         );
     }
 
     // Begin render pass
+    const auto extent = gpu.swapchain().extent();
     recorder.beginRenderPass(
         gpu.renderPassManager().renderPassAt(RenderPassIndex),
         gpu.framebufferManager().currentFramebuffer(RenderPassIndex),
@@ -513,6 +532,16 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         },
         SubpassContents::Inline
     );
+
+    // Set dynamic viewport
+    recorder.setViewport(Viewport {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(extent.width),
+        .height = static_cast<float>(extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+    });
 
     // Utility to convert from clip Area to scissor Rect2D
     const auto toScissor = [extent](const auto &area) {

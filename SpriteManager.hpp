@@ -9,15 +9,16 @@
 #include <Kube/Core/Vector.hpp>
 #include <Kube/Core/FlatVector.hpp>
 
-#include <Kube/GPU/MemoryAllocation.hpp>
-#include <Kube/GPU/DescriptorSetLayout.hpp>
-#include <Kube/GPU/DescriptorPool.hpp>
+#include <Kube/GPU/Buffer.hpp>
 #include <Kube/GPU/CommandPool.hpp>
+#include <Kube/GPU/DescriptorPool.hpp>
+#include <Kube/GPU/DescriptorSetLayout.hpp>
 #include <Kube/GPU/Fence.hpp>
-#include <Kube/GPU/Sampler.hpp>
 #include <Kube/GPU/Image.hpp>
 #include <Kube/GPU/ImageView.hpp>
+#include <Kube/GPU/MemoryAllocation.hpp>
 #include <Kube/GPU/PerFrameCache.hpp>
+#include <Kube/GPU/Sampler.hpp>
 
 #include "Base.hpp"
 #include "Sprite.hpp"
@@ -40,10 +41,17 @@ public:
     /** @brief Sprite cache */
     struct alignas_half_cacheline SpriteCache
     {
+        /** @brief Sprite reference count */
+        struct Counter
+        {
+            std::uint32_t refCount {};
+            float removeDelaySeconds {};
+        };
+
         GPU::Image image {};
         GPU::MemoryAllocation memoryAllocation {};
         GPU::ImageView imageView {};
-        Size size {};
+        Counter counter {};
     };
     static_assert_fit_half_cacheline(SpriteCache);
 
@@ -71,13 +79,18 @@ public:
     static_assert_fit_eighth_cacheline(Event);
 
     /** @brief Sprite cache */
-    struct alignas_half_cacheline FrameCache
+    struct alignas_double_cacheline FrameCache
     {
         GPU::DescriptorPool descriptorPool {};
         GPU::DescriptorSetHandle descriptorSet {};
         Core::Vector<Event, UIAllocator> events {};
+        Core::Vector<SpriteIndex, UIAllocator> spriteSizesUpdateIndexes {};
+        GPU::Buffer spriteSizesStagingBuffer {};
+        GPU::MemoryAllocation spriteSizesStagingAllocation {};
+        GPU::Buffer spriteSizesBuffer {};
+        GPU::MemoryAllocation spriteSizesAllocation {};
     };
-    static_assert_fit_half_cacheline(FrameCache);
+    static_assert_fit_double_cacheline(FrameCache);
 
     /** @brief Store a sprite that must be removed with delay */
     struct alignas_quarter_cacheline SpriteDelayedRemove
@@ -120,12 +133,12 @@ public:
 
     /** @brief Get the size of a sprite */
     [[nodiscard]] inline Size spriteSizeAt(const SpriteIndex spriteIndex) const noexcept
-        { return _spriteCaches.at(spriteIndex).size; }
+        { return _spriteSizes.at(spriteIndex); }
 
 
 public: // Unsafe functions reserved for internal usage
     /** @brief Increment the reference count of a sprite */
-    inline void incrementRefCount(const SpriteIndex spriteIndex) noexcept { ++_spriteCounters.at(spriteIndex).refCount; }
+    inline void incrementRefCount(const SpriteIndex spriteIndex) noexcept { ++_spriteCaches.at(spriteIndex).counter.refCount; }
 
     /** @brief Remove a sprite from the manager
      *  @note If the sprite is still used elswhere, this function does not deallocate its memory */
@@ -139,17 +152,15 @@ public: // Unsafe functions reserved for internal usage
     [[nodiscard]] inline GPU::DescriptorSetHandle descriptorSet(void) const noexcept { return _perFrameCache.current().descriptorSet; }
 
 
-    /** @brief Prepare frame cache to draw */
+    /** @brief Prepare frame cache to draw
+     *  @param Any transfer will be executed through recorder */
     void prepareFrameCache(void) noexcept;
 
-private:
-    /** @brief Sprite reference count */
-    struct SpriteCounter
-    {
-        std::uint32_t refCount {};
-        float removeDelaySeconds {};
-    };
+    /** @brief Transfer sprite sizes buffer to the GPU
+     *  @param The transfer will be executed through recorder */
+    void transferSpriteSizesBuffer(const GPU::CommandRecorder &recorder) noexcept;
 
+private:
     /** @brief Base implementation of the add function */
     [[nodiscard]] SpriteIndex addImpl(const Core::HashedName spriteName, const float removeDelaySeconds) noexcept;
 
@@ -163,10 +174,11 @@ private:
     /** @brief Cancel a pending delayed remove */
     void cancelDelayedRemove(const SpriteIndex spriteIndex) noexcept;
 
+
     // Cacheline 0
     Core::Vector<Core::HashedName, UIAllocator, SpriteIndex::IndexType> _spriteNames {};
     Core::FlatVector<SpriteCache, UIAllocator, SpriteIndex::IndexType> _spriteCaches {};
-    Core::FlatVector<SpriteCounter, UIAllocator, SpriteIndex::IndexType> _spriteCounters {};
+    Core::FlatVector<Size, UIAllocator, SpriteIndex::IndexType> _spriteSizes {};
     Core::Vector<SpriteIndex, UIAllocator, SpriteIndex::IndexType> _spriteFreeList {};
     Core::Vector<SpriteDelayedRemove, UIAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1

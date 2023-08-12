@@ -38,6 +38,7 @@ Quad getRectangleUVQuad(const vec2 size, const uint spriteIndex, const uint fill
     );
     if (spriteIndex != NullSpriteIndex && fillMode == FillModeCrop) {
         // Query sprite size
+        // const vec2 spriteSize = spriteSizes.sizes[spriteIndex];
         const vec2 spriteSize = textureSize(sprites[spriteIndex], 0);
         // Compute resize factor
         const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (size.x / size.y);
@@ -64,6 +65,7 @@ Quad getRectangleRelativeQuad(const Area area, const uint spriteIndex, const uin
 
     if (spriteIndex != NullSpriteIndex && fillMode == FillModeFit) {
         // Query sprite size
+        // const vec2 spriteSize = spriteSizes.sizes[spriteIndex];
         const vec2 spriteSize = textureSize(sprites[spriteIndex], 0);
         // Compute resize factor
         const bool isSpriteGreater = (spriteSize.x / spriteSize.y) >= (area.size.x / area.size.y);

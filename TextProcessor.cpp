@@ -106,7 +106,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Text>(void) n
 {
     return UI::PrimitiveProcessorModel {
         .computeShader = GPU::Shader(":/UI/Shaders/FilledQuad/Text.comp.spv"),
-        .computeLocalGroupSize = 128,
+        .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Glyph),
         .instanceAlignment = alignof(Glyph),
         .verticesPerInstance = 4,

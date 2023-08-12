@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : enable
+// #extension GL_EXT_debug_printf : enable
 
 #include "FilledQuad.glsl"
 
@@ -33,6 +34,8 @@ void main(void)
     const Instance instance = instances.data[instanceIndex];
     const bool isVertical = bool(instance.vertical != 0.0);
     // Compute relative UVs
+    // const Quad uvQuad = getTextUVQuad(Area(instance.uvPos, instance.uvSize), branchlessIf(instance.spriteIndex == 1, vec2(1024, 1141), vec2(1024, 533)), isVertical);
+    // const Quad uvQuad = getTextUVQuad(Area(instance.uvPos, instance.uvSize), spriteSizes.sizes[instance.spriteIndex], isVertical);
     const Quad uvQuad = getTextUVQuad(Area(instance.uvPos, instance.uvSize), textureSize(sprites[instance.spriteIndex], 0), isVertical);
     // Compute relative area
     const vec2 rotationCosSin = getRotationCosSin(instance.rotationAngle);

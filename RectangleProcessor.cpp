@@ -14,7 +14,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::Rectangle>(vo
 {
     return PrimitiveProcessorModel {
         .computeShader = GPU::Shader(":/UI/Shaders/FilledQuad/Rectangle.comp.spv"),
-        .computeLocalGroupSize = 256,
+        .computeLocalGroupSize = 1,
         .instanceSize = sizeof(Rectangle),
         .instanceAlignment = alignof(Rectangle),
         .verticesPerInstance = 4,

@@ -21,6 +21,11 @@ layout(std430, binding = 0) buffer ContextSection {
 // Samplers
 layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
 
+// Sprite sizes
+layout(std430, set = 1, binding = 1) buffer SpriteSizes {
+    vec2 sizes[MaxSpriteCount];
+} spriteSizes;
+
 // Push constants
 layout(push_constant) uniform ComputeConstants
 {
