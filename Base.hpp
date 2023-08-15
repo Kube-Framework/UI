@@ -315,10 +315,12 @@ namespace kF::UI
         /** @brief Check if an area overlap with a segment */
         [[nodiscard]] constexpr bool contains(const Point a, const Point b) const noexcept;
 
+        /** @brief Check if an area is invisible (zero width or zero height) */
+        [[nodiscard]] constexpr bool isInvisible(void) const noexcept { return !size.width | !size.height; }
+
 
         /** @brief Create an Area of given 'size' centered to a given 'center' point */
         [[nodiscard]] static constexpr Area MakeCenter(const Point center, const Size size) noexcept;
-
 
         /** @brief Apply padding to an area */
         [[nodiscard]] static constexpr Area ApplyPadding(const Area &area, const Padding &padding) noexcept;
