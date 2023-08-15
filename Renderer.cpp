@@ -68,8 +68,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
             }),
             .computeSet = cache.computeSetPool.allocate(_cache.computeSetLayout),
             .computeCommand = cache.commandPool.add(CommandLevel::Secondary),
-            .transferCommand = cache.commandPool.add(CommandLevel::Secondary),
-            .primaryCommand = cache.commandPool.add(CommandLevel::Primary),
+            .primaryCommand = cache.commandPool.add(CommandLevel::Primary)
         };
         return cache;
     });
@@ -379,18 +378,6 @@ void UI::Renderer::transferPrimitives(void) noexcept
 
     // End memory map
     frameCache.buffers.stagingAllocation.endMemoryMap();
-
-
-    // Record transfer command
-    frameCache.commandPool.record(
-        frameCache.transferCommand,
-        GPU::CommandBufferUsageFlags::OneTimeSubmit,
-        GPU::CommandInheritanceInfo(),
-        [this, &frameCache](const GPU::CommandRecorder &recorder) {
-            recorder.copyBuffer(frameCache.buffers.stagingBuffer, frameCache.buffers.deviceBuffer, GPU::BufferCopy(frameCache.buffers.stagingSize));
-        }
-    );
-
 }
 
 void UI::Renderer::batchPrimitives(void) noexcept
@@ -495,7 +482,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
     // Check if frame has been recomputed by checking if memory was mapped
     if (isInvalidated) [[likely]] {
         // Transfer memory
-        recorder.executeCommand(frameCache.transferCommand);
+        recorder.copyBuffer(frameCache.buffers.stagingBuffer, frameCache.buffers.deviceBuffer, BufferCopy(frameCache.buffers.stagingSize));
 
         // Block all compute pipelines until transfer ended
         recorder.pipelineBarrier(
@@ -509,7 +496,7 @@ void UI::Renderer::recordPrimaryCommand(const GPU::CommandRecorder &recorder, co
         // Block all graphic pipelines until compute pipelines ended
         recorder.pipelineBarrier(
             PipelineStageFlags::ComputeShader,
-            PipelineStageFlags::AllGraphics
+            PipelineStageFlags::VertexInput
         );
     }
 
