@@ -14,7 +14,7 @@ UI::PrimitiveProcessorModel UI::PrimitiveProcessor::QueryModel<UI::GradientRecta
 {
     return PrimitiveProcessorModel {
         .computeShader = GPU::Shader(":/UI/Shaders/FilledQuad/GradientRectangle.comp.spv"),
-        .computeLocalGroupSize = 1,
+        .computeLocalGroupSize = 64,
         .instanceSize = sizeof(GradientRectangle),
         .instanceAlignment = alignof(GradientRectangle),
         .verticesPerInstance = 4,

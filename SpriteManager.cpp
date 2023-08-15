@@ -42,9 +42,9 @@ UI::SpriteManager::SpriteManager(void) noexcept
     }())
     , _sampler(GPU::SamplerModel(
             GPU::SamplerCreateFlags::None,
-            GPU::Filter::Linear,
-            GPU::Filter::Linear,
-            GPU::SamplerMipmapMode::Linear,
+            GPU::Filter::Nearest,
+            GPU::Filter::Nearest,
+            GPU::SamplerMipmapMode::Nearest,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
@@ -62,12 +62,6 @@ UI::SpriteManager::SpriteManager(void) noexcept
                 GPU::DescriptorType::CombinedImageSampler,
                 DefaultMaxSpriteCount,
                 Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
-            ),
-            GPU::DescriptorSetLayoutBinding(
-                1,
-                GPU::DescriptorType::StorageBuffer,
-                1,
-                Core::MakeFlags(GPU::ShaderStageFlags::Compute, GPU::ShaderStageFlags::Vertex, GPU::ShaderStageFlags::Fragment)
             )
         },
         {
@@ -75,8 +69,7 @@ UI::SpriteManager::SpriteManager(void) noexcept
                 GPU::DescriptorBindingFlags::UpdateAfterBind,
                 GPU::DescriptorBindingFlags::UpdateUnusedWhilePending,
                 GPU::DescriptorBindingFlags::PartiallyBound
-            ),
-            GPU::DescriptorBindingFlags()
+            )
         }
     ))
     , _commandPool(GPU::QueueType::Transfer, GPU::CommandPoolCreateFlags::Transient)
@@ -86,25 +79,13 @@ UI::SpriteManager::SpriteManager(void) noexcept
             .descriptorPool = GPU::DescriptorPool::Make(
                 GPU::DescriptorPoolCreateFlags::UpdateAfterBind,
                 1,
-                {
-                    GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, DefaultMaxSpriteCount),
-                    GPU::DescriptorPoolSize(GPU::DescriptorType::StorageBuffer, 1)
-                }
+                { GPU::DescriptorPoolSize(GPU::DescriptorType::CombinedImageSampler, DefaultMaxSpriteCount) }
             ),
             .descriptorSet = frameCache.descriptorPool.allocate(_descriptorSetLayout),
-            .spriteSizesBuffer = GPU::Buffer::MakeExclusive(
-                _maxSpriteCount * sizeof(Size),
-                Core::MakeFlags(GPU::BufferUsageFlags::TransferDst, GPU::BufferUsageFlags::StorageBuffer)
-            ),
-            .spriteSizesAllocation = GPU::MemoryAllocation::MakeLocal(frameCache.spriteSizesBuffer),
         };
         return frameCache;
     })
 {
-    parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) noexcept {
-        _perFrameCache.setCurrentFrame(frameIndex);
-    });
-
     // Add default sprite
     const Color defaultBufferData { 255, 80, 255, 255 };
     const auto defaultSpriteIndex = addImpl(Core::HashedName {}, 0.0f);
@@ -121,7 +102,6 @@ UI::SpriteManager::SpriteManager(void) noexcept
         GPU::DescriptorImageInfo(_sampler, defaultImageView, GPU::ImageLayout::ShaderReadOnlyOptimal)
     );
     for (auto &frameCache : _perFrameCache) {
-        const GPU::DescriptorBufferInfo bufferInfo(frameCache.spriteSizesBuffer);
         GPU::DescriptorSetUpdate::UpdateWrite({
             GPU::DescriptorSetWriteModel(
                 frameCache.descriptorSet,
@@ -130,17 +110,13 @@ UI::SpriteManager::SpriteManager(void) noexcept
                 GPU::DescriptorType::CombinedImageSampler,
                 imageInfos.begin(),
                 imageInfos.end()
-            ),
-            GPU::DescriptorSetWriteModel(
-                frameCache.descriptorSet,
-                1,
-                0,
-                GPU::DescriptorType::StorageBuffer,
-                &bufferInfo,
-                &bufferInfo + 1
             )
         });
     }
+
+    parent().frameAcquiredDispatcher().add([this](const GPU::FrameIndex frameIndex) noexcept {
+        _perFrameCache.setCurrentFrame(frameIndex);
+    });
 }
 
 UI::Sprite UI::SpriteManager::add(const std::string_view &path, const float removeDelaySeconds) noexcept
@@ -261,7 +237,6 @@ UI::SpriteIndex UI::SpriteManager::addImpl(const Core::HashedName spriteName, co
         spriteIndex.value = _spriteNames.size();
         _spriteNames.push();
         _spriteCaches.push();
-        _spriteSizes.push();
     }
 
     // Set sprite reference count and name
@@ -280,9 +255,6 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
     auto stagingAllocation = MemoryAllocation::MakeStaging(stagingBuffer);
     stagingAllocation.memoryMap(spriteBuffer.data, spriteBuffer.data + imageSize);
 
-    // Set sprite size
-    _spriteSizes.at(spriteIndex) = Size(static_cast<Pixel>(spriteBuffer.extent.width), static_cast<Pixel>(spriteBuffer.extent.height));
-
     // Set sprite cache
     auto &spriteCache = _spriteCaches.at(spriteIndex);
     spriteCache.image = Image::MakeSingleLayer2D(
@@ -300,6 +272,7 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
         ComponentMapping(),
         ImageSubresourceRange(ImageAspectFlags::Color)
     ));
+    spriteCache.size = Size(static_cast<Pixel>(spriteBuffer.extent.width), static_cast<Pixel>(spriteBuffer.extent.height));
 
     // Record transfer command
     _commandPool.reset();
@@ -310,9 +283,12 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
                 PipelineStageFlags::TopOfPipe, PipelineStageFlags::Transfer,
                 DependencyFlags::None,
                 ImageMemoryBarrier(
-                    AccessFlags::None, AccessFlags::TransferWrite,
-                    ImageLayout::Undefined, ImageLayout::TransferDstOptimal,
-                    IgnoredFamilyQueue, IgnoredFamilyQueue,
+                    AccessFlags::None,
+                    AccessFlags::TransferWrite,
+                    ImageLayout::Undefined,
+                    ImageLayout::TransferDstOptimal,
+                    IgnoredFamilyQueue,
+                    IgnoredFamilyQueue,
                     spriteCache.image,
                     ImageSubresourceRange(ImageAspectFlags::Color)
                 )
@@ -324,7 +300,9 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
                 spriteCache.image,
                 ImageLayout::TransferDstOptimal,
                 BufferImageCopy(
-                    0, spriteBuffer.extent.width, spriteBuffer.extent.height,
+                    0,
+                    spriteBuffer.extent.width,
+                    spriteBuffer.extent.height,
                     ImageSubresourceLayers(ImageAspectFlags::Color),
                     Offset3D(),
                     Extent3D(spriteBuffer.extent.width, spriteBuffer.extent.height, 1u)
@@ -336,9 +314,12 @@ void UI::SpriteManager::load(const SpriteIndex spriteIndex, const SpriteBuffer &
                 PipelineStageFlags::Transfer, PipelineStageFlags::AllCommands,
                 DependencyFlags::None,
                 ImageMemoryBarrier(
-                    AccessFlags::TransferWrite, AccessFlags::ShaderRead,
-                    ImageLayout::TransferDstOptimal, ImageLayout::ShaderReadOnlyOptimal,
-                    IgnoredFamilyQueue, IgnoredFamilyQueue,
+                    AccessFlags::TransferWrite,
+                    AccessFlags::ShaderRead,
+                    ImageLayout::TransferDstOptimal,
+                    ImageLayout::ShaderReadOnlyOptimal,
+                    IgnoredFamilyQueue,
+                    IgnoredFamilyQueue,
                     spriteCache.image,
                     ImageSubresourceRange(ImageAspectFlags::Color)
                 )
@@ -378,7 +359,7 @@ void UI::SpriteManager::decrementRefCount(const SpriteIndex spriteIndex) noexcep
     // Add sprite to delayed remove list
     _spriteDelayedRemoves.push(SpriteDelayedRemove {
         .spriteIndex = spriteIndex,
-        .frameCount = _perFrameCache.count() - 1u,
+        .frameCount = _perFrameCache.count(),
         .beginTimestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count()
     });
 
@@ -403,9 +384,10 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
         [this, &frameCache](const auto index) {
             const auto &event = frameCache.events.at(index);
             const auto targetSprite = event.type == Event::Type::Add ? event.spriteIndex : DefaultSprite;
+            const auto &imageView = _spriteCaches.at(targetSprite).imageView;
             return GPU::DescriptorImageInfo(
                 _sampler,
-                _spriteCaches.at(targetSprite).imageView,
+                imageView,
                 GPU::ImageLayout::ShaderReadOnlyOptimal
             );
         }
@@ -426,13 +408,6 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
         }
     );
 
-    // Store sprite size update indexes
-    frameCache.spriteSizesUpdateIndexes.resize(
-        frameCache.events.begin(),
-        frameCache.events.end(),
-        [](const auto &event) { return event.spriteIndex; }
-    );
-
     // Clear events
     frameCache.events.clear();
 
@@ -440,62 +415,19 @@ void UI::SpriteManager::prepareFrameCache(void) noexcept
     GPU::DescriptorSetUpdate::UpdateWrite(models.begin(), models.end());
 }
 
-void UI::SpriteManager::transferSpriteSizesBuffer(const GPU::CommandRecorder &recorder) noexcept
-{
-    // Get current frame cache
-    auto &frameCache = _perFrameCache.current();
-
-    // Reset staging buffer
-    // @todo Investigate if the buffer can still be in use at this time
-    frameCache.spriteSizesStagingBuffer = {};
-    frameCache.spriteSizesStagingAllocation = {};
-
-    // Nothing to do here
-    if (frameCache.spriteSizesUpdateIndexes.empty())
-        return;
-
-    // Prepare staging buffer
-    frameCache.spriteSizesStagingBuffer = GPU::Buffer::MakeStaging(frameCache.spriteSizesUpdateIndexes.size() * sizeof(Size));
-    frameCache.spriteSizesStagingAllocation = GPU::MemoryAllocation::MakeStaging(frameCache.spriteSizesStagingBuffer);
-    const auto mappedMemory = frameCache.spriteSizesStagingAllocation.beginMemoryMap<Size>();
-    for (auto index = 0u, count = frameCache.spriteSizesUpdateIndexes.size(); index != count; ++index)
-        new (mappedMemory + index) Size { _spriteSizes[index] };
-    frameCache.spriteSizesStagingAllocation.endMemoryMap();
-
-    // Sort then erase duplicates
-    frameCache.spriteSizesUpdateIndexes.sort();
-    if (const auto eraseIt = std::unique(frameCache.spriteSizesUpdateIndexes.begin(), frameCache.spriteSizesUpdateIndexes.end()); eraseIt != frameCache.spriteSizesUpdateIndexes.end())
-        frameCache.spriteSizesUpdateIndexes.erase(eraseIt, frameCache.spriteSizesUpdateIndexes.end());
-
-    // Copy contiguous regions of the staging buffer into the final buffer
-    for (auto it = frameCache.spriteSizesUpdateIndexes.begin(), end = frameCache.spriteSizesUpdateIndexes.end(); it != end;) {
-        const auto contiguousBegin = it;
-        const auto indexFrom = *it;
-        SpriteIndex indexTo { it->value + 1 };
-        while (++it != end && *it == indexTo)
-            ++indexTo.value;
-        recorder.copyBuffer(frameCache.spriteSizesStagingBuffer, frameCache.spriteSizesBuffer, GPU::BufferCopy(
-            std::uint64_t(indexTo.value - indexFrom.value) * sizeof(Size),
-            Core::Distance<std::uint64_t>(frameCache.spriteSizesUpdateIndexes.begin(), contiguousBegin) * sizeof(Size),
-            std::uint64_t(indexFrom.value) * sizeof(Size)
-        ));
-    }
-
-    // Clear events
-    frameCache.spriteSizesUpdateIndexes.clear();
-}
-
 void UI::SpriteManager::updateDelayedRemoves(void) noexcept
 {
+    const auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     const auto end = _spriteDelayedRemoves.end();
     const auto it = std::remove_if(
         _spriteDelayedRemoves.begin(),
         end,
-        [this, now = std::chrono::high_resolution_clock::now().time_since_epoch().count()](auto &delayedRemove) {
-            delayedRemove.frameCount = Core::BranchlessIf(delayedRemove.frameCount, delayedRemove.frameCount - 1u, 0u);
+        [this, now](auto &delayedRemove) {
             const auto delay = std::int64_t(double(_spriteCaches.at(delayedRemove.spriteIndex).counter.removeDelaySeconds) * 1'000'000'000.0);
-            if (delayedRemove.frameCount | ((now - delayedRemove.beginTimestamp) < delay)) [[likely]]
+            if (delayedRemove.frameCount | ((now - delayedRemove.beginTimestamp) < delay)) [[likely]] {
+                delayedRemove.frameCount = Core::BranchlessIf(delayedRemove.frameCount, delayedRemove.frameCount - 1u, 0u);
                 return false;
+            }
 
             // Send remove events to each frame
             for (auto &frameCache : _perFrameCache) {
@@ -506,13 +438,10 @@ void UI::SpriteManager::updateDelayedRemoves(void) noexcept
             }
 
             // Reset sprite name
-            _spriteNames.at(delayedRemove.spriteIndex) = 0u;
+            _spriteNames.at(delayedRemove.spriteIndex) = {};
 
             // Reset sprite cache
             _spriteCaches.at(delayedRemove.spriteIndex) = {};
-
-            // Reset sprite size
-            _spriteSizes.at(delayedRemove.spriteIndex) = {};
 
             // Insert sprite index into free list
             _spriteFreeList.push(delayedRemove.spriteIndex);

@@ -1,7 +1,6 @@
 #version 450
 
 // #extension GL_EXT_debug_printf : enable
-// #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : enable
 
 #include "FilledQuad.glsl"
@@ -48,7 +47,7 @@ void main(void)
         outColor = fragColor;
     // Fill by texture
     } else {
-        vec4 textureColor = texture(sprites[fragSpriteIndex], fragUV);
+        vec4 textureColor = texture(sprites[nonuniformEXT(fragSpriteIndex)], fragUV);
         // Raw texture
         if (fragColor.a == 0.0) {
             outColor = textureColor;

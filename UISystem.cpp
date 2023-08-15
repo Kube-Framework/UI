@@ -76,7 +76,6 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     auto &dispatchTask = graph.add<&Renderer::dispatchInvalidFrame>(&_renderer);
     graph.add<&UISystem::dispatchDelayedEvents>(this);
     batchPrimitivesTask.after(prepareSpriteManagerTask);
-    transferPrimitivesTask.after(prepareSpriteManagerTask);
     dispatchTask.after(batchPrimitivesTask);
     dispatchTask.after(transferPrimitivesTask);
 

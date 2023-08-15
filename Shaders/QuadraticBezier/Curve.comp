@@ -19,7 +19,7 @@ struct Instance
 
 #include "../PrimitiveCompute.glsl"
 
-layout (local_size_x = 1) in;
+layout (local_size_x = 64) in;
 
 void main(void)
 {

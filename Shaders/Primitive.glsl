@@ -1,3 +1,6 @@
+// Enable the use of nonuniformEXT(index) to access bindless textures
+#extension GL_EXT_nonuniform_qualifier : enable
+
 // Constants - Common
 const float PI = radians(180);
 const float PI2 = 2 * PI;
@@ -18,13 +21,8 @@ layout(std430, binding = 0) buffer ContextSection {
     vec2 halfWindowSize;
 } context;
 
-// Samplers
+// Samplers, to be accessed with nonuniformEXT(index)
 layout(set = 1, binding = 0) uniform sampler2D sprites[MaxSpriteCount];
-
-// Sprite sizes
-layout(std430, set = 1, binding = 1) buffer SpriteSizes {
-    vec2 sizes[MaxSpriteCount];
-} spriteSizes;
 
 // Push constants
 layout(push_constant) uniform ComputeConstants

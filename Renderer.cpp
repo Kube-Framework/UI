@@ -388,7 +388,6 @@ void UI::Renderer::transferPrimitives(void) noexcept
         GPU::CommandInheritanceInfo(),
         [this, &frameCache](const GPU::CommandRecorder &recorder) {
             recorder.copyBuffer(frameCache.buffers.stagingBuffer, frameCache.buffers.deviceBuffer, GPU::BufferCopy(frameCache.buffers.stagingSize));
-            _uiSystem->spriteManager().transferSpriteSizesBuffer(recorder);
         }
     );
 

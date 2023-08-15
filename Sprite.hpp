@@ -25,7 +25,7 @@ class alignas_quarter_cacheline kF::UI::Sprite
 {
 public:
     /** @brief Remove delay in seconds */
-    static constexpr auto DefaultRemoveDelay = 0.0f;
+    static constexpr auto DefaultRemoveDelay = 1.0f;
 
 
     /** @brief Destructor */

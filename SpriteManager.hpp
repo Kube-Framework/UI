@@ -39,7 +39,7 @@ public:
     static constexpr SpriteIndex DefaultMaxSpriteCount { 1024u };
 
     /** @brief Sprite cache */
-    struct alignas_half_cacheline SpriteCache
+    struct alignas_eighth_cacheline SpriteCache
     {
         /** @brief Sprite reference count */
         struct Counter
@@ -52,8 +52,10 @@ public:
         GPU::MemoryAllocation memoryAllocation {};
         GPU::ImageView imageView {};
         Counter counter {};
+        UI::Size size {};
     };
-    static_assert_fit_half_cacheline(SpriteCache);
+    static_assert_alignof_eighth_cacheline(SpriteCache);
+    static_assert_sizeof(SpriteCache, Core::CacheLineEighthSize * 5);
 
     /** @brief Staging buffer */
     struct alignas_quarter_cacheline SpriteBuffer
@@ -79,18 +81,13 @@ public:
     static_assert_fit_eighth_cacheline(Event);
 
     /** @brief Sprite cache */
-    struct alignas_double_cacheline FrameCache
+    struct alignas_cacheline FrameCache
     {
         GPU::DescriptorPool descriptorPool {};
         GPU::DescriptorSetHandle descriptorSet {};
         Core::Vector<Event, UIAllocator> events {};
-        Core::Vector<SpriteIndex, UIAllocator> spriteSizesUpdateIndexes {};
-        GPU::Buffer spriteSizesStagingBuffer {};
-        GPU::MemoryAllocation spriteSizesStagingAllocation {};
-        GPU::Buffer spriteSizesBuffer {};
-        GPU::MemoryAllocation spriteSizesAllocation {};
     };
-    static_assert_fit_double_cacheline(FrameCache);
+    static_assert_fit_cacheline(FrameCache);
 
     /** @brief Store a sprite that must be removed with delay */
     struct alignas_quarter_cacheline SpriteDelayedRemove
@@ -133,7 +130,7 @@ public:
 
     /** @brief Get the size of a sprite */
     [[nodiscard]] inline Size spriteSizeAt(const SpriteIndex spriteIndex) const noexcept
-        { return _spriteSizes.at(spriteIndex); }
+        { return _spriteCaches.at(spriteIndex).size; }
 
 
 public: // Unsafe functions reserved for internal usage
@@ -156,10 +153,6 @@ public: // Unsafe functions reserved for internal usage
      *  @param Any transfer will be executed through recorder */
     void prepareFrameCache(void) noexcept;
 
-    /** @brief Transfer sprite sizes buffer to the GPU
-     *  @param The transfer will be executed through recorder */
-    void transferSpriteSizesBuffer(const GPU::CommandRecorder &recorder) noexcept;
-
 private:
     /** @brief Base implementation of the add function */
     [[nodiscard]] SpriteIndex addImpl(const Core::HashedName spriteName, const float removeDelaySeconds) noexcept;
@@ -177,8 +170,7 @@ private:
 
     // Cacheline 0
     Core::Vector<Core::HashedName, UIAllocator, SpriteIndex::IndexType> _spriteNames {};
-    Core::FlatVector<SpriteCache, UIAllocator, SpriteIndex::IndexType> _spriteCaches {};
-    Core::FlatVector<Size, UIAllocator, SpriteIndex::IndexType> _spriteSizes {};
+    Core::Vector<SpriteCache, UIAllocator, SpriteIndex::IndexType> _spriteCaches {};
     Core::Vector<SpriteIndex, UIAllocator, SpriteIndex::IndexType> _spriteFreeList {};
     Core::Vector<SpriteDelayedRemove, UIAllocator, SpriteIndex::IndexType> _spriteDelayedRemoves {};
     // Cacheline 1
