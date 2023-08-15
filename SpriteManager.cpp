@@ -41,19 +41,19 @@ UI::SpriteManager::SpriteManager(void) noexcept
         return max;
     }())
     , _sampler(GPU::SamplerModel(
-            GPU::SamplerCreateFlags::None,
-            GPU::Filter::Linear,
-            GPU::Filter::Linear,
-            GPU::SamplerMipmapMode::Linear,
-            GPU::SamplerAddressMode::ClampToBorder,
-            GPU::SamplerAddressMode::ClampToBorder,
-            GPU::SamplerAddressMode::ClampToBorder,
-            false, 0.0f, // Anisotropy
-            false, GPU::CompareOp::Never, // Compare
-            0.0f, 0.0f, 0.0f, // Lod
-            GPU::BorderColor::FloatTransparentBlack, // Border
-            false // Unormalized
-        ))
+        GPU::SamplerCreateFlags::None,
+        GPU::Filter::Linear,
+        GPU::Filter::Linear,
+        GPU::SamplerMipmapMode::Linear,
+        GPU::SamplerAddressMode::ClampToBorder,
+        GPU::SamplerAddressMode::ClampToBorder,
+        GPU::SamplerAddressMode::ClampToBorder,
+        false, 0.0f, // Anisotropy
+        false, GPU::CompareOp::Never, // Compare
+        0.0f, 0.0f, 0.0f, // Lod
+        GPU::BorderColor::FloatTransparentBlack, // Border
+        false // Unormalized
+    ))
     , _descriptorSetLayout(GPU::DescriptorSetLayout::Make(
         GPU::DescriptorSetLayoutCreateFlags::UpdateAfterBindPool,
         {
