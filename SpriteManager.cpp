@@ -42,9 +42,9 @@ UI::SpriteManager::SpriteManager(void) noexcept
     }())
     , _sampler(GPU::SamplerModel(
             GPU::SamplerCreateFlags::None,
-            GPU::Filter::Nearest,
-            GPU::Filter::Nearest,
-            GPU::SamplerMipmapMode::Nearest,
+            GPU::Filter::Linear,
+            GPU::Filter::Linear,
+            GPU::SamplerMipmapMode::Linear,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
             GPU::SamplerAddressMode::ClampToBorder,
