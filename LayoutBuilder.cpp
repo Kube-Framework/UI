@@ -160,6 +160,7 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
     // Resolve hug constraints
     constexpr auto ResolveHug = [](
         auto &constraint,
+        const auto minSize,
         const auto childCount,
         const auto isDistributed,
         const auto spacing,
@@ -172,6 +173,8 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
         // Check if constraint need to get resolved
         if (constraint != PixelHug)
             return;
+        if (!childCount)
+            constraint = minSize;
         // Fill if distributed axis has at least one filled child
         else if (isDistributed & bool(fillCount))
             constraint = PixelFill;
@@ -190,6 +193,7 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
     };
     ResolveHug(
         data.constraints->maxSize.width,
+        data.constraints->minSize.width,
         data.children.size(),
         data.layout->flowType == FlowType::Row,
         data.layout->spacing,
@@ -201,6 +205,7 @@ void UI::Internal::LayoutBuilder::discoverConstraints(void) noexcept
     );
     ResolveHug(
         data.constraints->maxSize.height,
+        data.constraints->minSize.height,
         data.children.size(),
         data.layout->flowType == FlowType::Column,
         data.layout->spacing,
