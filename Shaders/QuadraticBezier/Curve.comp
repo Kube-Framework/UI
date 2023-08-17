@@ -4,7 +4,7 @@
 
 #include "QuadraticBezier.glsl"
 
-// Rectangle instance
+// Curve instance
 struct Instance
 {
     Area area; // Frame area

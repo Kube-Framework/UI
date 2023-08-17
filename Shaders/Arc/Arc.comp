@@ -1,22 +1,21 @@
 #version 450
 
-// #extension GL_EXT_debug_printf : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "CubicBezier.glsl"
+#include "Arc.glsl"
 
-// Cubic bezier instance
+// Arc instance
 struct Instance
 {
-    Area area; // Frame area
-    vec2 p0; // Curve point 0
-    vec2 p1; // Curve point 1
-    vec2 p2; // Curve point 2
-    vec2 p3; // Curve point 3
-    uint color; // Fill color
-    float thickness; // Width of the line
-    float edgeSoftness; // Edge softness in pixels
-    uint _padding;
+    vec2 center; // Arc center
+    float radius; // Arc radius
+    float thickness; // Arc thickness
+    float aperture; // Arc aperture
+    uint color; // Arc inner color
+    uint borderColor; // Arc border color
+    float borderWidth; // Arc border width
+    float edgeSoftness; // Arc edge softness
+    float rotationAngle; // Arc rotation angle
 };
 
 #include "../PrimitiveCompute.glsl"
@@ -29,32 +28,34 @@ void main(void)
     const uint instanceIndex = gl_GlobalInvocationID.x;
     if (instanceIndex >= computeConstants.instanceCount)
         return;
-
-    // Compute metrics
     const Offset offset = offsets.data[instanceIndex];
     const Instance instance = instances.data[instanceIndex];
-    const Area clampedArea = getClampedArea(instance.area);
+
+    // Compute metrics
+    float totalRadius = instance.radius + instance.thickness + instance.edgeSoftness;
 
     // Set vertices
     Vertex vertex;
-    vertex.p0 = instance.p0;
-    vertex.p1 = instance.p1;
-    vertex.p2 = instance.p2;
-    vertex.p3 = instance.p3;
-    vertex.color = instance.color;
+    vertex.center = instance.center;
+    vertex.radius = instance.radius;
     vertex.thickness = instance.thickness;
+    vertex.aperture = instance.aperture;
+    vertex.color = instance.color;
+    vertex.borderColor = instance.borderColor;
+    vertex.borderWidth = instance.borderWidth;
     vertex.edgeSoftness = instance.edgeSoftness;
+    vertex.rotationAngle = instance.rotationAngle;
     //   TopLeft
-    vertex.pos = toRelative(clampedArea.pos);
+    vertex.pos = toRelative(instance.center - totalRadius);
     vertices.data[offset.vertexOffset + 0] = vertex;
     //   TopRight
-    vertex.pos = toRelative(clampedArea.pos + vec2(clampedArea.size.x, 0.0));
+    vertex.pos = toRelative(instance.center + vec2(totalRadius, -totalRadius));
     vertices.data[offset.vertexOffset + 1] = vertex;
     //   BottomRight
-    vertex.pos = toRelative(clampedArea.pos + clampedArea.size);
+    vertex.pos = toRelative(instance.center + totalRadius);
     vertices.data[offset.vertexOffset + 2] = vertex;
     //   BottomLeft
-    vertex.pos = toRelative(clampedArea.pos + vec2(0.0, clampedArea.size.y));
+    vertex.pos = toRelative(instance.center + vec2(-totalRadius, totalRadius));
     vertices.data[offset.vertexOffset + 3] = vertex;
 
     // Set indices

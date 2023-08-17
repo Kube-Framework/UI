@@ -13,10 +13,11 @@
 #include "UISystem.hpp"
 #include "LayoutBuilder.hpp"
 
+#include "ArcProcessor.hpp"
 #include "CubicBezierProcessor.hpp"
 #include "CurveProcessor.hpp"
-#include "RectangleProcessor.hpp"
 #include "GradientRectangleProcessor.hpp"
+#include "RectangleProcessor.hpp"
 #include "TextProcessor.hpp"
 
 using namespace kF;
@@ -97,6 +98,7 @@ UI::UISystem::UISystem(GPU::BackendWindow * const window) noexcept
     registerPrimitive<GradientRectangle>();
     registerPrimitive<Curve>();
     registerPrimitive<CubicBezier>();
+    registerPrimitive<Arc>();
 }
 
 bool UI::UISystem::tick(void) noexcept

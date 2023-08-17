@@ -7,6 +7,8 @@ kube_add_library(UI
         Animator.ipp
         App.cpp
         App.hpp
+        ArcProcessor.cpp
+        ArcProcessor.hpp
         Base.cpp
         Base.hpp
         Base.ipp
@@ -72,6 +74,9 @@ kube_add_library(UI
         UISystem.ipp
 
     SHADERS
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Arc/Arc.comp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Arc/Arc.frag
+        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Arc/Arc.vert
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.comp
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.frag
         ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/CubicBezier/CubicBezier.vert

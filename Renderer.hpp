@@ -227,6 +227,8 @@ private:
     /** @brief Register Cubic Bezier graphic pipeline */
     void registerCubicBezierPipeline(void) noexcept;
 
+    /** @brief Register Arc graphic pipeline */
+    void registerArcPipeline(void) noexcept;
 
 
     // Cacheline 0 & 1

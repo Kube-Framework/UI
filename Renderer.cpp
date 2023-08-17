@@ -88,6 +88,7 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
     registerFilledQuadPipeline();
     registerQuadraticBezierPipeline();
     registerCubicBezierPipeline();
+    registerArcPipeline();
 }
 
 void UI::Renderer::registerGraphicPipeline(const GraphicPipelineRendererModel &model) noexcept
@@ -667,6 +668,33 @@ void UI::Renderer::registerCubicBezierPipeline(void) noexcept
             VertexInputAttribute(0, 5,  Format::R32_UINT,       offsetof(Vertex, vertColor)),
             VertexInputAttribute(0, 6,  Format::R32_SFLOAT,     offsetof(Vertex, vertThickness)),
             VertexInputAttribute(0, 7,  Format::R32_SFLOAT,     offsetof(Vertex, vertEdgeSoftness))
+        },
+        .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
+        .rasterizationModel = RasterizationModel(PolygonMode::Fill)
+    });
+}
+
+void UI::Renderer::registerArcPipeline(void) noexcept
+{
+    using namespace GPU;
+    using Vertex = DeclareGraphicPipelineVertexType<ArcGraphicPipeline>;
+
+    registerGraphicPipeline(GraphicPipelineRendererModel {
+        .name = ArcGraphicPipeline,
+        .vertexShader = ":/UI/Shaders/Arc/Arc.vert.spv",
+        .fragmentShader = ":/UI/Shaders/Arc/Arc.frag.spv",
+        .vertexInputBinding = VertexInputBinding(0, sizeof(Vertex), VertexInputRate::Vertex),
+        .vertexInputAttributes = {
+            VertexInputAttribute(0, 0, Format::R32G32_SFLOAT,   offsetof(Vertex, vertPos)),
+            VertexInputAttribute(0, 1, Format::R32G32_SFLOAT,   offsetof(Vertex, vertCenter)),
+            VertexInputAttribute(0, 2, Format::R32_SFLOAT,      offsetof(Vertex, vertRadius)),
+            VertexInputAttribute(0, 3, Format::R32_SFLOAT,      offsetof(Vertex, vertThickness)),
+            VertexInputAttribute(0, 4, Format::R32_SFLOAT,      offsetof(Vertex, vertAperture)),
+            VertexInputAttribute(0, 5, Format::R32_UINT,        offsetof(Vertex, vertColor)),
+            VertexInputAttribute(0, 6, Format::R32_UINT,        offsetof(Vertex, vertBorderColor)),
+            VertexInputAttribute(0, 7, Format::R32_SFLOAT,      offsetof(Vertex, vertBorderWidth)),
+            VertexInputAttribute(0, 8, Format::R32_SFLOAT,      offsetof(Vertex, vertEdgeSoftness)),
+            VertexInputAttribute(0, 9, Format::R32_SFLOAT,      offsetof(Vertex, vertRotationAngle))
         },
         .inputAssemblyModel = InputAssemblyModel(PrimitiveTopology::TriangleList),
         .rasterizationModel = RasterizationModel(PolygonMode::Fill)

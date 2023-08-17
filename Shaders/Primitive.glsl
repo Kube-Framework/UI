@@ -45,7 +45,7 @@ Area getClampedArea(const Area area)
     return clamped;
 }
 
-vec2 getRotationCosSin(const float angle)
+vec2 getCosSin(const float angle)
 {
     return vec2(cos(angle), sin(angle));
 }

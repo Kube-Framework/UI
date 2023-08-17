@@ -36,7 +36,7 @@ void main(void)
     // Compute relative UVs
     const Quad uvQuad = getTextUVQuad(Area(instance.uvPos, instance.uvSize), textureSize(sprites[nonuniformEXT(instance.spriteIndex)], 0), isVertical);
     // Compute relative area
-    const vec2 rotationCosSin = getRotationCosSin(instance.rotationAngle);
+    const vec2 rotationCosSin = getCosSin(instance.rotationAngle);
     const mat2 rotationMatrix = getRotationMatrix(rotationCosSin);
     const Area clampedArea = getClampedArea(Area(instance.pos, branchlessIf(isVertical, instance.uvSize.yx, instance.uvSize)));
     const Quad quad = getTextRelativeQuad(clampedArea, rotationMatrix, instance.rotationOrigin);

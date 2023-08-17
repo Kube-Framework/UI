@@ -62,6 +62,7 @@ namespace kF::UI
         Point vertRotationCosSin;
     };
 
+
     /** @brief Quadratic bezier pipeline name */
     constexpr GraphicPipelineName QuadraticBezierGraphicPipeline = Core::Hash("QuadraticBezier");
 
@@ -79,6 +80,7 @@ namespace kF::UI
         Pixel vertEdgeSoftness;
     };
 
+
     /** @brief Cubic bezier pipeline name */
     constexpr GraphicPipelineName CubicBezierGraphicPipeline = Core::Hash("CubicBezier");
 
@@ -95,5 +97,25 @@ namespace kF::UI
         Pixel vertThickness;
         Pixel vertEdgeSoftness;
         std::uint32_t _padding;
+    };
+
+
+    /** @brief Arc pipeline name */
+    constexpr GraphicPipelineName ArcGraphicPipeline = Core::Hash("Arc");
+
+    /** @brief Declare arc graphic pipeline vertex */
+    template<>
+    struct alignas_quarter_cacheline DeclareGraphicPipelineVertexType<ArcGraphicPipeline>
+    {
+        Point vertPos;
+        Point vertCenter;
+        Pixel vertRadius;
+        Pixel vertThickness;
+        Pixel vertAperture;
+        std::uint32_t vertColor;
+        std::uint32_t vertBorderColor;
+        Pixel vertBorderWidth;
+        Pixel vertEdgeSoftness;
+        Pixel vertRotationAngle;
     };
 }
