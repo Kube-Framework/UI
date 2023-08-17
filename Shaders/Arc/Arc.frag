@@ -32,7 +32,7 @@ float arcSdf(const vec2 pos, const vec2 center, const float radius, const float 
 void main(void)
 {
     const vec2 inversedPoint = applyRotation(getInversedRotationMatrix(fragRotationCosSin), fragCenter, gl_FragCoord.xy);
-    const float dist = arcSdf(inversedPoint, fragCenter, fragRadius, fragThickness, fragApertureCosSin);
+    const float dist = arcSdf(inversedPoint, fragCenter, fragRadius, fragThickness / 2.0, fragApertureCosSin);
 
     // Smooth the border by antialiasing
     const float smoothedBorderAlpha = float(fragBorderWidth != 0.0) * smoothstep(-(fragBorderWidth + fragEdgeSoftness), -fragBorderWidth, dist);

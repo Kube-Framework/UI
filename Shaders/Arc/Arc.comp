@@ -32,7 +32,7 @@ void main(void)
     const Instance instance = instances.data[instanceIndex];
 
     // Compute metrics
-    float totalRadius = instance.radius + instance.thickness + instance.edgeSoftness;
+    const float totalRadius = instance.radius + (instance.thickness / 2.0) + instance.edgeSoftness;
 
     // Set vertices
     Vertex vertex;
