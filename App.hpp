@@ -57,6 +57,9 @@ public:
     /** @brief Centered window position */
     static constexpr Size FillWindowSize { PixelInfinity, PixelInfinity };
 
+    /** @brief Minimum window size */
+    static constexpr Size DefaultMinimumWindowSize { 100, 100 };
+
     /** @brief Default target frame rate */
     static constexpr int DefaultEventRate { 60 };
 
@@ -79,6 +82,7 @@ public:
         const std::string_view windowTitle,
         const Point windowPos = UndefinedWindowPos,
         const Size windowSize = FillWindowSize,
+        const Size minimumWindowSize = DefaultMinimumWindowSize,
         const WindowFlags windowFlags = WindowFlags::None,
         const Core::Version version = Core::Version(0, 1, 0),
         const std::size_t workerCount = Flow::Scheduler::AutoWorkerCount,
@@ -143,8 +147,13 @@ private:
         BackendInstance &operator=(const BackendInstance &other) noexcept = delete;
 
         /** @brief Constructor */
-        BackendInstance(const std::string_view windowTitle,
-                const Point windowPos, const Size windowSize, const WindowFlags windowFlags) noexcept;
+        BackendInstance(
+            const std::string_view windowTitle,
+            const Point windowPos,
+            const Size windowSize,
+            const Size minimumWindowSize,
+            const WindowFlags windowFlags
+        ) noexcept;
     };
 
 

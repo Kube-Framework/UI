@@ -114,8 +114,13 @@ UI::App::BackendInstance::~BackendInstance(void) noexcept
     SDL_Quit();
 }
 
-UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
-        const Point windowPos, const Size windowSize, const WindowFlags windowFlags) noexcept
+UI::App::BackendInstance::BackendInstance(
+    const std::string_view windowTitle,
+    const Point windowPos,
+    const Size windowSize,
+    const Size minimumWindowSize,
+    const WindowFlags windowFlags
+) noexcept
 {
     // Init SDL2
     kFEnsure(!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS),
@@ -161,6 +166,7 @@ UI::App::BackendInstance::BackendInstance(const std::string_view windowTitle,
         SDL_SetWindowSize(window, static_cast<int>(size.width), static_cast<int>(size.height) - top);
         SDL_SetWindowPosition(window, 0, top);
     }
+    SDL_SetWindowMinimumSize(window, int(minimumWindowSize.width), int(minimumWindowSize.height));
 }
 
 UI::App::~App(void) noexcept
@@ -180,13 +186,14 @@ UI::App::App(
     const std::string_view windowTitle,
     const Point windowPos,
     const Size windowSize,
+    const Size minimumWindowSize,
     const WindowFlags windowFlags,
     const Core::Version version,
     const std::size_t workerCount,
     const std::size_t taskQueueSize,
     const std::size_t eventQueueSize
 ) noexcept
-    : _backendInstance(windowTitle, windowPos, windowSize, windowFlags)
+    : _backendInstance(windowTitle, windowPos, windowSize, minimumWindowSize, windowFlags)
     , _gpu(_backendInstance.window, MakeFrameImageModels(), { &MakeRenderPass }, version)
     , _executor(workerCount, taskQueueSize, eventQueueSize)
 {
