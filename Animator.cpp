@@ -56,12 +56,11 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
     const auto end = _states.end();
     const auto it = std::remove_if(_states.begin(), end, [this, elapsed](auto &state) {
         const auto &animation = *state.animation;
-        const auto reverse = animation.reverse;
         const auto duration = std::max<std::int64_t>(animation.duration, 1);
         const auto totalElapsed = std::min(state.elapsed + elapsed, duration);
         if (animation.tickEvent) {
             const auto ratio = float(double(totalElapsed) / double(duration));
-            const auto reversedRatio = reverse ? 1.0f - ratio : ratio;
+            const auto reversedRatio = state.reverse ? 1.0f - ratio : ratio;
             animation.tickEvent(reversedRatio);
         }
         if (duration != totalElapsed) [[likely]] {
@@ -69,7 +68,7 @@ void UI::Animator::onTick(const std::int64_t elapsed) noexcept
             return false;
         } else [[unlikely]] {
             if (animation.animationMode == AnimationMode::Bounce)
-                state.reverse = !reverse;
+                state.reverse = !state.reverse;
             const auto oldStartCount = state.startCount;
             if (animation.statusEvent)
                 animation.statusEvent(AnimationStatus::Finish);
