@@ -243,6 +243,12 @@ public:
     /** @brief Check if UISystem is currently dragging something */
     [[nodiscard]] inline bool isDragging(void) const noexcept { return _eventCache.drop.typeHash != TypeHash {}; }
 
+    /** @brief Get dragged type */
+    [[nodiscard]] inline TypeHash dragType(void) const noexcept { return _eventCache.drop.typeHash; }
+
+    /** @brief Get dragged opaque instance */
+    [[nodiscard]] inline const void *getDragOpaqueInstance(void) const noexcept { return _eventCache.drop.data(); }
+
     /** @brief Cancel a drag */
     void cancelDrag(void) noexcept;
 
