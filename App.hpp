@@ -127,6 +127,10 @@ public:
     void setWindowSize(const Size size) noexcept;
 
 
+    /** @brief Get application version */
+    [[nodiscard]] inline Core::Version applicationVersion(void) const noexcept { return _gpu->instance.applicationVersion(); }
+
+
     /** @brief Run app in blocking mode */
     void run(void) noexcept;
 
