@@ -25,8 +25,6 @@ using namespace kF;
 UI::Size UI::UISystem::GetWindowSize(void) noexcept
 {
     const auto extent = GPU::GPUObject::Parent().swapchain().extent();
-    kFEnsure(extent.width && extent.height,
-        "UI::UISystem::GetWindowSize: Couldn't retreive display DPI");
     return Size(static_cast<Pixel>(extent.width), static_cast<Pixel>(extent.height));
 }
 
@@ -114,6 +112,10 @@ bool UI::UISystem::tick(void) noexcept
 
     // Process UI events
     processEventHandlers();
+
+    // Do not process item tree if the window size is zero
+    if (!_cache.windowSize.width || !_cache.windowSize.height)
+        return false;
 
     // If the current frame is still valid, we only need to dispatch painter commands
     if (!isFrameInvalid(currentFrame)) {

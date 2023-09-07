@@ -75,7 +75,7 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
                 break;
             _resizeExtent = extent;
             kFInfo("[UI] Window resized: ", extent.width, ", ", extent.height);
-            parent().sendEvent<PresentPipeline>([] { GPU::GPUObject::Parent().dispatchViewSizeChanged(); });
+            // parent().sendEvent<PresentPipeline>([] { GPU::GPUObject::Parent().dispatchViewSizeChanged(); });
             break;
         }
         default:
