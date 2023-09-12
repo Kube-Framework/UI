@@ -55,6 +55,12 @@ namespace kF::UI
         Pixel lineCount {};
         SpriteIndex spriteIndex {};
         LinesMetrics linesMetrics {};
+
+        /** @brief Query glyph metrics of an unicode character */
+        [[nodiscard]] inline const FontManager::GlyphMetrics &getMetricsOf(const std::uint32_t desired) const noexcept
+        {
+            return FontManager::GetMetricsOf(*glyphIndexSet, *glyphsMetrics, desired);
+        }
     };
     static_assert_fit_double_cacheline(ComputeParameters);
 
@@ -221,7 +227,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(
     for (; it != to; ++it) {
         // Glyph
         if (!std::isspace(*it)) {
-            const auto advance = params.glyphsMetrics->at(params.glyphIndexSet->at(*it)).advance;
+            const auto advance = params.getMetricsOf(*it).advance;
             if (CheckFit(metrics, textSize, xFit, advance)) [[likely]] {
                 metrics.totalSize += advance;
                 metrics.totalGlyphSize += advance;
@@ -249,7 +255,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(
 
     // Insert elided dots
     if (metrics.elided) [[unlikely]] {
-        const auto elideSize = params.glyphsMetrics->at(params.glyphIndexSet->at('.')).advance * ElideDotCount;
+        const auto elideSize = params.getMetricsOf('.').advance * ElideDotCount;
         while (!CheckFit(metrics, textSize, xFit, elideSize)) {
             // Decrement iterator if possible
             if (it != from)
@@ -259,7 +265,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(
 
             // Glyph
             if (!std::isspace(*it)) {
-                const auto advance = params.glyphsMetrics->at(params.glyphIndexSet->at(*it)).advance;
+                const auto advance = params.getMetricsOf(*it).advance;
                 metrics.totalSize -= advance;
                 metrics.totalGlyphSize -= advance;
             // Space
@@ -322,7 +328,7 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
     for (auto it = from; it != to; ++it) {
         // Glyph
         if (!std::isspace(*it)) {
-            const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at(*it));
+            const auto &metrics = params.getMetricsOf(*it);
             insertGlyph(metrics);
         // Space
         } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
@@ -333,7 +339,7 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
     }
 
     if (metrics.elided) [[unlikely]] {
-        const auto &metrics = params.glyphsMetrics->at(params.glyphIndexSet->at('.'));
+        const auto &metrics = params.getMetricsOf('.');
         for (auto i = 0u; i != ElideDotCount; ++i)
             insertGlyph(metrics);
     }

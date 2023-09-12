@@ -26,8 +26,14 @@ namespace kF::UI
 class alignas_cacheline kF::UI::FontManager
 {
 public:
+    /** @brief Undefined glyph */
+    static constexpr auto UndefinedGlyph = std::numeric_limits<std::uint32_t>::max();
+
+    /** @brief Initializer of the glyph index set */
+    static constexpr void GlyphIndexSetInitializer(std::uint32_t *from, std::uint32_t *to) noexcept { std::fill(from, to, UndefinedGlyph); }
+
     /** @brief Glyph index set */
-    using GlyphIndexSet = Core::SparseSet<std::uint32_t, 1024, UIAllocator, wchar_t>;
+    using GlyphIndexSet = Core::SparseSet<std::uint32_t, 1024, UIAllocator, std::uint32_t, &GlyphIndexSetInitializer>;
 
     /** @brief Glyph metrics */
     struct GlyphMetrics
@@ -57,6 +63,9 @@ public:
 
     /** @brief Buffer type of a map */
     using MapBuffer = Core::Vector<Color, UIAllocator>;
+
+    /** @brief Query glyph metrics of an unicode character */
+    [[nodiscard]] static const GlyphMetrics &GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t desired) noexcept;
 
 
     /** @brief Destructor */

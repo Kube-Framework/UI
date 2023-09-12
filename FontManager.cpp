@@ -29,6 +29,18 @@
 
 using namespace kF;
 
+const UI::FontManager::GlyphMetrics &UI::FontManager::GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t desired) noexcept
+{
+    const std::uint32_t unicodes[] { desired, 0x0000FFFD, '?' };
+    for (const auto unicode : unicodes) {
+        if (!glyphIndexSet.pageExists(unicode))
+            continue;
+        else if (const auto index = glyphIndexSet.at(unicode); index != UndefinedGlyph)
+            return glyphsMetrics.at(index);
+    }
+    return glyphsMetrics.front();
+}
+
 UI::FontManager::~FontManager(void) noexcept
 {
     FT_Done_FreeType(_backend);
@@ -119,7 +131,7 @@ void UI::FontManager::load(const std::string_view &path, const FontIndex fontInd
         auto unicode = FT_Get_First_Char(fontFace, &glyphIndex);
         for (std::uint32_t index {}; glyphIndex; ++index) {
             // Register glyph into sparse set
-            fontCache.glyphIndexSet.add(static_cast<wchar_t>(unicode), index);
+            fontCache.glyphIndexSet.add(static_cast<std::uint32_t>(unicode), index);
 
             // Load glyph metrics
             code = FT_Load_Glyph(fontFace, glyphIndex, FT_LOAD_BITMAP_METRICS_ONLY);
@@ -241,7 +253,7 @@ UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const st
 
     for (const auto it : text) {
         if (!std::isspace(it)) {
-            pen.x += glyphsMetrics.at(glyphIndexSet.at(it)).advance;
+            pen.x += GetMetricsOf(glyphIndexSet, glyphsMetrics, it).advance;
         } else if (const bool isTab = it == '\t'; isTab | (it == ' ')) {
             pen.x += spaceWidth * (1.0f + spacesPerTab * isTab);
         } else {
