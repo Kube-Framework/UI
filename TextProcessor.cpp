@@ -183,8 +183,6 @@ static void UI::ComputeGlyph(Glyph *&out, ComputeParameters &params) noexcept
     const auto end = params.text->str.end();
     Size size {};
 
-    if (params.text->str == "hello\nworld")
-        kFInfo("HI");
     while (it != end) {
         // Compute line metrics
         auto lineMetrics = ComputeLineMetrics<GetX, GetY>(params, it, end, GetY(size));
