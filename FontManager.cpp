@@ -21,6 +21,8 @@
 #include <freetype/freetype.h>
 #include <freetype/ftsizes.h>
 
+#include <Kube/Core/Unicode.hpp>
+
 #include <Kube/IO/File.hpp>
 
 #include "App.hpp"
@@ -29,13 +31,13 @@
 
 using namespace kF;
 
-const UI::FontManager::GlyphMetrics &UI::FontManager::GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t desired) noexcept
+const UI::FontManager::GlyphMetrics &UI::FontManager::GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t unicode) noexcept
 {
-    const std::uint32_t unicodes[] { desired, 0x0000FFFD, '?' };
-    for (const auto unicode : unicodes) {
-        if (!glyphIndexSet.pageExists(unicode))
+    const std::uint32_t unicodes[] { unicode, 0x0000FFFD, '?' };
+    for (const auto c : unicodes) {
+        if (!glyphIndexSet.pageExists(c))
             continue;
-        else if (const auto index = glyphIndexSet.at(unicode); index != UndefinedGlyph)
+        else if (const auto index = glyphIndexSet.at(c); index != UndefinedGlyph)
             return glyphsMetrics.at(index);
     }
     return glyphsMetrics.front();
@@ -238,7 +240,7 @@ void UI::FontManager::decrementRefCount(const FontIndex fontIndex) noexcept
     _fontFreeList.push(fontIndex);
 }
 
-UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab) const noexcept
+UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const std::string_view &text, const Pixel spacesPerTab_) const noexcept
 {
     constexpr auto UpdateMetrics = [](UI::Size &metrics, const UI::Point pen) {
         metrics.width = std::max(metrics.width, pen.x);
@@ -248,13 +250,19 @@ UI::Size UI::FontManager::computeTextMetrics(const FontIndex fontIndex, const st
     const auto &glyphIndexSet = glyphIndexSetAt(fontIndex);
     const auto lineHeight = lineHeightAt(fontIndex);
     const auto spaceWidth = spaceWidthAt(fontIndex);
+    const auto spacesPerTab = spacesPerTab_ - 1.0f;
     Size metrics {};
     Point pen {};
 
-    for (const auto it : text) {
-        if (!std::isspace(it)) {
-            pen.x += GetMetricsOf(glyphIndexSet, glyphsMetrics, it).advance;
-        } else if (const bool isTab = it == '\t'; isTab | (it == ' ')) {
+    auto from = text.begin();
+    const auto to = text.end();
+    while (true) {
+        const auto unicode = Core::Unicode::GetNextChar(from, to);
+        if (!unicode) {
+            break;
+        } else if (!std::isspace(unicode)) {
+            pen.x += GetMetricsOf(glyphIndexSet, glyphsMetrics, unicode).advance;
+        } else if (const bool isTab = unicode == '\t'; isTab | (unicode == ' ')) {
             pen.x += spaceWidth * (1.0f + spacesPerTab * isTab);
         } else {
             pen.x = {};

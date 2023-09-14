@@ -245,3 +245,17 @@ void UI::App::stop(void) noexcept
 {
     _executor.stop();
 }
+
+
+UI::UIString UI::App::clipboard(void) const noexcept
+{
+    const auto clipboard = ::SDL_GetClipboardText();
+    UIString text(clipboard);
+    ::SDL_free(clipboard);
+    return text;
+}
+
+void UI::App::setClipboard(const std::string_view &text) noexcept
+{
+    ::SDL_SetClipboardText(UIString(text).c_str());
+}

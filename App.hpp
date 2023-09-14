@@ -127,6 +127,13 @@ public:
     void setWindowSize(const Size size) noexcept;
 
 
+    /** @brief Get system clipboard */
+    [[nodiscard]] UIString clipboard(void) const noexcept;
+
+    /** @brief Set system clipboard */
+    void setClipboard(const std::string_view &text) noexcept;
+
+
     /** @brief Get application version */
     [[nodiscard]] inline Core::Version applicationVersion(void) const noexcept { return _gpu->instance().applicationVersion(); }
 

@@ -3,6 +3,8 @@
  * @ Description: Text processor
  */
 
+#include <Kube/Core/Unicode.hpp>
+
 #include <Kube/IO/File.hpp>
 
 #include <Kube/UI/App.hpp>
@@ -54,6 +56,7 @@ namespace kF::UI
         Pixel baseline {};
         Pixel lineCount {};
         SpriteIndex spriteIndex {};
+        Pixel elideSize {};
         LinesMetrics linesMetrics {};
 
         /** @brief Query glyph metrics of an unicode character */
@@ -80,8 +83,9 @@ namespace kF::UI
     /** @brief Compute a line of glyphs from a text */
     template<auto GetX, auto GetY>
     static Pixel ComputeLine(
-        Glyph *&out, ComputeParameters &params,
-        const std::string_view::iterator from,
+        Glyph *&out,
+        ComputeParameters &params,
+        std::string_view::iterator &it,
         const std::string_view::iterator to,
         const LineMetrics &metrics,
         const Pixel yOffset
@@ -149,7 +153,7 @@ std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
     auto *out = begin;
     ComputeParameters params;
 
-    for (const auto &text : Core::IteratorRange { primitiveBegin, primitiveEnd }) {
+    for (const Text &text : Core::IteratorRange { primitiveBegin, primitiveEnd }) {
         // Query compute parameters
         params.text = &text;
         params.glyphIndexSet = &fontManager.glyphIndexSetAt(text.fontIndex);
@@ -159,6 +163,7 @@ std::uint32_t UI::PrimitiveProcessor::InsertInstances<UI::Text>(
         params.descender = fontManager.descenderAt(text.fontIndex);
         params.lineHeight = fontManager.lineHeightAt(text.fontIndex);
         params.spriteIndex = fontManager.spriteAt(text.fontIndex);
+        params.elideSize = params.getMetricsOf('.').advance * ElideDotCount * text.elide;
         params.linesMetrics.clear();
 
         // Dispatch
@@ -178,18 +183,17 @@ static void UI::ComputeGlyph(Glyph *&out, ComputeParameters &params) noexcept
     const auto end = params.text->str.end();
     Size size {};
 
+    if (params.text->str == "hello\nworld")
+        kFInfo("HI");
     while (it != end) {
         // Compute line metrics
         auto lineMetrics = ComputeLineMetrics<GetX, GetY>(params, it, end, GetY(size));
 
         // Compute line glyphs
-        lineMetrics.width = ComputeLine<GetX, GetY>(
-            out, params, it, it + lineMetrics.charCount, lineMetrics, GetY(size)
-        );
+            lineMetrics.width = ComputeLine<GetX, GetY>(out, params, it, end, lineMetrics, GetY(size));
 
         // Update caches
         params.linesMetrics.push(std::move(lineMetrics));
-        it += lineMetrics.charCount;
         GetX(size) = std::max(GetX(size), lineMetrics.width);
         GetY(size) += params.lineHeight;
 
@@ -215,6 +219,7 @@ static UI::LineMetrics UI::ComputeLineMetrics(
         return !xFit | (metrics.totalSize + size <= GetX(textSize));
     };
 
+    LineMetrics elideMetrics;
     LineMetrics metrics;
     const auto spaceWidth = params.spaceWidth;
     const auto tabMultiplier = params.text->spacesPerTab - 1;
@@ -222,13 +227,20 @@ static UI::LineMetrics UI::ComputeLineMetrics(
     const bool lastLine = (yOffset + params.lineHeight * 2) > (GetY(params.text->area.pos) + GetY(params.text->area.size));
     const bool xFit = params.text->fit | params.text->elide;
     const bool xElide = params.text->elide & (lastLine | !params.text->fit);
-    auto it = from;
+    const auto elideSize = xElide * params.elideSize;
+    auto charCount = 0u;
 
-    for (; it != to; ++it) {
+    for (auto it = from; true;) {
+        // Get next unicode character
+        const auto unicode = Core::Unicode::GetNextChar(it, to);
+        // End of text
+        if (!unicode)
+            break;
+        ++charCount;
         // Glyph
-        if (!std::isspace(*it)) {
-            const auto advance = params.getMetricsOf(*it).advance;
-            if (CheckFit(metrics, textSize, xFit, advance)) [[likely]] {
+        if (!std::isspace(unicode)) {
+            const auto advance = params.getMetricsOf(unicode).advance;
+            if (CheckFit(metrics, textSize, xFit, advance + elideSize)) [[likely]] {
                 metrics.totalSize += advance;
                 metrics.totalGlyphSize += advance;
             } else [[unlikely]] {
@@ -236,10 +248,10 @@ static UI::LineMetrics UI::ComputeLineMetrics(
                 break;
             }
         // Space
-        } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
+        } else if (const bool isTab = unicode == '\t'; isTab | (unicode == ' ')) {
             const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
             const auto size = spaceWidth * spaceCount;
-            if (CheckFit(metrics, textSize, xFit, size)) [[likely]] {
+            if (CheckFit(metrics, textSize, xFit, size + elideSize)) [[likely]] {
                 metrics.spaceCount += spaceCount;
                 metrics.totalSize += size;
             } else [[unlikely]] {
@@ -247,50 +259,24 @@ static UI::LineMetrics UI::ComputeLineMetrics(
                 break;
             }
         // End of line
-        } else {
-            ++it;
+        } else
             break;
-        }
-    }
-
-    // Insert elided dots
-    if (metrics.elided) [[unlikely]] {
-        const auto elideSize = params.getMetricsOf('.').advance * ElideDotCount;
-        while (!CheckFit(metrics, textSize, xFit, elideSize)) {
-            // Decrement iterator if possible
-            if (it != from)
-                --it;
-            else
-                break;
-
-            // Glyph
-            if (!std::isspace(*it)) {
-                const auto advance = params.getMetricsOf(*it).advance;
-                metrics.totalSize -= advance;
-                metrics.totalGlyphSize -= advance;
-            // Space
-            } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
-                const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
-                const auto size = spaceWidth * spaceCount;
-                metrics.spaceCount += spaceCount;
-                metrics.totalSize += size;
-            // End of line
-            } else {
-                ++it;
-                break;
-            }
-        }
     }
 
     // Compute character count
-    metrics.charCount = Core::Distance<std::uint32_t>(from, it);
+    metrics.charCount = charCount;
     return metrics;
 }
 
 template<auto GetX, auto GetY>
-static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
-        const std::string_view::iterator from, const std::string_view::iterator to,
-        const LineMetrics &metrics, const Pixel yOffset) noexcept
+static UI::Pixel UI::ComputeLine(
+    Glyph *&out,
+    ComputeParameters &params,
+    std::string_view::iterator &it,
+    const std::string_view::iterator to,
+    const LineMetrics &metrics,
+    const Pixel yOffset
+) noexcept
 {
     const auto spaceWidth = Core::BranchlessIf(
         params.text->textAlignment == TextAlignment::Justify,
@@ -325,13 +311,18 @@ static UI::Pixel UI::ComputeLine(Glyph *&out, ComputeParameters &params,
         };
         GetX(pos) += metrics.advance;
     };
-    for (auto it = from; it != to; ++it) {
+    for (auto count = 0u; count != metrics.charCount; ++count) {
+        // Get next unicode character
+        const auto unicode = Core::Unicode::GetNextChar(it, to);
+        // End of text
+        if (!unicode)
+            break;
         // Glyph
-        if (!std::isspace(*it)) {
-            const auto &metrics = params.getMetricsOf(*it);
+        else if (!std::isspace(unicode)) {
+            const auto &metrics = params.getMetricsOf(unicode);
             insertGlyph(metrics);
         // Space
-        } else if (const bool isTab = *it == '\t'; isTab | (*it == ' ')) {
+        } else if (const bool isTab = unicode == '\t'; isTab | (unicode == ' ')) {
             const auto spaceCount = 1.0f + tabMultiplier * static_cast<Pixel>(isTab);
             GetX(pos) += spaceWidth * spaceCount;
         } else

@@ -65,7 +65,7 @@ public:
     using MapBuffer = Core::Vector<Color, UIAllocator>;
 
     /** @brief Query glyph metrics of an unicode character */
-    [[nodiscard]] static const GlyphMetrics &GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t desired) noexcept;
+    [[nodiscard]] static const GlyphMetrics &GetMetricsOf(const GlyphIndexSet &glyphIndexSet, const GlyphsMetrics &glyphsMetrics, const std::uint32_t unicode) noexcept;
 
 
     /** @brief Destructor */
@@ -82,6 +82,11 @@ public:
     /** @brief Add a font to the manager using its path if it doesn't exists
      *  @note If the font is already loaded this function does not duplicate its memory */
     [[nodiscard]] Font add(const std::string_view &path, const FontModel &model) noexcept;
+
+
+    /** @brief Query glyph metrics of an unicode character */
+    [[nodiscard]] inline const GlyphMetrics &getMetricsOf(const FontIndex fontIndex, const std::uint32_t unicode) const noexcept
+        { return GetMetricsOf(glyphIndexSetAt(fontIndex), glyphsMetricsAt(fontIndex), unicode); }
 
 
 public: // Unsafe functions reserved for internal usage
