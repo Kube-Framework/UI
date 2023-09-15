@@ -92,13 +92,16 @@ namespace kF::UI
     class ListModel;
 }
 
-template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator = kF::Core::DefaultStaticAllocator>
+template<kF::UI::ListModelContainerRequirements Container, kF::Core::StaticAllocatorRequirements Allocator_ = kF::Core::DefaultStaticAllocator>
 class kF::UI::ListModel
 {
 public:
     /** @brief Static which indicates if the container is sorted */
     static constexpr bool IsSorted = Container::IsSorted;
     static_assert(!IsSorted, "UI::ListModel doesn't support sorted containers yiet");
+
+    /** @brief Allocator */
+    using Allocator = Allocator_;
 
     /** @brief Container range type */
     using Range = decltype(std::declval<const Container &>().size());

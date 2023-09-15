@@ -54,6 +54,8 @@ kube_add_library(UI
         PresentSystem.cpp
         PresentSystem.hpp
         PrimitiveProcessor.hpp
+        ProxyListModel.hpp
+        ProxyListModel.ipp
         RectangleProcessor.cpp
         RectangleProcessor.hpp
         Renderer.cpp
