@@ -205,9 +205,6 @@ public:
     /** @brief Set current keyboard grab state */
     void setKeyboardGrab(const bool state) noexcept;
 
-    /** @brief Set input mode of keyboard */
-    void setKeyboardInputMode(const bool state) noexcept;
-
 
     /** @brief Get scene max depth */
     [[nodiscard]] DepthUnit maxDepth(void) const noexcept { return _cache.maxDepth; }

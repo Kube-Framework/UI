@@ -759,14 +759,6 @@ void UI::UISystem::setKeyboardGrab(const bool state) noexcept
     SDL_SetWindowKeyboardGrab(_cache.window, static_cast<SDL_bool>(state));
 }
 
-void UI::UISystem::setKeyboardInputMode(const bool state) noexcept
-{
-    if (state)
-        SDL_StartTextInput();
-    else
-        SDL_StopTextInput();
-}
-
 UI::Point UI::UISystem::mousePosition(void) const noexcept
 {
     int x, y;
