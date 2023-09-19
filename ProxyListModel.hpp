@@ -9,23 +9,23 @@
 
 namespace kF::UI
 {
-    template<typename ListModel>
+    template<typename ListModelType>
     class ProxyListModel;
 }
 
 /** @brief Proxy of a list model */
-template<typename ListModel>
+template<typename ListModelType>
 class kF::UI::ProxyListModel
 {
 public:
     /** @brief List Model Allocator */
-    using Allocator = ListModel::Allocator;
+    using Allocator = ListModelType::Allocator;
 
     /** @brief List model underlying type */
-    using Type = ListModel::Type;
+    using Type = ListModelType::Type;
 
     /** @brief List model underlying type */
-    using Range = ListModel::Range;
+    using Range = ListModelType::Range;
 
     /** @brief Proxy list model iterator */
     template<typename Iterator>
@@ -60,10 +60,10 @@ public:
     };
 
     /** @brief Proxy list model iterator */
-    using Iterator = ProxyIterator<typename ListModel::Iterator>;
+    using Iterator = ProxyIterator<typename ListModelType::Iterator>;
 
     /** @brief Proxy list model const iterator */
-    using ConstIterator = ProxyIterator<typename ListModel::ConstIterator>;
+    using ConstIterator = ProxyIterator<typename ListModelType::ConstIterator>;
 
     /** @brief Proxy list model reverse iterator */
     using ReverseIterator = std::reverse_iterator<Iterator>;
@@ -75,7 +75,7 @@ public:
     using Container = Core::Vector<Iterator, Allocator>;
 
     /** @brief Proxy list model dispatcher */
-    using EventDispatcher = typename ListModel::EventDispatcher;
+    using EventDispatcher = typename ListModelType::EventDispatcher;
 
     /** @brief Proxy filter function */
     using Filter = Core::Functor<bool(const Type &entry), Allocator>;
@@ -88,7 +88,7 @@ public:
     ~ProxyListModel(void) noexcept = default;
 
     /** @brief Constructor */
-    ProxyListModel(ListModel &listModel, Filter &&filter = {}, Sort &&sort = {}) noexcept;
+    ProxyListModel(ListModelType &listModel, Filter &&filter = {}, Sort &&sort = {}) noexcept;
 
     /** @brief Move constructor */
     ProxyListModel(ProxyListModel &&other) noexcept = default;
@@ -168,7 +168,7 @@ private:
     void onListModelEvent(const ListModelEvent &event) noexcept;
 
 
-    ListModel &_listModel;
+    ListModelType &_listModel;
     mutable EventDispatcher _dispatcher {};
     Container _container {};
     Core::DispatcherSlot _listModelSlot {};

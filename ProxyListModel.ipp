@@ -1,7 +1,7 @@
 #include "ProxyListModel.hpp"
 
-template<typename ListModel>
-inline kF::UI::ProxyListModel<ListModel>::ProxyListModel(ListModel &listModel, Filter &&filter, Sort &&sort) noexcept
+template<typename ListModelType>
+inline kF::UI::ProxyListModel<ListModelType>::ProxyListModel(ListModelType &listModel, Filter &&filter, Sort &&sort) noexcept
     : _listModel(listModel)
     , _listModelSlot(listModel.dispatcher().template add<&ProxyListModel::onListModelEvent>(this))
     , _filter(std::move(filter))
@@ -10,8 +10,8 @@ inline kF::UI::ProxyListModel<ListModel>::ProxyListModel(ListModel &listModel, F
     applyProxy();
 }
 
-template<typename ListModel>
-inline void kF::UI::ProxyListModel<ListModel>::applyProxy(void) noexcept
+template<typename ListModelType>
+inline void kF::UI::ProxyListModel<ListModelType>::applyProxy(void) noexcept
 {
     // Check if filter functor is valid
     if (_filter) {
@@ -36,8 +36,8 @@ inline void kF::UI::ProxyListModel<ListModel>::applyProxy(void) noexcept
     _dispatcher.dispatch(ListModelEvent(ListModelEvent::Resize { .count = _container.size() }));
 }
 
-template<typename ListModel>
-inline void kF::UI::ProxyListModel<ListModel>::onListModelEvent(const ListModelEvent &event) noexcept
+template<typename ListModelType>
+inline void kF::UI::ProxyListModel<ListModelType>::onListModelEvent(const ListModelEvent &event) noexcept
 {
     if (event.type != ListModelEvent::Type::None)
         applyProxy();
