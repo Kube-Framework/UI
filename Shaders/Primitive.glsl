@@ -7,7 +7,7 @@ const float PI2 = 2 * PI;
 const float Epsilon = 0.00001;
 
 // Constants - Sprites
-layout(constant_id = 0) const uint MaxSpriteCount = 1024;
+layout(constant_id = 0) const uint MaxSpriteCount = 512;
 const uint NullSpriteIndex = ~0;
 
 // Constants - FillMode

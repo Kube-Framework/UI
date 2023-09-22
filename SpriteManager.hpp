@@ -36,7 +36,7 @@ public:
     static constexpr SpriteIndex DefaultSprite { 0u };
 
     /** @brief Default sprite index */
-    static constexpr SpriteIndex DefaultMaxSpriteCount { 1024u };
+    static constexpr SpriteIndex DefaultMaxSpriteCount { 512u };
 
     /** @brief Sprite cache */
     struct alignas_eighth_cacheline SpriteCache
