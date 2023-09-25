@@ -132,11 +132,15 @@ std::uint32_t UI::PrimitiveProcessor::GetInstanceCount<UI::Text>(
 {
     std::uint32_t count {};
     for (auto it = primitiveBegin; it != primitiveEnd; ++it) {
-        count += it->elide * ElideDotCount;
-        for (const auto unicode : it->str) {
-            if (!std::isspace(unicode)) [[likely]]
-                ++count;
+        auto from = it->str.begin();
+        const auto to = it->str.end();
+        while (true) {
+            if (const auto unicode = Core::Unicode::GetNextChar(from, to); !unicode)
+                break;
+            else
+                count += !std::isspace(unicode);
         }
+        count += it->elide * ElideDotCount;
     }
     return count;
 }
