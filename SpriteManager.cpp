@@ -145,9 +145,8 @@ UI::Sprite UI::SpriteManager::add(const std::string_view &path, const float remo
         );
     // Else we need to load file from flash storage
     } else {
-        std::string str(path);
         data = reinterpret_cast<Color *>(
-            ::stbi_load(str.c_str(), &x, &y, &channelCount, ::STBI_rgb_alpha)
+            ::stbi_load(UIString(path).c_str(), &x, &y, &channelCount, ::STBI_rgb_alpha)
         );
     }
     if (!data) {
