@@ -66,6 +66,11 @@ public:
     /** @brief Get the size of sprite */
     [[nodiscard]] Size spriteSize(void) const noexcept;
 
+
+    /** @brief Comparison operators */
+    [[nodiscard]] constexpr bool operator==(const Sprite &other) const noexcept = default;
+    [[nodiscard]] constexpr bool operator!=(const Sprite &other) const noexcept = default;
+
 private:
     SpriteManager *_manager {};
     SpriteIndex _index { NullSpriteIndex };

@@ -76,6 +76,11 @@ public:
     /** @brief Compute text metrics using internal font */
     [[nodiscard]] Size computeTextMetrics(const std::string_view &text, const Pixel spacesPerTab = DefaultSpacesPerTab) const noexcept;
 
+
+    /** @brief Comparison operators */
+    [[nodiscard]] constexpr bool operator==(const Font &other) const noexcept = default;
+    [[nodiscard]] constexpr bool operator!=(const Font &other) const noexcept = default;
+
 private:
     FontManager *_manager {};
     FontIndex _index {};

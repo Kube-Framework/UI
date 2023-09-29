@@ -539,6 +539,10 @@ namespace kF::UI
 
         /** @brief Implicit conversion to value */
         [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+
+        /** @brief Comparison operators */
+        [[nodiscard]] constexpr bool operator==(const FontIndex &other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator!=(const FontIndex &other) const noexcept = default;
     };
 
 
@@ -552,6 +556,10 @@ namespace kF::UI
 
         /** @brief Implicit conversion to value */
         [[nodiscard]] inline operator IndexType(void) const noexcept { return value; }
+
+        /** @brief Comparison operators */
+        [[nodiscard]] constexpr bool operator==(const SpriteIndex &other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator!=(const SpriteIndex &other) const noexcept = default;
     };
 
     namespace Internal
