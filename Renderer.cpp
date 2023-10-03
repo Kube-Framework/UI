@@ -80,6 +80,8 @@ UI::Renderer::Renderer(UISystem &uiSystem) noexcept
 
     // Make sure that we set the current frame when acquired
     parent().viewSizeDispatcher().add([this] {
+        if (!parent().swapchain())
+            return;
         for (auto index = 0u, count = _cache.graphicPipelines.size(); index != count; ++index)
             _cache.graphicPipelines.at(index).instance = createGraphicPipeline(_cache.graphicPipelineLayout, _cache.graphicPipelineModels.at(index));
     });
