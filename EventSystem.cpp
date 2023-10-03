@@ -67,14 +67,15 @@ void UI::EventSystem::interpretEvent(const SDL_Event &event) noexcept
         break;
     case SDL_WINDOWEVENT:
         switch (event.window.event) {
+        case SDL_WINDOWEVENT_RESTORED:
         case SDL_WINDOWEVENT_RESIZED:
+        case SDL_WINDOWEVENT_MINIMIZED:
+        case SDL_WINDOWEVENT_MAXIMIZED:
         case SDL_WINDOWEVENT_SIZE_CHANGED:
         {
             const GPU::Extent2D extent { static_cast<std::uint32_t>(event.window.data1), static_cast<std::uint32_t>(event.window.data2) };
-            if (_resizeExtent.width == extent.width && _resizeExtent.height == extent.height)
-                break;
-            _resizeExtent = extent;
             kFInfo("[UI] Window resized: ", extent.width, ", ", extent.height);
+            _resizeExtent = extent;
             parent().sendEvent<PresentPipeline>([] { GPU::GPUObject::Parent().dispatchViewSizeChanged(); });
             break;
         }
